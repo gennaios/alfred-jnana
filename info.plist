@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>io.github.gennaios.jnana</string>
+	<key>category</key>
+	<string>Productivity</string>
+	<key>connections</key>
+	<dict>
+		<key>29C88244-50EC-4F32-97E1-CC7CD6C27424</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>59C86A3A-EB9B-44C3-BAC8-4DDF34E2B01F</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>59C86A3A-EB9B-44C3-BAC8-4DDF34E2B01F</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>A7FEE2A5-EFAA-472A-93BD-447B5764FEA6</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>A2D588C0-BDD4-417C-8DA0-4F2FDAA01103</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>323B4651-960B-4E68-81D9-678692A70188</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>F1593634-29B2-49EE-A175-6702794F2F0B</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>A2D588C0-BDD4-417C-8DA0-4F2FDAA01103</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>gennaios</string>
+	<key>description</key>
+	<string></string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>Jnana</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<false/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>2</integer>
+				<key>hotmod</key>
+				<integer>262144</integer>
+				<key>hotstring</key>
+				<string>D</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>com.adobe.Acrobat.Pro</string>
+					<string>com.calibre-ebook.ebook-viewer</string>
+					<string>com.apple.Preview</string>
+					<string>net.sourceforge.skim-app.skim</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>F1593634-29B2-49EE-A175-6702794F2F0B</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>escaping</key>
+				<integer>126</integer>
+				<key>keyword</key>
+				<string>.jnaall</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<false/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>2</integer>
+				<key>runningsubtext</key>
+				<string>Getting bookmarks...</string>
+				<key>script</key>
+				<string>on run
+	set theQuery to "\"{query}\""
+	
+	tell application "System Events"
+		set theParameter to " all "
+	end tell
+	
+	set bookmarks to do shell script "./jnana" &amp; theParameter &amp; theQuery
+	return bookmarks
+end run</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string></string>
+				<key>title</key>
+				<string>Search all bookmarks</string>
+				<key>type</key>
+				<integer>6</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>A2D588C0-BDD4-417C-8DA0-4F2FDAA01103</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run
+	set query to "{query}"
+	
+	set AppleScript's text item delimiters to " "
+	--	set query to q as text
+	--set AppleScript's text item delimiters to {""}
+	--	display notification query
+	
+	--
+	-- Split command
+	--
+	set results to my explode("/Page:", query)
+	--	try
+	set theFile to item 1 of results as string
+	set thePage to item 2 of results as string
+	-- display notification theFile &amp; " - " &amp; thePage
+	set fileAlias to POSIX file theFile as Unicode text
+	-- display notification fileAlias as string
+	-- end try
+	
+	
+	--
+	-- vary actions by active app
+	--
+	if fileAlias ends with ".epub" then
+		set parameter1 to "\"" &amp; theFile &amp; "\""
+		set parameter2 to " " &amp; thePage
+		set cmd to "python ../alfred-gnosis/src/gnosis.py --epub-to-bookmark " &amp; parameter1 &amp; parameter2
+		do shell script cmd
+		return
+	else if fileAlias ends with ".pdf" then
+		tell application "Finder" to open file fileAlias
+	end if
+
+	tell application "System Events"
+		set activeApp to name of first application process whose frontmost is true
+		log "Active app : " &amp; activeApp
+	end tell
+	
+	if activeApp = "AdobeAcrobat" then
+		my open_acrobat(fileAlias, thePage)
+	else if activeApp = "Preview" then
+		delay 0.25
+		tell application "Preview"
+			try
+				tell application "System Events"
+					keystroke "g" using {option down, command down} -- ⌥⌘G
+					keystroke thePage
+					keystroke return
+					keystroke return
+				end tell
+			end try
+		end tell
+	else if activeApp = "Skim" then
+		tell application "Skim"
+			tell document 1 to go to page thePage
+		end tell
+	else
+		display notification "Some other app!"
+	end if
+end run
+
+on open_acrobat(theFile, thePage)
+	set documentOpened to false
+	
+	tell application "Adobe Acrobat"
+		set documentName to ""
+		--
+		-- Switch to document and page if open
+		repeat with theDoc in documents
+			set filePath to file alias of theDoc
+			set posixPath to POSIX path of theFile
+			-- display notification filePath as string
+			
+			if (filePath as string) is equal to (theFile as string) then
+				set documentName to name of theDoc
+				-- display notification "File is open " &amp; name of theDoc
+				try
+					bring to front document documentName
+				end try
+				tell PDF Window of document documentName to goto page (thePage as integer)
+				set documentOpened to true
+				exit repeat
+			end if
+		end repeat
+		
+		if documentOpened is not true then
+			open file theFile options "page=" &amp; thePage
+		end if
+	end tell
+end open_acrobat
+
+on FileExists(theFile)
+	tell application "Finder"
+		if exists POSIX file theFile then
+			return true
+		else
+			return false
+		end if
+	end tell
+end FileExists
+
+on replace_chars(this_text, search_string, replacement_string)
+	if this_text contains the search_string then
+		set AppleScript's text item delimiters to the search_string
+		set the item_list to every text item of this_text
+		set AppleScript's text item delimiters to the replacement_string
+		set this_text to the item_list as string
+		set AppleScript's text item delimiters to ""
+	end if
+	return this_text
+end replace_chars
+
+on explode(delimiter, input)
+	local delimiter, input, ASTID
+	set ASTID to AppleScript's text item delimiters
+	try
+		set AppleScript's text item delimiters to delimiter
+		set input to text items of input
+		set AppleScript's text item delimiters to ASTID
+		return input --&gt; list
+	on error eMsg number eNum
+		set AppleScript's text item delimiters to ASTID
+		error "Can't explode: " &amp; eMsg number eNum
+	end try
+end explode</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>323B4651-960B-4E68-81D9-678692A70188</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<false/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>0</integer>
+				<key>hotmod</key>
+				<integer>0</integer>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>com.adobe.Acrobat.Pro</string>
+					<string>com.calibre-ebook.ebook-viewer</string>
+					<string>com.apple.Preview</string>
+					<string>net.sourceforge.skim-app.skim</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>29C88244-50EC-4F32-97E1-CC7CD6C27424</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run	set query to "{query}"		set AppleScript's text item delimiters to " "	--	set query to q as text	--set AppleScript's text item delimiters to {""}	--	display notification query		--	-- Split command	--	set results to my explode("/Page:", query)	--	try	set theFile to item 1 of results as string	set thePage to item 2 of results as string	-- display notification theFile &amp; " - " &amp; thePage	set fileAlias to POSIX file theFile as Unicode text	-- display notification fileAlias as string	-- end try		--	-- If not exists, remove from DB	if not my FileExists(theFile) then		-- display notification "File does not exist"		try			-- do shell script "python gnosis.py -r \"" &amp; theFile &amp; "\""		end try		-- return	end if		--	-- vary actions by active app	--	if fileAlias ends with ".epub" then
+		set parameter1 to "\"" &amp; theFile &amp; "\""		set parameter2 to " " &amp; thePage		set cmd to "python gnosis.py --epub-to-bookmark " &amp; parameter1 &amp; parameter2		do shell script cmd
+		return
+	else if fileAlias ends with ".pdf" then
+		tell application "Finder" to open file fileAlias
+	end if
+	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		log "Active app : " &amp; activeApp	end tell	
+	if activeApp = "AdobeAcrobat" then		my open_acrobat(fileAlias, thePage)	else if activeApp = "Preview" then		delay 0.25		tell application "Preview"			try				tell application "System Events"					keystroke "g" using {option down, command down} -- ⌥⌘G					keystroke thePage					keystroke return					keystroke return				end tell			end try		end tell	else if activeApp = "Skim" then		tell application "Skim"			tell document 1 to go to page thePage		end tell	else		display notification "Some other app!"	end ifend runon open_acrobat(theFile, thePage)	set documentOpened to false		tell application "Adobe Acrobat"		set documentName to ""		--		-- Switch to document and page if open		repeat with theDoc in documents			set filePath to file alias of theDoc			set posixPath to POSIX path of theFile			-- display notification filePath as string						if (filePath as string) is equal to (theFile as string) then				set documentName to name of theDoc				-- display notification "File is open " &amp; name of theDoc				try					bring to front document documentName				end try				tell PDF Window of document documentName to goto page (thePage as integer)				set documentOpened to true				exit repeat			end if		end repeat				if documentOpened is not true then			open file theFile options "page=" &amp; thePage		end if	end tellend open_acrobaton FileExists(theFile)	tell application "Finder"		if exists POSIX file theFile then			return true		else			return false		end if	end tellend FileExistson replace_chars(this_text, search_string, replacement_string)	if this_text contains the search_string then		set AppleScript's text item delimiters to the search_string		set the item_list to every text item of this_text		set AppleScript's text item delimiters to the replacement_string		set this_text to the item_list as string		set AppleScript's text item delimiters to ""	end if	return this_textend replace_charson explode(delimiter, input)	local delimiter, input, ASTID	set ASTID to AppleScript's text item delimiters	try		set AppleScript's text item delimiters to delimiter		set input to text items of input		set AppleScript's text item delimiters to ASTID		return input --&gt; list	on error eMsg number eNum		set AppleScript's text item delimiters to ASTID		error "Can't explode: " &amp; eMsg number eNum	end tryend explode</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>A7FEE2A5-EFAA-472A-93BD-447B5764FEA6</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>escaping</key>
+				<integer>126</integer>
+				<key>keyword</key>
+				<string>.jnaall</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<false/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>2</integer>
+				<key>runningsubtext</key>
+				<string>Getting bookmarks...</string>
+				<key>script</key>
+				<string>on run	set theQuery to "\"{query}\""		tell application "System Events"		set theParameter to " all "	end tell	
+	set bookmarks to do shell script "jnana" &amp; theParameter &amp; theQuery	return bookmarksend run</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string></string>
+				<key>title</key>
+				<string>Search all bookmarks</string>
+				<key>type</key>
+				<integer>6</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>59C86A3A-EB9B-44C3-BAC8-4DDF34E2B01F</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string># Jnana
+
+Alfred workflow to index eBook (EPUB &amp; PDF) bookmarks. Filter bookmarks of current EPUB (calibre ebook-viewer) or PDF (Preview, Skim, and Acrobat) and go to page. Search index of all previously opened ebooks and open any of them to proper section.
+
+Alfred 3.
+
+## Usage
+
+### Config
+
+Workflow environment variable :
+
+* JNANA_DB=(default empty or sqlite), or optional 'postgresql'
+* JNANA_SPHINX=True - use Sphinx or Manticore for more performant full-text search
+
+### Commands
+
+.jnathis - search and go to bookmarks for currently opened ePub or PDF
+.jna - search and go to any bookmark for file type: PDF when in PDF viewer, or ePub.
+.jnaall - bookmarks of any type
+.jnaedit - edit ePub (in BBEdit, later configurable)
+
+### Command-line
+
+
+## Git
+
+Repo :  https://github.com/gennaios/alfred-jnana
+Build from source : https://gist.github.com/deanishe/b16f018119ef3fe951af</string>
+	<key>uidata</key>
+	<dict>
+		<key>29C88244-50EC-4F32-97E1-CC7CD6C27424</key>
+		<dict>
+			<key>xpos</key>
+			<integer>30</integer>
+			<key>ypos</key>
+			<integer>620</integer>
+		</dict>
+		<key>323B4651-960B-4E68-81D9-678692A70188</key>
+		<dict>
+			<key>xpos</key>
+			<integer>480</integer>
+			<key>ypos</key>
+			<integer>50</integer>
+		</dict>
+		<key>59C86A3A-EB9B-44C3-BAC8-4DDF34E2B01F</key>
+		<dict>
+			<key>xpos</key>
+			<integer>240</integer>
+			<key>ypos</key>
+			<integer>620</integer>
+		</dict>
+		<key>A2D588C0-BDD4-417C-8DA0-4F2FDAA01103</key>
+		<dict>
+			<key>xpos</key>
+			<integer>250</integer>
+			<key>ypos</key>
+			<integer>50</integer>
+		</dict>
+		<key>A7FEE2A5-EFAA-472A-93BD-447B5764FEA6</key>
+		<dict>
+			<key>xpos</key>
+			<integer>470</integer>
+			<key>ypos</key>
+			<integer>620</integer>
+		</dict>
+		<key>F1593634-29B2-49EE-A175-6702794F2F0B</key>
+		<dict>
+			<key>xpos</key>
+			<integer>30</integer>
+			<key>ypos</key>
+			<integer>50</integer>
+		</dict>
+	</dict>
+	<key>variables</key>
+	<dict>
+		<key>JNANA_DB</key>
+		<string>postgresql</string>
+		<key>JNANA_SPHINX</key>
+		<string>True</string>
+	</dict>
+	<key>version</key>
+	<string>0.1</string>
+	<key>webaddress</key>
+	<string></string>
+</dict>
+</plist>
