@@ -47,12 +47,13 @@ func searchAll(sess *dbr.Session, query string) ([]SearchAllResult, error) {
 	//	JOIN bookmarkindex on bookmarks.id = bookmarkindex.rowid
 	//	WHERE bookmarkindex MATCH '?' ORDER BY rank LIMIT 100`, queryString)
 
+	// NOTE: AND rank MATCH 'bm25(10.0, 5.0)' ORDER BY rank faster than ORDER BY bm25(fts, …)
 	_, err := sess.Select("bookmarks.id", "bookmarks.title", "bookmarks.section",
 		"bookmarks.destination", "bookmarks.file_id", "files.path", "files.file_name").
 		From("bookmarks").
 		Join("files", "bookmarks.file_id = files.id").
-		Join("bookmarkindex", "bookmarks.id = bookmarkindex.rowid").
-		Where("bookmarkindex MATCH ?", queryString).
+		Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
+		Where("bookmarksindex MATCH ? AND rank MATCH 'bm25(5.0, 2.0, 1.0)'", queryString).
 		OrderBy("rank").Limit(100).Load(&results)
 
 	return results, err
