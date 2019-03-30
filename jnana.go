@@ -1,15 +1,17 @@
 package main
 
 import (
-	"github.com/deanishe/awgo"
-	"github.com/deanishe/awgo/update"
-	"github.com/docopt/docopt-go"
-	"log"
+	"encoding/json"
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/deanishe/awgo"
+	"github.com/deanishe/awgo/update"
+	"github.com/docopt/docopt-go"
 )
 
 var (
@@ -23,6 +25,7 @@ usage:
     jnana allpdf [<query>]
     jnana epub [<query>]
     jnana pdf <file> [<query>]
+    jnana lastquery
     jnana -h
 
 options:
@@ -35,6 +38,7 @@ commands:
     allpdf	Search all PDF bookmarks.
     epub	Retrieve or filter bookmarks for EPUB in Calibre.
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
+    lastquery	Retrieve cached last query string for script filter
 `
 
 	wf *aw.Workflow
@@ -42,17 +46,16 @@ commands:
 	dataDir        = "Library/Application Support/Alfred 3/Workflow Data/io.github.gennaios.gnosis"
 	dbFileName     = "gnosis.db"
 	coversCacheDir string // directory generated icons are stored in
-
-	query string
 )
 
 var options struct {
 	// commands
-	All     bool
-	Allepub bool
-	Allpdf  bool
-	Epub    bool
-	Pdf     bool
+	All       bool
+	Allepub   bool
+	Allpdf    bool
+	Epub      bool
+	Pdf       bool
+	Lastquery bool
 
 	// parameters
 	Query string
@@ -91,27 +94,66 @@ func iconForFileID(fileId string, filePath string) *aw.Icon {
 	return icon
 }
 
+func cacheLastQuery(queryString string) {
+	var (
+		// Cache "key" (filename) and the value to store
+		name  = "LastQuery"
+		value = queryString
+	)
+
+	cache := aw.NewCache(wf.CacheDir())
+
+	// The API uses bytes
+	data, _ := json.Marshal(value)
+
+	if err := cache.Store(name, data); err != nil {
+		panic(err)
+	}
+}
+
+func getLastQuery() string {
+	var (
+		// Cache "key" (filename) and the value to store
+		name = "LastQuery"
+	)
+
+	cache := aw.NewCache(wf.CacheDir())
+
+	data, err := cache.Load(name)
+	if err != nil {
+		panic(err)
+	}
+
+	var lastQuery string
+	err = json.Unmarshal(data, &lastQuery)
+
+	return lastQuery
+}
+
+func printLastQuery() {
+	lastQuery := getLastQuery()
+	fmt.Println(lastQuery)
+}
+
 // Query database for all bookmarks
 func searchAllBookmarks(query string) {
 	usr, _ := user.Current()
 	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
 	conn := initDatabase(dbFile)
 
-	results, err := searchAll(conn, query)
+	queryString := strings.TrimSpace(query)
+	cacheLastQuery(queryString)
+
+	results, err := searchAll(conn, queryString)
 	if err != nil {
 		wf.FatalError(err)
 	}
 
 	returnBookmarks(results)
-
-	//resultsJson, _ := json.Marshal(results)
-	//fmt.Println("Results: ", string(resultsJson))
 }
 
 // Parse database search results and return items to Alfred
 func returnBookmarks(bookmarks []SearchAllResult) {
-	log.Printf("%d total bookmark(s)", len(bookmarks))
-
 	for _, bookmark := range bookmarks {
 		uid := strconv.FormatInt(bookmark.ID, 10)
 		icon := iconForFileID(bookmark.FileID, bookmark.Path)
@@ -148,6 +190,9 @@ func runCommand() {
 	if options.All == true {
 		searchAllBookmarks(options.Query)
 	}
+	if options.Lastquery == true {
+		printLastQuery()
+	}
 }
 
 // workflow start
@@ -162,7 +207,6 @@ func run() {
 		wf.FatalError(err)
 	}
 
-	// fmt.Println("global arguments:", args)
 	runCommand()
 }
 

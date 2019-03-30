@@ -1,9 +1,10 @@
 package main
 
 import (
+	"strings"
+
 	"github.com/gocraft/dbr"
 	_ "github.com/mattn/go-sqlite3"
-	"strings"
 )
 
 type SearchAllResult struct {
@@ -63,16 +64,15 @@ func searchAll(sess *dbr.Session, query string) ([]SearchAllResult, error) {
 // replace '–*' with 'NOT *'
 func stringForSQLite(query string) string {
 	var queryArray []string
-	query = strings.TrimSpace(query)
 
 	slc := strings.Split(query, " ")
 	for i := range slc {
-		slc[i] = strings.TrimSpace(slc[i])
+		term := strings.TrimSpace(slc[i])
 
-		if strings.HasPrefix(slc[i], "-") {
-			queryArray = append(queryArray, "NOT "+slc[i][1:]+"*")
+		if strings.HasPrefix(term, "-") {
+			queryArray = append(queryArray, "NOT "+term[1:]+"*")
 		} else {
-			queryArray = append(queryArray, slc[i]+"*")
+			queryArray = append(queryArray, term+"*")
 		}
 	}
 
