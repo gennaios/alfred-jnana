@@ -141,10 +141,9 @@ func searchAllBookmarks(query string) {
 	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
 	conn := initDatabase(dbFile)
 
-	queryString := strings.TrimSpace(query)
-	cacheLastQuery(queryString)
+	cacheLastQuery(query)
 
-	results, err := searchAll(conn, queryString)
+	results, err := searchAll(conn, query)
 	if err != nil {
 		wf.FatalError(err)
 	}
@@ -187,8 +186,11 @@ func returnBookmarks(bookmarks []SearchAllResult) {
 }
 
 func runCommand() {
+	// normalize white space, remove dupes
+	query := strings.Join(strings.Fields(strings.TrimSpace(options.Query)), " ")
+
 	if options.All == true {
-		searchAllBookmarks(options.Query)
+		searchAllBookmarks(query)
 	}
 	if options.Lastquery == true {
 		printLastQuery()

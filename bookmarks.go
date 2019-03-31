@@ -75,17 +75,32 @@ func searchAll(sess *dbr.Session, query string) ([]SearchAllResult, error) {
 // replace '–*' with 'NOT *'
 func stringForSQLite(query string) string {
 	var queryArray []string
+	queryOperators := []string{"AND", "OR", "NOT", "and", "or", "not"}
 
 	slc := strings.Split(query, " ")
 	for i := range slc {
-		term := strings.TrimSpace(slc[i])
+		term := slc[i]
 
 		if strings.HasPrefix(term, "-") {
+			// exclude terms beginning with '-', change to 'NOT [term]'
 			queryArray = append(queryArray, "NOT "+term[1:]+"*")
+		} else if stringInSlice(term, queryOperators) {
+			// auto capitalize operators 'and', 'or', 'not'
+			queryArray = append(queryArray, strings.ToUpper(term))
 		} else {
 			queryArray = append(queryArray, term+"*")
 		}
 	}
 
 	return strings.Join(queryArray[:], " ")
+}
+
+// Test if string is included in slice
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
