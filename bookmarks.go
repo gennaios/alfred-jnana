@@ -26,27 +26,38 @@ func initDatabase(filepath string) *dbr.Session {
 		panic("db nil")
 	}
 
+	_, _ = conn.Exec("PRAGMA auto_vacuum = 1")
+	_, _ = conn.Exec("PRAGMA foreign_keys = 1")
+	_, _ = conn.Exec("PRAGMA ignore_check_constraints = 0")
+	_, _ = conn.Exec("PRAGMA journal_mode = WAL")
+	_, _ = conn.Exec("PRAGMA synchronous = 0")
+	_, _ = conn.Exec("PRAGMA temp_store = 2") // MEMORY
+
+	_, _ = conn.Exec("PRAGMA cache_size = -31250")
+	_, _ = conn.Exec("PRAGMA page_size = 8192") // default 4096, match APFS block size?
+
 	sess := conn.NewSession(nil)
 	_, err = sess.Begin()
 	if err != nil {
 		panic(err)
 	}
-	// defer db.Close()
 
 	return sess
 }
 
+// Search all bookmarks from FTS5 table, order by rank title, section, & file name
+// Return results as slice of struct SearchAllResult, later preped for Alfred script filter
 func searchAll(sess *dbr.Session, query string) ([]SearchAllResult, error) {
 	queryString := stringForSQLite(query)
 	var results []SearchAllResult
 
-	//err := db.Select(&results, `SELECT
+	//	SELECT
 	//	bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination,
 	//	files.file_name, files.path
 	//	FROM bookmarks
 	//	JOIN files ON files.id = bookmarks.file_id
-	//	JOIN bookmarkindex on bookmarks.id = bookmarkindex.rowid
-	//	WHERE bookmarkindex MATCH '?' ORDER BY rank LIMIT 100`, queryString)
+	//	JOIN bookmarksindex on bookmarks.id = bookmarkindex.rowid
+	//	WHERE bookmarksindex MATCH '?' AND rank MATCH 'bm25(5.0, 2.0, 1.0)'
 
 	// NOTE: AND rank MATCH 'bm25(10.0, 5.0)' ORDER BY rank faster than ORDER BY bm25(fts, …)
 	_, err := sess.Select("bookmarks.id", "bookmarks.title", "bookmarks.section",
