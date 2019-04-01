@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gocraft/dbr"
@@ -43,6 +44,19 @@ func initDatabase(filepath string) *dbr.Session {
 	}
 
 	return sess
+}
+
+func forFile(file string, query string) {
+	// TODO: DB query first, then import
+	// databaseRecordForFile(…)
+	fmt.Println("Query: ", query)
+
+	if strings.HasSuffix(file, ".pdf") {
+		// TODO: call pdf module
+		bookmarks, _ := bookmarksForPDF(file)
+		print("Bookmarks: ", len(bookmarks), bookmarks[0].Title, bookmarks[0].Section, bookmarks[0].Destination)
+	}
+
 }
 
 // Search all bookmarks from FTS5 table, order by rank title, section, & file name
