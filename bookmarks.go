@@ -8,6 +8,27 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type FileRecord struct {
+	ID            int64
+	Path          string `db:"path"`
+	FileName      string `db:"file_name"`
+	FileExtension string `db:"file_extension"`
+	Title         string `db:"title"`
+	Authors       string `db:"authors"`
+	Subjects      string `db:"subjects"`
+	DateCreated   string `db:"date_created"`
+	DateModified  string `db:"file_modified_date"` // TODO: rename -> date_modified
+	FileHash      string `db:"hash"`
+}
+
+type BookmarkRecord struct {
+	ID          int64
+	FileId      int64
+	Title       string         `db:"title"`
+	Section     dbr.NullString `db:"section"`
+	Destination string         `db:"destination"`
+}
+
 type SearchAllResult struct {
 	ID          int64
 	Title       string         `db:"title"`
@@ -46,17 +67,60 @@ func initDatabase(filepath string) *dbr.Session {
 	return sess
 }
 
-func forFile(file string, query string) {
-	// TODO: DB query first, then import
-	// databaseRecordForFile(…)
-	fmt.Println("Query: ", query)
+func databaseRecordForFile(dbFile, file string) FileRecord {
+	sess := initDatabase(dbFile)
+	var fileRecord FileRecord
 
-	if strings.HasSuffix(file, ".pdf") {
-		// TODO: call pdf module
-		bookmarks, _ := bookmarksForPDF(file)
-		print("Bookmarks: ", len(bookmarks), bookmarks[0].Title, bookmarks[0].Section, bookmarks[0].Destination)
+	// look for existing
+	err := sess.Select("id", "file_name", "file_modified_date", "hash").
+		From("files").Where("path == ?", file).
+		LoadOne(&fileRecord)
+	if err != nil {
+		// TODO: error to Alfred
+		panic(err)
 	}
 
+	// TODO: if none, check by hash
+	if fileRecord.ID == 0 {
+		fmt.Println("Doesn't exist: ", file)
+	}
+
+	// TODO: if none by hash, create
+
+	return fileRecord
+}
+
+func forFile(dbFile string, file string) ([]BookmarkRecord, error) {
+	var bookmarks []BookmarkRecord
+	var err error
+
+	fileRecord := databaseRecordForFile(dbFile, file)
+
+	// TODO, record created if none, always not 0
+	if fileRecord.ID != 0 {
+		sess := initDatabase(dbFile)
+
+		// look for existing
+		err = sess.Select("id", "title", "section", "destination").From("bookmarks").
+			Where("file_id == ?", fileRecord.ID).
+			LoadOne(&bookmarks)
+	}
+
+	if fileRecord.ID == 0 {
+		// get from file and import
+		if strings.HasSuffix(file, ".pdf") {
+			// TODO: call pdf module
+			bookmarks, _ := bookmarksForPDF(file)
+			print("Bookmarks: ", len(bookmarks), bookmarks[0].Title, bookmarks[0].Section, bookmarks[0].Destination)
+		}
+	}
+
+	return bookmarks, err
+}
+
+// Filtered bookmarks for file
+func forFileFiltered(dbFile string, file string, query string) {
+	fmt.Println("Filtered: ", dbFile, file, query)
 }
 
 // Search all bookmarks from FTS5 table, order by rank title, section, & file name
