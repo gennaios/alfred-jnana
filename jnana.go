@@ -23,6 +23,7 @@ usage:
     jnana all [<query>]
     jnana allepub [<query>]
     jnana allpdf [<query>]
+    jnana bookmarks <file> [<query>]
     jnana epub [<query>]
     jnana pdf <file> [<query>]
     jnana lastquery
@@ -36,6 +37,7 @@ commands:
     all		Search all bookmarks.
     allepub	Search all EPUB bookmarks.
     allpdf	Search all PDF bookmarks.
+    bookmarks	Retrieve bookmarks for file, all or filtered by query
     epub	Retrieve or filter bookmarks for EPUB in Calibre.
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
     lastquery	Retrieve cached last query string for script filter
@@ -53,13 +55,15 @@ var options struct {
 	All       bool
 	Allepub   bool
 	Allpdf    bool
+	Bookmarks bool
 	Epub      bool
 	Pdf       bool
 	Lastquery bool
 
 	// parameters
-	Query string
-	File  string
+	Query  string
+	File   string
+	Fileid string
 }
 
 func init() {
@@ -68,6 +72,12 @@ func init() {
 
 	usr, _ := user.Current()
 	coversCacheDir = filepath.Join(usr.HomeDir, dataDir, "covers")
+}
+
+// Bookmark all or filtered for file, from database or imported, return results
+func bookmarksForFile(file string, query string) {
+	forFile(file, query)
+	// TODO: pass to Alfred
 }
 
 func iconForFileID(fileId string, filePath string) *aw.Icon {
@@ -186,11 +196,17 @@ func returnBookmarks(bookmarks []SearchAllResult) {
 }
 
 func runCommand() {
+	// show options for debug
+	// fmt.Println(options)
+
 	// normalize white space, remove dupes
 	query := strings.Join(strings.Fields(strings.TrimSpace(options.Query)), " ")
 
 	if options.All == true {
 		searchAllBookmarks(query)
+	}
+	if options.Bookmarks == true {
+		bookmarksForFile(options.File, options.Query)
 	}
 	if options.Lastquery == true {
 		printLastQuery()
