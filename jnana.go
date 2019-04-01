@@ -23,8 +23,10 @@ usage:
     jnana all [<query>]
     jnana allepub [<query>]
     jnana allpdf [<query>]
-    jnana bookmarks <file> [<query>]
-    jnana epub [<query>]
+    jnana bm <file>
+    jnana bmf <file> <query>
+    jnana epub
+    jnana epubf <query>
     jnana pdf <file> [<query>]
     jnana lastquery
     jnana -h
@@ -37,8 +39,10 @@ commands:
     all		Search all bookmarks.
     allepub	Search all EPUB bookmarks.
     allpdf	Search all PDF bookmarks.
-    bookmarks	Retrieve bookmarks for file, all or filtered by query
-    epub	Retrieve or filter bookmarks for EPUB in Calibre.
+    bm		Bookmarks for file
+    bmf		Bookmarks for file filtered by query
+    epub	Bookmarks for EPUB in Calibre
+    epubf	Bookmarks for EPUB in Calibre filtered by query
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
     lastquery	Retrieve cached last query string for script filter
 `
@@ -55,8 +59,10 @@ var options struct {
 	All       bool
 	Allepub   bool
 	Allpdf    bool
-	Bookmarks bool
+	Bm        bool
+	Bmf       bool
 	Epub      bool
+	Epubf     bool
 	Pdf       bool
 	Lastquery bool
 
@@ -74,9 +80,30 @@ func init() {
 	coversCacheDir = filepath.Join(usr.HomeDir, dataDir, "covers")
 }
 
-// Bookmark all or filtered for file, from database or imported, return results
-func bookmarksForFile(file string, query string) {
-	forFile(file, query)
+// Bookmarks all for file, from database or imported, return results
+func bookmarksForFile(file string) {
+	if _, err := os.Stat(file); err != nil {
+		wf.FatalError(err)
+	}
+
+	usr, _ := user.Current()
+	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
+
+	bookmarks, err := forFile(dbFile, file)
+	if err != nil {
+		wf.FatalError(err)
+	} else {
+		returnBookmarksForPdf(file, bookmarks)
+	}
+	// TODO: pass to Alfred
+}
+
+// Bookmarks filtered for file, from database or imported, return results
+func bookmarksForFileFiltered(file string, query string) {
+	usr, _ := user.Current()
+	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
+
+	forFileFiltered(dbFile, file, query)
 	// TODO: pass to Alfred
 }
 
@@ -93,12 +120,12 @@ func iconForFileID(fileId string, filePath string) *aw.Icon {
 	} else if os.IsNotExist(err) {
 		icon = &aw.Icon{
 			Value: filePath,
-			Type:  aw.IconTypeFileType,
+			Type:  aw.IconTypeFileIcon,
 		}
 	} else {
 		icon = &aw.Icon{
 			Value: filePath,
-			Type:  aw.IconTypeFileType,
+			Type:  aw.IconTypeFileIcon,
 		}
 	}
 	return icon
@@ -158,11 +185,35 @@ func searchAllBookmarks(query string) {
 		wf.FatalError(err)
 	}
 
-	returnBookmarks(results)
+	returnSearchAllResults(results)
+}
+
+func returnBookmarksForPdf(file string, bookmarks []BookmarkRecord) {
+	var icon *aw.Icon
+	icon = &aw.Icon{
+		Value: file,
+		Type:  aw.IconTypeFileIcon,
+	}
+
+	for _, bookmark := range bookmarks {
+		subtitleSuffix := ""
+		if bookmark.Section.String != "" {
+			subtitleSuffix = ". " + bookmark.Section.String
+		}
+
+		wf.NewItem(bookmark.Title).
+			Subtitle("Page " + bookmark.Destination + subtitleSuffix).
+			UID(strconv.FormatInt(bookmark.ID, 10)).
+			Valid(true).
+			Icon(icon).
+			Arg(bookmark.Destination)
+	}
+
+	wf.SendFeedback()
 }
 
 // Parse database search results and return items to Alfred
-func returnBookmarks(bookmarks []SearchAllResult) {
+func returnSearchAllResults(bookmarks []SearchAllResult) {
 	for _, bookmark := range bookmarks {
 		uid := strconv.FormatInt(bookmark.ID, 10)
 		icon := iconForFileID(bookmark.FileID, bookmark.Path)
@@ -197,7 +248,7 @@ func returnBookmarks(bookmarks []SearchAllResult) {
 
 func runCommand() {
 	// show options for debug
-	// fmt.Println(options)
+	//fmt.Println(options)
 
 	// normalize white space, remove dupes
 	query := strings.Join(strings.Fields(strings.TrimSpace(options.Query)), " ")
@@ -205,8 +256,11 @@ func runCommand() {
 	if options.All == true {
 		searchAllBookmarks(query)
 	}
-	if options.Bookmarks == true {
-		bookmarksForFile(options.File, options.Query)
+	if options.Bm == true {
+		bookmarksForFile(options.File)
+	}
+	if options.Bmf == true {
+		bookmarksForFileFiltered(options.File, options.Query)
 	}
 	if options.Lastquery == true {
 		printLastQuery()
