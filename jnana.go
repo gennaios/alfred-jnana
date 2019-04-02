@@ -95,7 +95,6 @@ func bookmarksForFile(file string) {
 	} else {
 		returnBookmarksForPdf(file, bookmarks)
 	}
-	// TODO: pass to Alfred
 }
 
 // Bookmarks filtered for file, from database or imported, return results
@@ -103,8 +102,13 @@ func bookmarksForFileFiltered(file string, query string) {
 	usr, _ := user.Current()
 	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
 
-	forFileFiltered(dbFile, file, query)
-	// TODO: pass to Alfred
+	bookmarks, err := forFileFiltered(dbFile, file, query)
+
+	if err != nil {
+		wf.FatalError(err)
+	} else {
+		returnBookmarksForPdfFiltered(file, bookmarks)
+	}
 }
 
 func iconForFileID(fileId string, filePath string) *aw.Icon {
@@ -189,6 +193,30 @@ func searchAllBookmarks(query string) {
 }
 
 func returnBookmarksForPdf(file string, bookmarks []BookmarkRecord) {
+	var icon *aw.Icon
+	icon = &aw.Icon{
+		Value: file,
+		Type:  aw.IconTypeFileIcon,
+	}
+
+	for _, bookmark := range bookmarks {
+		subtitleSuffix := ""
+		if bookmark.Section.String != "" {
+			subtitleSuffix = ". " + bookmark.Section.String
+		}
+
+		wf.NewItem(bookmark.Title).
+			Subtitle("Page " + bookmark.Destination + subtitleSuffix).
+			UID(strconv.FormatInt(bookmark.ID, 10)).
+			Valid(true).
+			Icon(icon).
+			Arg(bookmark.Destination)
+	}
+
+	wf.SendFeedback()
+}
+
+func returnBookmarksForPdfFiltered(file string, bookmarks []SearchAllResult) {
 	var icon *aw.Icon
 	icon = &aw.Icon{
 		Value: file,
