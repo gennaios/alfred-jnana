@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gocraft/dbr"
@@ -29,6 +30,7 @@ type BookmarkRecord struct {
 	Destination string         `db:"destination"`
 }
 
+// TODO: combine with above
 type SearchAllResult struct {
 	ID          int64
 	Title       string         `db:"title"`
@@ -119,23 +121,47 @@ func forFile(dbFile string, file string) ([]BookmarkRecord, error) {
 }
 
 // Filtered bookmarks for file
-func forFileFiltered(dbFile string, file string, query string) {
-	fmt.Println("Filtered: ", dbFile, file, query)
+func forFileFiltered(dbFile string, file string, query string) ([]SearchAllResult, error) {
+	queryString := stringForSQLite(query)
+	var results []SearchAllResult
+
+	sess := initDatabase(dbFile)
+	fileRecord := databaseRecordForFile(dbFile, file)
+
+	/*
+		select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
+		from bookmarks
+		JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
+		where bookmarks.file_id = ? and bookmarksindex.rowid = bookmarks.id
+		and bookmarksindex match '{title section} : …' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';
+	*/
+
+	//_, err := sess.Select("bookmarks.id", "bookmarks.title", "bookmarks.section",
+	//	"bookmarks.destination").
+	//	From("bookmarks").
+	//	Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
+	//	Where("bookmarks.file_id = ?", fileRecord.ID).
+	//	Where("bookmarksindex MATCH ? ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)'", queryString).
+	//	Load(&results)
+
+	// TODO: limit column matches not working
+	_, err := sess.SelectBySql("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = " + strconv.FormatInt(fileRecord.ID, 10) + " and bookmarksindex.rowid = bookmarks.id and bookmarksindex match '{title section} : " + queryString + "' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';").Load(&results)
+	return results, err
 }
 
 // Search all bookmarks from FTS5 table, order by rank title, section, & file name
-// Return results as slice of struct SearchAllResult, later preped for Alfred script filter
+// Return results as slice of struct SearchAllResult, later prepped for Alfred script filter
 func searchAll(sess *dbr.Session, query string) ([]SearchAllResult, error) {
 	queryString := stringForSQLite(query)
 	var results []SearchAllResult
 
-	//	SELECT
-	//	bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination,
-	//	files.file_name, files.path
-	//	FROM bookmarks
-	//	JOIN files ON files.id = bookmarks.file_id
-	//	JOIN bookmarksindex on bookmarks.id = bookmarkindex.rowid
-	//	WHERE bookmarksindex MATCH '?' AND rank MATCH 'bm25(5.0, 2.0, 1.0)'
+	//SELECT
+	//bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination,
+	//bookmarks.file_id, files.path, files.file_name
+	//FROM bookmarks
+	//JOIN files ON bookmarks.file_id = files.id
+	//JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
+	//WHERE bookmarksindex MATCH '?' AND rank MATCH 'bm25(5.0, 2.0, 1.0)'
 
 	// NOTE: AND rank MATCH 'bm25(10.0, 5.0)' ORDER BY rank faster than ORDER BY bm25(fts, …)
 	_, err := sess.Select("bookmarks.id", "bookmarks.title", "bookmarks.section",
@@ -170,7 +196,7 @@ func stringForSQLite(query string) string {
 		}
 	}
 
-	return strings.Join(queryArray[:], " ")
+	return strings.TrimSpace(strings.Join(queryArray[:], " "))
 }
 
 // Test if string is included in slice
