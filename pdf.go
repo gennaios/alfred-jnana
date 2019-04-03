@@ -7,14 +7,14 @@ import (
 	"os/exec"
 )
 
-type BookmarkJson struct {
+type Bookmark struct {
 	Title       string `json:"title"`
 	Section     string `json:"section"`
 	Destination string `json:"destination"`
 }
 
-// BookmarkJson for PDF file, from Python script ./pdf.py
-func bookmarksForPDF(file string) ([]BookmarkJson, error) {
+// Bookmark for PDF file, from Python script ./pdf.py
+func bookmarksForPDF(file string) ([]Bookmark, error) {
 	cmdArgs := []string{"bookmarks", file}
 
 	output, err := exec.Command("./pdf.py", cmdArgs...).Output()
@@ -23,15 +23,15 @@ func bookmarksForPDF(file string) ([]BookmarkJson, error) {
 	}
 
 	// JSON stdout as []bytes, convert before return
-	var bookmarks []BookmarkJson
+	var bookmarks []Bookmark
 	bookmarks, err = bookmarksFromJson(output)
 
 	return bookmarks, err
 }
 
-// Take JSON []bytes and return as slice of BookmarkJson structs
-func bookmarksFromJson(jsonBytes []byte) ([]BookmarkJson, error) {
-	var bookmarks []BookmarkJson
+// Take JSON []bytes and return as slice of Bookmark structs
+func bookmarksFromJson(jsonBytes []byte) ([]Bookmark, error) {
+	var bookmarks []Bookmark
 
 	err := json.Unmarshal(jsonBytes, &bookmarks)
 	if err != nil {

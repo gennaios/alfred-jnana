@@ -88,8 +88,10 @@ func bookmarksForFile(file string) {
 
 	usr, _ := user.Current()
 	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
+	db := Database{}
+	db.Init(dbFile)
 
-	bookmarks, err := forFile(dbFile, file)
+	bookmarks, err := db.BookmarksForFile(file)
 	if err != nil {
 		wf.FatalError(err)
 	} else {
@@ -102,7 +104,9 @@ func bookmarksForFileFiltered(file string, query string) {
 	usr, _ := user.Current()
 	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
 
-	bookmarks, err := forFileFiltered(dbFile, file, query)
+	db := Database{}
+	db.Init(dbFile)
+	bookmarks, err := db.BookmarksForFileFiltered(file, query)
 
 	if err != nil {
 		wf.FatalError(err)
@@ -180,11 +184,12 @@ func printLastQuery() {
 func searchAllBookmarks(query string) {
 	usr, _ := user.Current()
 	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
-	conn := initDatabase(dbFile)
+	db := Database{}
+	db.Init(dbFile)
 
 	cacheLastQuery(query)
 
-	results, err := searchAll(conn, query)
+	results, err := db.searchAll(query)
 	if err != nil {
 		wf.FatalError(err)
 	}
