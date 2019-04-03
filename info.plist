@@ -111,7 +111,7 @@
 				<key>hotkey</key>
 				<integer>5</integer>
 				<key>hotmod</key>
-				<integer>1179648</integer>
+				<integer>1048576</integer>
 				<key>hotstring</key>
 				<string>G</string>
 				<key>leftcursor</key>
@@ -132,6 +132,63 @@
 			<string>alfred.workflow.trigger.hotkey</string>
 			<key>uid</key>
 			<string>9BC020A0-E6C1-43EA-97D2-53583BC37A97</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run
+  set theQuery to "{query}"
+  set q to theQuery
+
+	tell application "System Events"
+		set activeApp to name of first application process whose frontmost is true
+		log "Active app : " &amp; activeApp
+
+		if activeApp = "Preview" then
+			keystroke "g" using {option down, command down} -- ⌥⌘G
+			keystroke q
+			delay 0.25
+			keystroke return
+			keystroke return
+		else if activeApp = "Skim" then
+			tell application "Skim"
+				set thePage to q
+				tell document 1 to go to page (thePage as integer)
+			end tell
+		else if activeApp = "AdobeAcrobat" then
+			tell application "Adobe Acrobat"
+				set thePage to q
+				--tell PDF Window 1 to goto page (thePage as integer)
+				tell PDF Window of active doc to goto page (thePage as integer)
+			end tell
+		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
+			set theBookmark to q
+			set cmd to "python gnosis.py -b " &amp; theBookmark
+			do shell script cmd
+		else
+			display notification "Some other app!"
+		end if
+	end tell
+
+end run</string>
+				<key>scriptargtype</key>
+				<integer>0</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>4A2C10C6-084C-4101-A584-6C440EA5FC98</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
@@ -285,63 +342,6 @@ end theSplit
 			<string>alfred.workflow.input.scriptfilter</string>
 			<key>uid</key>
 			<string>237DDB28-42BE-45FC-9017-CCE481F1BDB7</string>
-			<key>version</key>
-			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>concurrently</key>
-				<false/>
-				<key>escaping</key>
-				<integer>68</integer>
-				<key>script</key>
-				<string>on run
-  set theQuery to "{query}"
-  set q to theQuery
-
-	tell application "System Events"
-		set activeApp to name of first application process whose frontmost is true
-		log "Active app : " &amp; activeApp
-
-		if activeApp = "Preview" then
-			keystroke "g" using {option down, command down} -- ⌥⌘G
-			keystroke q
-			delay 0.25
-			keystroke return
-			keystroke return
-		else if activeApp = "Skim" then
-			tell application "Skim"
-				set thePage to q
-				tell document 1 to go to page (thePage as integer)
-			end tell
-		else if activeApp = "AdobeAcrobat" then
-			tell application "Adobe Acrobat"
-				set thePage to q
-				--tell PDF Window 1 to goto page (thePage as integer)
-				tell PDF Window of active doc to goto page (thePage as integer)
-			end tell
-		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
-			set theBookmark to q
-			set cmd to "python gnosis.py -b " &amp; theBookmark
-			do shell script cmd
-		else
-			display notification "Some other app!"
-		end if
-	end tell
-
-end run</string>
-				<key>scriptargtype</key>
-				<integer>0</integer>
-				<key>scriptfile</key>
-				<string></string>
-				<key>type</key>
-				<integer>6</integer>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.action.script</string>
-			<key>uid</key>
-			<string>4A2C10C6-084C-4101-A584-6C440EA5FC98</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
