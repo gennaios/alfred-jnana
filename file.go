@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -60,7 +61,7 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 	}
 
 	// not found by path or hash, create new
-	if file.ID == 0 {
+	if err == dbr.ErrNotFound {
 		file, err = db.NewFile(book)
 		if err != nil {
 			return file, true, err
@@ -75,6 +76,9 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 		stat, _ := os.Stat(book)
 		modDate := stat.ModTime().UTC()
 		oldDate, _ := time.Parse(time.RFC3339, file.DateModified)
+		if err != nil {
+			fmt.Println("date error:", err)
+		}
 		diff := modDate.Sub(oldDate).Seconds()
 
 		if diff > 1 {
@@ -111,6 +115,11 @@ func (db *Database) NewFile(book string) (File, error) {
 		return File{}, err
 	}
 	hash, _ := fileHash(book)
+	// format string for insert, strange set then get by format doesn't work
+	// TODO: format not compatible with alfred-gnosis
+	dateModified := stat.ModTime().UTC().Format(time.RFC3339)
+	dateModified = strings.Replace(dateModified, " +0000 UTC", "", 1)
+
 	tx, err := db.sess.Begin()
 	if err != nil {
 		return File{}, err
@@ -122,7 +131,7 @@ func (db *Database) NewFile(book string) (File, error) {
 		Pair("file_name", filepath.Base(book)).
 		Pair("file_extension", filepath.Ext(book)[1:]).
 		Pair("date_created", time.Now().UTC().Format(time.RFC3339)).
-		Pair("file_modified_date", stat.ModTime().UTC().Format(time.RFC3339)).
+		Pair("file_modified_date", dateModified).
 		Pair("hash", hash).
 		Exec()
 	err = tx.Commit()
@@ -131,12 +140,15 @@ func (db *Database) NewFile(book string) (File, error) {
 }
 
 func (db *Database) UpdateFile(file File) error {
+	// format string for insert, strange set then get by format doesn't work
+	dateModified := strings.Replace(file.DateModified, " +0000 UTC", "", 1)
+
 	tx, err := db.sess.Begin()
 	_, err = db.sess.Update("files").
 		Set("file_name", filepath.Base(file.Path)).
 		Set("path", file.Path).
 		Set("hash", file.FileHash).
-		Set("file_modified_date", file.DateModified).
+		Set("file_modified_date", dateModified).
 		Where("id = ?", file.ID).
 		Exec()
 	if err != nil {
@@ -144,7 +156,7 @@ func (db *Database) UpdateFile(file File) error {
 	}
 	err = tx.Commit()
 	if err != nil {
-		fmt.Println("error updating:", err)
+		fmt.Println("error committing:", err)
 	}
 	return err
 }
