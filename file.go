@@ -14,6 +14,6 @@ type File struct {
 	Authors       dbr.NullString `db:"authors"`
 	Subjects      dbr.NullString `db:"subjects"`
 	DateCreated   string         `db:"date_created"`
-	DateModified  dbr.NullString `db:"file_modified_date"` // TODO: rename -> date_modified
+	DateModified  string         `db:"file_modified_date"` // TODO: rename -> date_modified
 	FileHash      string         `db:"hash"`
 }
