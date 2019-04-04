@@ -70,23 +70,27 @@ func (db *Database) BookmarksForFile(file string) ([]BookmarkRecord, error) {
 		Where("file_id == ?", fileRecord.ID).
 		LoadOne(&bookmarks)
 
-	// TODO, file created or changed, compared bookmarks
-	if changed == true {
+	// file created or changed / or no bookmarks found
+	if changed == true || len(bookmarks) == 0 {
 		var newBookmarks []Bookmark
 
 		// PDF get bookmarks from file
 		if strings.HasSuffix(file, ".pdf") {
-			// TODO: call pdf module
 			newBookmarks, _ = bookmarksForPDF(file)
 		}
 		// TODO: EPUB get bookmarks from file
-
-		// file updated, compare bookmarks
-		if bookmarksEqual(bookmarks, newBookmarks) == false {
-			// update database
-			err = db.UpdateBookmarks(fileRecord, newBookmarks)
-			_ = notification("Bookmarks updated.")
-			// fetch new bookmarks
+		// no bookmarks returned from first, get new
+		if len(bookmarks) == 0 {
+			// insert new
+			bookmarks, err = db.NewBookmarks(fileRecord, newBookmarks)
+		} else {
+			// file updated, compare bookmarks
+			if bookmarksEqual(bookmarks, newBookmarks) == false {
+				// update database
+				bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
+				_ = notification("Bookmarks updated.")
+				// fetch new bookmarks
+			}
 		}
 	}
 	return bookmarks, err
@@ -145,11 +149,8 @@ func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 	return results, err
 }
 
-func (db *Database) UpdateBookmarks(file File, bookmarks []Bookmark) error {
+func (db *Database) NewBookmarks(file File, bookmarks []Bookmark) ([]BookmarkRecord, error) {
 	tx, err := db.sess.Begin()
-	_, err = db.sess.DeleteFrom("bookmarks").
-		Where("file_id = ?", file.ID).
-		Exec()
 	// insert new bookmarks
 	for i := 0; i < len(bookmarks); i++ {
 		_, err = db.sess.InsertInto("bookmarks").
@@ -160,7 +161,22 @@ func (db *Database) UpdateBookmarks(file File, bookmarks []Bookmark) error {
 			Exec()
 	}
 	err = tx.Commit()
-	return err
+	// get newly inserted bookmarks
+	var newBookmarks []BookmarkRecord
+	err = db.sess.Select("id", "title", "section", "destination").From("bookmarks").
+		Where("file_id == ?", file.ID).
+		LoadOne(&newBookmarks)
+	return newBookmarks, err
+}
+
+func (db *Database) UpdateBookmarks(file File, bookmarks []Bookmark) ([]BookmarkRecord, error) {
+	tx, err := db.sess.Begin()
+	_, err = db.sess.DeleteFrom("bookmarks").
+		Where("file_id = ?", file.ID).
+		Exec()
+	err = tx.Commit()
+	newBookmarks, err := db.NewBookmarks(file, bookmarks)
+	return newBookmarks, err
 }
 
 // Compare bookmarks from database with file

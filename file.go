@@ -39,7 +39,6 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 	if err == dbr.ErrNotFound {
 		hash, err = fileHash(book)
 		file, err = db.GetFileFromHash(hash)
-		_ = notification("Doing hash.") // TODO remove
 	} else {
 		created = false
 	}
