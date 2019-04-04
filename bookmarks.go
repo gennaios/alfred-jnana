@@ -1,21 +1,18 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/deckarep/gosx-notifier"
 	"github.com/gocraft/dbr"
 	"github.com/google/go-cmp/cmp"
 	_ "github.com/mattn/go-sqlite3"
+	"strconv"
+	"strings"
 )
+
+type Database struct {
+	conn *dbr.Connection
+	sess *dbr.Session
+}
 
 type BookmarkRecord struct {
 	ID          int64
@@ -34,80 +31,6 @@ type SearchAllResult struct {
 	FileID      string         `db:"file_id"`
 	Path        string         `db:"path"`
 	FileName    string         `db:"file_name"`
-}
-
-type Database struct {
-	conn *dbr.Connection
-	sess *dbr.Session
-}
-
-// Get: Look for existing record by file path
-func (db *Database) GetBookFromFile(book string) (File, error) {
-	var file File
-	err := db.sess.Select("*").From("files").Where("path = ?", book).LoadOne(&file)
-	return file, err
-}
-
-// GetFromHash: look for existing by file hash (sha256)
-func (db *Database) GetBookFromHash(hash string) (File, error) {
-	var file File
-	err := db.sess.Select("*").From("files").Where("hash = ?", hash).LoadOne(&file)
-	return file, err
-}
-
-func (db *Database) NewBook(file File) error {
-	tx, err := db.sess.Begin()
-	file.FileName = filepath.Base(file.Path)
-	file.FileExtension = filepath.Ext(file.Path)
-	file.DateCreated = time.Now().UTC().Format("time.RFC3339")
-
-	stat, err := os.Stat(file.Path)
-	if err != nil {
-		file.DateModified = stat.ModTime().UTC().Format("time.RFC3339")
-	}
-	_, err = db.sess.InsertInto("files").
-		Columns("id", "path", "file_name", "file_extension", "date_created", "hash").
-		Record(&file).
-		Exec()
-	err = tx.Commit()
-	return err
-}
-
-func (db *Database) UpdateBook(file File) error {
-	tx, err := db.sess.Begin()
-	_, err = db.sess.Update("files").
-		Set("file_name", filepath.Base(file.Path)).
-		Set("path", file.Path).
-		Set("hash", file.FileHash).
-		Set("file_modified_date", file.DateModified).
-		Where("id = ?", file.ID).
-		Exec()
-	if err != nil {
-		fmt.Println("error updating:", err)
-	}
-	err = tx.Commit()
-	if err != nil {
-		fmt.Println("error updating:", err)
-	}
-	return err
-}
-
-func (db *Database) UpdateBookmarks(file File, bookmarks []Bookmark) error {
-	tx, err := db.sess.Begin()
-	_, err = db.sess.DeleteFrom("bookmarks").
-		Where("file_id = ?", file.ID).
-		Exec()
-	// insert new bookmarks
-	for i := 0; i < len(bookmarks); i++ {
-		_, err = db.sess.InsertInto("bookmarks").
-			Pair("file_id", file.ID).
-			Pair("title", bookmarks[i].Title).
-			Pair("section", dbr.NewNullString(bookmarks[i].Section)).
-			Pair("destination", bookmarks[i].Destination).
-			Exec()
-	}
-	err = tx.Commit()
-	return err
 }
 
 func (db *Database) Init(filepath string) {
@@ -136,71 +59,6 @@ func (db *Database) Init(filepath string) {
 	if err != nil {
 		panic(err)
 	}
-}
-
-func (db *Database) GetFile(book string) (File, bool, error) {
-	file := File{ID: 0, Path: book}
-	var err error
-	var hash string
-	created := true  // check for update if found
-	changed := false // return value, to later recheck bookmarks
-
-	// first lookup by file path
-	file, err = db.GetBookFromFile(book)
-
-	// not found, possible file moved, look up by file hash
-	if err == dbr.ErrNotFound {
-		hash, err = fileHash(book)
-		file, err = db.GetBookFromHash(hash)
-	} else {
-		created = false
-	}
-
-	// found by hash, verify not dupe
-	// TODO move not working
-	// TODO: dupe not working, move maybe ok
-	if file.ID != 0 && book != file.Path {
-		if _, err = os.Stat(file.Path); err != nil {
-			if os.IsNotExist(err) {
-				// old path doesn't exist, moved, same hash
-				_ = notification("File moved: " + file.Path)
-				file.Path = book
-				err = db.UpdateBook(file)
-				return file, false, err
-			}
-		} else {
-			_ = notification("Dupe of: " + file.Path)
-		}
-	}
-
-	// not found by path or hash, create new record
-	if file.ID == 0 {
-		file.Path = book
-		file.FileHash, err = fileHash(book)
-		stat, _ := os.Stat(book)
-		modDate := stat.ModTime().UTC()
-		file.DateModified = modDate.String()
-		err = db.NewBook(file) // TODO: new book
-		_ = notification("New Book.")
-	}
-
-	// not created, check if different
-	if created == false {
-		// check book changed against date in database
-		stat, _ := os.Stat(book)
-		modDate := stat.ModTime().UTC()
-		oldDate, _ := time.Parse(time.RFC3339, file.DateModified)
-		diff := modDate.Sub(oldDate).Seconds()
-
-		if diff > 1 {
-			//date different, check hash value
-			changed = true
-			file.FileHash, _ = fileHash(book)
-			file.DateModified = modDate.String()
-			err = db.UpdateBook(file)
-		}
-	}
-	return file, changed, err
 }
 
 func (db *Database) BookmarksForFile(file string) ([]BookmarkRecord, error) {
@@ -287,6 +145,24 @@ func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 	return results, err
 }
 
+func (db *Database) UpdateBookmarks(file File, bookmarks []Bookmark) error {
+	tx, err := db.sess.Begin()
+	_, err = db.sess.DeleteFrom("bookmarks").
+		Where("file_id = ?", file.ID).
+		Exec()
+	// insert new bookmarks
+	for i := 0; i < len(bookmarks); i++ {
+		_, err = db.sess.InsertInto("bookmarks").
+			Pair("file_id", file.ID).
+			Pair("title", bookmarks[i].Title).
+			Pair("section", dbr.NewNullString(bookmarks[i].Section)).
+			Pair("destination", bookmarks[i].Destination).
+			Exec()
+	}
+	err = tx.Commit()
+	return err
+}
+
 // Compare bookmarks from database with file
 func bookmarksEqual(bookmarks []BookmarkRecord, newBookmarks []Bookmark) bool {
 	var oldBookmarks []Bookmark
@@ -327,22 +203,6 @@ func stringForSQLite(query string) string {
 		}
 	}
 	return strings.TrimSpace(strings.Join(queryArray[:], " "))
-}
-
-func fileHash(file string) (string, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	// sha256 hash of open file
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-	hashString := hex.EncodeToString(h.Sum(nil))
-	return hashString, err
 }
 
 func notification(message string) error {
