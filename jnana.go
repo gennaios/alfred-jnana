@@ -92,10 +92,10 @@ func bookmarksForFile(file string) {
 	db.Init(dbFile)
 
 	bookmarks, err := db.BookmarksForFile(file)
-	if err != nil {
-		wf.FatalError(err)
-	} else {
+	if err == nil {
 		returnBookmarksForPdf(file, bookmarks)
+	} else {
+		wf.FatalError(err)
 	}
 }
 
@@ -108,10 +108,10 @@ func bookmarksForFileFiltered(file string, query string) {
 	db.Init(dbFile)
 	bookmarks, err := db.BookmarksForFileFiltered(file, query)
 
-	if err != nil {
-		wf.FatalError(err)
-	} else {
+	if err == nil {
 		returnBookmarksForPdfFiltered(file, bookmarks)
+	} else {
+		wf.FatalError(err)
 	}
 }
 
