@@ -170,7 +170,7 @@
 			end tell
 		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
 			set theBookmark to q
-			set cmd to "python gnosis.py -b " &amp; theBookmark
+			set cmd to "./jnana epubbm " &amp; theBookmark
 			do shell script cmd
 		else
 			display notification "Some other app!"
