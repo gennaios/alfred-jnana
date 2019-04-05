@@ -199,9 +199,10 @@ func searchAllBookmarks(query string) {
 
 func returnBookmarksForPdf(file string, bookmarks []BookmarkRecord) {
 	var icon *aw.Icon
-	icon = &aw.Icon{
-		Value: file,
-		Type:  aw.IconTypeFileIcon,
+	if strings.HasSuffix(file, "pdf") {
+		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
+	} else {
+		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 	}
 
 	for _, bookmark := range bookmarks {
@@ -223,9 +224,10 @@ func returnBookmarksForPdf(file string, bookmarks []BookmarkRecord) {
 
 func returnBookmarksForPdfFiltered(file string, bookmarks []SearchAllResult) {
 	var icon *aw.Icon
-	icon = &aw.Icon{
-		Value: file,
-		Type:  aw.IconTypeFileIcon,
+	if strings.HasSuffix(file, "pdf") {
+		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
+	} else {
+		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 	}
 
 	for _, bookmark := range bookmarks {
