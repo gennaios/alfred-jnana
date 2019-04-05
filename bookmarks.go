@@ -66,8 +66,8 @@ func (db *Database) BookmarksForFile(file string) ([]BookmarkRecord, error) {
 	var err error
 
 	fileRecord, changed, _ := db.GetFile(file)
-	err = db.sess.Select("id", "title", "section", "destination").From("bookmarks").
-		Where("file_id == ?", fileRecord.ID).
+	err = db.sess.Select("id", "title", "section", "destination").
+		From("bookmarks").Where("file_id == ?", fileRecord.ID).
 		LoadOne(&bookmarks)
 
 	// file created or changed / or no bookmarks found
@@ -89,7 +89,6 @@ func (db *Database) BookmarksForFile(file string) ([]BookmarkRecord, error) {
 				// update database
 				bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
 				_ = notification("Bookmarks updated.")
-				// fetch new bookmarks
 			}
 		}
 	}
@@ -163,17 +162,15 @@ func (db *Database) NewBookmarks(file File, bookmarks []Bookmark) ([]BookmarkRec
 	err = tx.Commit()
 	// get newly inserted bookmarks
 	var newBookmarks []BookmarkRecord
-	err = db.sess.Select("id", "title", "section", "destination").From("bookmarks").
-		Where("file_id == ?", file.ID).
+	err = db.sess.Select("id", "title", "section", "destination").
+		From("bookmarks").Where("file_id == ?", file.ID).
 		LoadOne(&newBookmarks)
 	return newBookmarks, err
 }
 
 func (db *Database) UpdateBookmarks(file File, bookmarks []Bookmark) ([]BookmarkRecord, error) {
 	tx, err := db.sess.Begin()
-	_, err = db.sess.DeleteFrom("bookmarks").
-		Where("file_id = ?", file.ID).
-		Exec()
+	_, err = db.sess.DeleteFrom("bookmarks").Where("file_id = ?", file.ID).Exec()
 	err = tx.Commit()
 	newBookmarks, err := db.NewBookmarks(file, bookmarks)
 	return newBookmarks, err

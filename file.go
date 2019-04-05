@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -84,7 +83,7 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 			//date different, check hash value
 			changed = true
 			file.FileHash, _ = fileHash(book)
-			file.DateModified = modDate.String()
+			file.DateModified = modDate.Format("2006-01-02 15:04:05")
 			err = db.UpdateFile(file)
 		}
 	}
@@ -95,7 +94,8 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 // return columns needed by GetFile
 func (db *Database) GetFileFromPath(book string) (File, error) {
 	var file File
-	err := db.sess.Select("id", "path", "file_modified_date").From("files").Where("path = ?", book).LoadOne(&file)
+	err := db.sess.Select("id", "path", "file_modified_date").
+		From("files").Where("path = ?", book).LoadOne(&file)
 	return file, err
 }
 
@@ -103,23 +103,22 @@ func (db *Database) GetFileFromPath(book string) (File, error) {
 // return columns needed by GetFile
 func (db *Database) GetFileFromHash(hash string) (File, error) {
 	var file File
-	err := db.sess.Select("id", "path", "file_modified_date").From("files").Where("hash = ?", hash).LoadOne(&file)
+	err := db.sess.Select("id", "path", "file_modified_date").
+		From("files").Where("hash = ?", hash).LoadOne(&file)
 	return file, err
 }
 
 // NewFile create new file entry.
 // File struct comes in with only path.
+// Required fields: path, name, extension, created, modified, hash
 func (db *Database) NewFile(book string) (File, error) {
-	// path, name, extension, created, modified, hash
 	stat, err := os.Stat(book)
 	if err != nil {
 		return File{}, err
 	}
-	hash, _ := fileHash(book)
 	// format string for insert, strange set then get by format doesn't work
-	// TODO: format not compatible with alfred-gnosis
-	dateModified := stat.ModTime().UTC().Format(time.RFC3339)
-	dateModified = strings.Replace(dateModified, " +0000 UTC", "", 1)
+	dateModified := stat.ModTime().UTC().Format("2006-01-02 15:04:05")
+	hash, _ := fileHash(book)
 
 	tx, err := db.sess.Begin()
 	if err != nil {
@@ -131,7 +130,7 @@ func (db *Database) NewFile(book string) (File, error) {
 		Pair("path", book).
 		Pair("file_name", filepath.Base(book)).
 		Pair("file_extension", filepath.Ext(book)[1:]).
-		Pair("date_created", time.Now().UTC().Format(time.RFC3339)).
+		Pair("date_created", time.Now().UTC().Format("2006-01-02 15:04:05")).
 		Pair("file_modified_date", dateModified).
 		Pair("hash", hash).
 		Exec()
@@ -141,14 +140,11 @@ func (db *Database) NewFile(book string) (File, error) {
 }
 
 func (db *Database) UpdateFile(file File) error {
-	// format string for insert, strange set then get by format doesn't work
-	dateModified := strings.Replace(file.DateModified, " +0000 UTC", "", 1)
-
 	tx, err := db.sess.Begin()
 	_, err = db.sess.Update("files").
 		Set("path", file.Path).
 		Set("file_name", filepath.Base(file.Path)).
-		Set("file_modified_date", dateModified).
+		Set("file_modified_date", file.DateModified).
 		Set("hash", file.FileHash).
 		Where("id = ?", file.ID).
 		Exec()
