@@ -170,7 +170,7 @@
 			end tell
 		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
 			set theBookmark to q
-			set cmd to "./jnana epubbm " &amp; theBookmark
+			set cmd to "./jnana openepub " &amp; theBookmark
 			do shell script cmd
 		else
 			display notification "Some other app!"
@@ -425,7 +425,7 @@ end run</string>
 	else if fileAlias ends with ".epub" then
 		set parameter1 to (quoted form of theFile)
 		set parameter2 to " " &amp; thePage
-		set cmd to "python ../alfred-gnosis/src/gnosis.py --epub-to-bookmark " &amp; parameter1 &amp; parameter2
+		set cmd to "./jnana openepub " &amp; parameter1 &amp; parameter2
 		do shell script cmd
 		return
 	end if

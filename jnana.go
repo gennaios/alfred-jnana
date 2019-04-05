@@ -29,8 +29,8 @@ usage:
     jnana bm <file>
     jnana bmf <file> <query>
     jnana epub [<query>]
-    jnana epubbm <query>
     jnana epubf <query>
+    jnana openepub [<file>] <query>
     jnana pdf <file> [<query>]
     jnana lastquery
     jnana -h
@@ -46,8 +46,8 @@ commands:
     bm		Bookmarks for file
     bmf		Bookmarks for file filtered by query
     epub	Bookmarks for EPUB in calibre
-    epubbm	open calibre to bookmark
     epubf	Bookmarks for EPUB in calibre filtered by query
+    openepub	open calibre to bookmark
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
     lastquery	Retrieve cached last query string for script filter
 `
@@ -67,8 +67,8 @@ var options struct {
 	Bm        bool
 	Bmf       bool
 	Epub      bool
-	Epubbm    bool
 	Epubf     bool
+	Openepub  bool
 	Pdf       bool
 	Lastquery bool
 
@@ -209,11 +209,13 @@ func getLastQuery() string {
 }
 
 // receive bookmark title as query from script filter and open calibre
-func openCalibreBookmark(query string) {
-	epub := calibreEpubFile()
+func openCalibreBookmark(file string, query string) {
 	command := "/Applications/calibre.app/Contents/MacOS/ebook-viewer"
+	if file == "false" {
+		file = calibreEpubFile()
+	}
 	// TODO: "--continue" needed?
-	cmdArgs := []string{"--open-at=toc:\"" + query + "\"", epub}
+	cmdArgs := []string{"--open-at=toc:\"" + query + "\"", file}
 
 	_, err := exec.Command(command, cmdArgs...).Output()
 	if err != nil {
@@ -364,8 +366,8 @@ func runCommand() {
 	if options.Epub == true {
 		bookmarksForFileEpub()
 	}
-	if options.Epubbm == true {
-		openCalibreBookmark(query)
+	if options.Openepub == true {
+		openCalibreBookmark(options.File, options.Query)
 	}
 	if options.Lastquery == true {
 		printLastQuery()
