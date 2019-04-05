@@ -67,7 +67,6 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 			return file, true, err
 		}
 		created = true
-		_ = notification("New Book, ID: " + string(file.ID))
 	}
 
 	// not created, check if different
@@ -92,17 +91,19 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 	return file, changed, err
 }
 
-// Get: Look for existing record by file path
+// GetFileFromPath: Look for existing record by file path
+// return columns needed by GetFile
 func (db *Database) GetFileFromPath(book string) (File, error) {
 	var file File
-	err := db.sess.Select("*").From("files").Where("path = ?", book).LoadOne(&file)
+	err := db.sess.Select("id", "path", "file_modified_date").From("files").Where("path = ?", book).LoadOne(&file)
 	return file, err
 }
 
 // GetFromHash: look for existing by file hash (sha256)
+// return columns needed by GetFile
 func (db *Database) GetFileFromHash(hash string) (File, error) {
 	var file File
-	err := db.sess.Select("*").From("files").Where("hash = ?", hash).LoadOne(&file)
+	err := db.sess.Select("id", "path", "file_modified_date").From("files").Where("hash = ?", hash).LoadOne(&file)
 	return file, err
 }
 
@@ -145,10 +146,10 @@ func (db *Database) UpdateFile(file File) error {
 
 	tx, err := db.sess.Begin()
 	_, err = db.sess.Update("files").
-		Set("file_name", filepath.Base(file.Path)).
 		Set("path", file.Path).
-		Set("hash", file.FileHash).
+		Set("file_name", filepath.Base(file.Path)).
 		Set("file_modified_date", dateModified).
+		Set("hash", file.FileHash).
 		Where("id = ?", file.ID).
 		Exec()
 	if err != nil {
