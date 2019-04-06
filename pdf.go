@@ -3,19 +3,38 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gen2brain/go-fitz"
 	"log"
 	"os/exec"
+	"strconv"
+	"strings"
 )
 
 type FileBookmark struct {
 	Title       string `json:"title"`
 	Section     string `json:"section"`
 	Destination string `json:"destination"`
+	Uri         string
 }
 
-// FileBookmark for PDF file, from Python script ./pdf.py
+// FileBookmarks: for EPUB and PDF file, using go-fitz
+func FileBookmarks(file string) ([]FileBookmark, error) {
+	doc, err := fitz.New(file)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	defer doc.Close()
+
+	outlines, err := doc.ToC()
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	return parseBookmarks(outlines), err
+}
+
+// FBookmarks for EPUB and PDF file, using Python script ./pdf.py
 func bookmarksForPDF(file string) ([]FileBookmark, error) {
-	cmdArgs := []string{"bookmarks", file}
+	cmdArgs := []string{"FileBookmarks", file}
 
 	output, err := exec.Command("./pdf.py", cmdArgs...).Output()
 	if err != nil {
@@ -37,6 +56,49 @@ func bookmarksFromJson(jsonBytes []byte) ([]FileBookmark, error) {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 	return bookmarks, err
+}
+
+// Parse bookmarks from go-fitz
+func parseBookmarks(outline []fitz.Outline) []FileBookmark {
+	sections := []string{"", "", "", "", "", "", "", "", "", "", "", "", ""}
+	var parsedBookmarks []FileBookmark
+	var page int
+	var currentLevel int
+	var section string
+	var title string
+
+	for _, bookmark := range outline {
+		if bookmark.Page != -1 {
+			page = bookmark.Page + 1
+		} else {
+			page = -1
+		}
+		title = strings.TrimSpace(bookmark.Title)
+
+		section = ""
+		sections[bookmark.Level] = title
+
+		if bookmark.Level == 1 {
+			section = ""
+		} else {
+			currentLevel = bookmark.Level
+			for currentLevel > 1 {
+				if section == "" {
+					section = sections[currentLevel-1]
+				} else {
+					section = sections[currentLevel-1] + " > " + section
+				}
+				currentLevel -= 1
+			}
+		}
+		newBookmark := FileBookmark{
+			Title:       title,
+			Section:     section,
+			Destination: strconv.Itoa(page),
+			Uri:         bookmark.URI,
+		}
+		parsedBookmarks = append(parsedBookmarks, newBookmark)
+	}
+	return parsedBookmarks
 }
