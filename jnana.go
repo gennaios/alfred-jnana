@@ -3,18 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/deanishe/awgo"
+	"github.com/deanishe/awgo/update"
+	"github.com/docopt/docopt-go"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/deanishe/awgo"
-	"github.com/deanishe/awgo/update"
-	"github.com/docopt/docopt-go"
 )
 
 var (
@@ -29,8 +27,7 @@ usage:
     jnana bm <file>
     jnana bmf <file> <query>
     jnana epub [<query>]
-    jnana epubf <query>
-    jnana openepub [<file>] <query>
+    jnana openepub <query> [<file>]
     jnana pdf <file> [<query>]
     jnana lastquery
     jnana -h
@@ -67,7 +64,6 @@ var options struct {
 	Bm        bool
 	Bmf       bool
 	Epub      bool
-	Epubf     bool
 	Openepub  bool
 	Pdf       bool
 	Lastquery bool
@@ -109,9 +105,14 @@ func bookmarksForFile(file string) {
 	}
 }
 
-func bookmarksForFileEpub() {
+func bookmarksForFileEpub(query string) {
 	epub := calibreEpubFile()
-	bookmarksForFile(epub)
+
+	if query == "" {
+		bookmarksForFile(epub)
+	} else {
+		bookmarksForFileFiltered(epub, query)
+	}
 }
 
 // Bookmarks filtered for file, from database or imported, return results
@@ -209,18 +210,28 @@ func getLastQuery() string {
 }
 
 // receive bookmark title as query from script filter and open calibre
-func openCalibreBookmark(file string, query string) {
+func openCalibreBookmark(query string, file string) {
 	command := "/Applications/calibre.app/Contents/MacOS/ebook-viewer"
-	if file == "false" {
+	if file == "" {
 		file = calibreEpubFile()
 	}
+	//else {
+	//	file = "\"" + file + "\""
+	//}
+	fmt.Println("file:", file)
+	fmt.Println("query:", query)
 	// TODO: "--continue" needed?
-	cmdArgs := []string{"--open-at=toc:\"" + query + "\"", file}
+	cmdArgs := []string{`--open-at=toc:'` + query + `'`, file}
+	fmt.Println("args:", cmdArgs)
+	cmd := `--open-at=toc:'` + query + `' ` + file
 
-	_, err := exec.Command(command, cmdArgs...).Output()
-	if err != nil {
-		log.Fatal(err)
-	}
+	_ = exec.Command(command, cmd).Start()
+	//for _, v := range cmd.Args {
+	//	fmt.Println(v)
+	//}
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 }
 
 func printLastQuery() {
@@ -244,7 +255,7 @@ func searchAllBookmarks(query string) {
 	returnSearchAllResults(results)
 }
 
-func returnBookmarksForEpub(bookmarks []BookmarkRecord) {
+func returnBookmarksForEpub(bookmarks []Bookmark) {
 	var icon *aw.Icon
 	icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 
@@ -253,7 +264,6 @@ func returnBookmarksForEpub(bookmarks []BookmarkRecord) {
 		if bookmark.Section.String != "" {
 			section = bookmark.Section.String
 		}
-
 		wf.NewItem(bookmark.Title).
 			Subtitle(section).
 			UID(strconv.FormatInt(bookmark.ID, 10)).
@@ -264,7 +274,7 @@ func returnBookmarksForEpub(bookmarks []BookmarkRecord) {
 	wf.SendFeedback()
 }
 
-func returnBookmarksForPdf(file string, bookmarks []BookmarkRecord) {
+func returnBookmarksForPdf(file string, bookmarks []Bookmark) {
 	var icon *aw.Icon
 	if strings.HasSuffix(file, "pdf") {
 		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
@@ -330,7 +340,7 @@ func returnSearchAllResults(bookmarks []SearchAllResult) {
 		var subtitle string
 		if strings.HasSuffix(bookmark.FileName, ".epub") {
 			subtitle = bookmark.FileName
-			arg = bookmark.Path + "/Page:\"" + bookmark.Destination + "\""
+			arg = bookmark.Path + "/Page:\"" + bookmark.Title + "\""
 		} else {
 			subtitle = "Page " + bookmark.Destination + ". " + bookmark.FileName
 			arg = bookmark.Path + "/Page:" + bookmark.Destination
@@ -364,10 +374,10 @@ func runCommand() {
 		bookmarksForFileFiltered(options.File, options.Query)
 	}
 	if options.Epub == true {
-		bookmarksForFileEpub()
+		bookmarksForFileEpub(options.Query)
 	}
 	if options.Openepub == true {
-		openCalibreBookmark(options.File, options.Query)
+		openCalibreBookmark(options.Query, options.File)
 	}
 	if options.Lastquery == true {
 		printLastQuery()

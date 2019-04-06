@@ -14,7 +14,7 @@ type Database struct {
 	sess *dbr.Session
 }
 
-type BookmarkRecord struct {
+type Bookmark struct {
 	ID          int64
 	FileId      int64          `db:"file_id"`
 	Title       string         `db:"title"`
@@ -61,34 +61,34 @@ func (db *Database) Init(filepath string) {
 	}
 }
 
-func (db *Database) BookmarksForFile(file string) ([]BookmarkRecord, error) {
-	var bookmarks []BookmarkRecord
+func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
+	var bookmarks []Bookmark
 	var err error
 
 	fileRecord, changed, _ := db.GetFile(file)
 	err = db.sess.Select("id", "title", "section", "destination").
-		From("bookmarks").Where("file_id == ?", fileRecord.ID).
+		From("bookmarks").Where("file_id = ?", fileRecord.ID).
 		LoadOne(&bookmarks)
 
 	// file created or changed / or no bookmarks found
 	if changed == true || len(bookmarks) == 0 {
-		var newBookmarks []Bookmark
-
-		// PDF get bookmarks from file
 		if strings.HasSuffix(file, ".pdf") {
+			var newBookmarks []FileBookmark
+
+			// PDF get bookmarks from file
 			newBookmarks, _ = bookmarksForPDF(file)
-		}
-		// TODO: EPUB get bookmarks from file
-		// no bookmarks returned from first, get new
-		if len(bookmarks) == 0 {
-			// insert new
-			bookmarks, err = db.NewBookmarks(fileRecord, newBookmarks)
-		} else {
-			// file updated, compare bookmarks
-			if bookmarksEqual(bookmarks, newBookmarks) == false {
-				// update database
-				bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
-				_ = notification("Bookmarks updated.")
+			// TODO: EPUB get bookmarks from file
+			// no bookmarks returned from first, get new
+			if len(bookmarks) == 0 {
+				// insert new
+				bookmarks, err = db.NewBookmarks(fileRecord, newBookmarks)
+			} else {
+				// file updated, compare bookmarks
+				if bookmarksEqual(bookmarks, newBookmarks) == false {
+					// update database
+					bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
+					_ = notification("Bookmarks updated.")
+				}
 			}
 		}
 	}
@@ -148,7 +148,7 @@ func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 	return results, err
 }
 
-func (db *Database) NewBookmarks(file File, bookmarks []Bookmark) ([]BookmarkRecord, error) {
+func (db *Database) NewBookmarks(file File, bookmarks []FileBookmark) ([]Bookmark, error) {
 	tx, err := db.sess.Begin()
 	// insert new bookmarks
 	for i := 0; i < len(bookmarks); i++ {
@@ -161,14 +161,14 @@ func (db *Database) NewBookmarks(file File, bookmarks []Bookmark) ([]BookmarkRec
 	}
 	err = tx.Commit()
 	// get newly inserted bookmarks
-	var newBookmarks []BookmarkRecord
+	var newBookmarks []Bookmark
 	err = db.sess.Select("id", "title", "section", "destination").
 		From("bookmarks").Where("file_id == ?", file.ID).
 		LoadOne(&newBookmarks)
 	return newBookmarks, err
 }
 
-func (db *Database) UpdateBookmarks(file File, bookmarks []Bookmark) ([]BookmarkRecord, error) {
+func (db *Database) UpdateBookmarks(file File, bookmarks []FileBookmark) ([]Bookmark, error) {
 	tx, err := db.sess.Begin()
 	_, err = db.sess.DeleteFrom("bookmarks").Where("file_id = ?", file.ID).Exec()
 	err = tx.Commit()
@@ -177,11 +177,11 @@ func (db *Database) UpdateBookmarks(file File, bookmarks []Bookmark) ([]Bookmark
 }
 
 // Compare bookmarks from database with file
-func bookmarksEqual(bookmarks []BookmarkRecord, newBookmarks []Bookmark) bool {
-	var oldBookmarks []Bookmark
+func bookmarksEqual(bookmarks []Bookmark, newBookmarks []FileBookmark) bool {
+	var oldBookmarks []FileBookmark
 
 	for i := 0; i < len(bookmarks); i++ {
-		var bookmark Bookmark
+		var bookmark FileBookmark
 		bookmark.Title = bookmarks[i].Title
 		bookmark.Section = bookmarks[i].Section.String
 		bookmark.Destination = bookmarks[i].Destination

@@ -145,33 +145,30 @@
 				<key>script</key>
 				<string>on run
   set theQuery to "{query}"
-  set q to theQuery
 
 	tell application "System Events"
 		set activeApp to name of first application process whose frontmost is true
-		log "Active app : " &amp; activeApp
 
 		if activeApp = "Preview" then
 			keystroke "g" using {option down, command down} -- ⌥⌘G
-			keystroke q
+			keystroke theQuery
 			delay 0.25
 			keystroke return
 			keystroke return
+		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
+			set cmd to "./jnana openepub " &amp; (quoted form of theQuery)
+			do shell script cmd
 		else if activeApp = "Skim" then
 			tell application "Skim"
-				set thePage to q
+				set thePage to theQuery
 				tell document 1 to go to page (thePage as integer)
 			end tell
 		else if activeApp = "AdobeAcrobat" then
 			tell application "Adobe Acrobat"
-				set thePage to q
+				set thePage to theQuery
 				--tell PDF Window 1 to goto page (thePage as integer)
 				tell PDF Window of active doc to goto page (thePage as integer)
 			end tell
-		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
-			set theBookmark to q
-			set cmd to "./jnana openepub " &amp; theBookmark
-			do shell script cmd
 		else
 			display notification "Some other app!"
 		end if
@@ -245,12 +242,11 @@ end run</string>
 			set cmd to "./jnana epub"
 		else
 			set queryString to (quoted form of theQuery)
-			set cmd to "./jnana epubf " &amp; queryString
+			set cmd to "./jnana epub " &amp; queryString
 		end if
 	else
 		-- PDF
-		log "PDF : " &amp; theFile
-
+		--log "PDF : " &amp; theFile
 		set cmd to "./jnana bm " &amp; (quoted form of theFile)
 
 		if length of theQuery is not 0 then
@@ -260,7 +256,7 @@ end run</string>
 		end if
 	end if
 
-	set the clipboard to cmd
+	-- set the clipboard to cmd
 	set bookmarks to do shell script cmd
 	return bookmarks
 end run
@@ -400,9 +396,6 @@ end run</string>
 	set query to "{query}"
 	
 	set AppleScript's text item delimiters to " "
-	--	set query to q as text
-	--set AppleScript's text item delimiters to {""}
-	--	display notification query
 	
 	--
 	-- Split command
@@ -414,7 +407,6 @@ end run</string>
 	-- display notification theFile &amp; " - " &amp; thePage
 	set fileAlias to POSIX file theFile as Unicode text
 	-- display notification fileAlias as string
-	-- end try
 	
 	
 	--
@@ -423,9 +415,9 @@ end run</string>
 	if fileAlias ends with ".pdf" then
 		tell application "Finder" to open file fileAlias
 	else if fileAlias ends with ".epub" then
-		set parameter1 to (quoted form of theFile)
-		set parameter2 to " " &amp; thePage
-		set cmd to "./jnana openepub " &amp; parameter1 &amp; parameter2
+		set theFile to (quoted form of theFile)
+		set tocTitle to " " &amp; thePage
+		set cmd to "./jnana openepub " &amp; tocTitle &amp; " " &amp; theFile
 		do shell script cmd
 		return
 	end if
@@ -563,13 +555,8 @@ end explode</string>
 				<string>Getting bookmarks...</string>
 				<key>script</key>
 				<string>on run
-	set theQuery to quoted form of "{query}"
-	
-	tell application "System Events"
-		set theParameter to " all "
-	end tell
-	
-	set bookmarks to do shell script "./jnana" &amp; theParameter &amp; theQuery
+	set theQuery to quoted form of "{query}"	
+	set bookmarks to do shell script "./jnana all " &amp; theQuery
 	return bookmarks
 end run</string>
 				<key>scriptargtype</key>
