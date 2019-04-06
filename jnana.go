@@ -3,9 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/deanishe/awgo"
-	"github.com/deanishe/awgo/update"
-	"github.com/docopt/docopt-go"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,6 +10,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/deanishe/awgo"
+	"github.com/deanishe/awgo/update"
+	"github.com/docopt/docopt-go"
 )
 
 var (
@@ -29,7 +30,9 @@ usage:
     jnana epub [<query>]
     jnana openepub <query> [<file>]
     jnana pdf <file> [<query>]
+    jnana test <file>
     jnana lastquery
+    jnana test <file>
     jnana -h
 
 options:
@@ -47,6 +50,7 @@ commands:
     openepub	open calibre to bookmark
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
     lastquery	Retrieve cached last query string for script filter
+    test        Testing stuff
 `
 
 	wf *aw.Workflow
@@ -67,6 +71,7 @@ var options struct {
 	Openepub  bool
 	Pdf       bool
 	Lastquery bool
+	Test      bool
 
 	// parameters
 	Query  string
@@ -95,11 +100,7 @@ func bookmarksForFile(file string) {
 
 	bookmarks, err := db.BookmarksForFile(file)
 	if err == nil {
-		if strings.HasSuffix(file, "pdf") {
-			returnBookmarksForPdf(file, bookmarks)
-		} else {
-			returnBookmarksForEpub(bookmarks)
-		}
+		returnBookmarksForFile(file, bookmarks)
 	} else {
 		wf.FatalError(err)
 	}
@@ -107,7 +108,6 @@ func bookmarksForFile(file string) {
 
 func bookmarksForFileEpub(query string) {
 	epub := calibreEpubFile()
-
 	if query == "" {
 		bookmarksForFile(epub)
 	} else {
@@ -125,7 +125,7 @@ func bookmarksForFileFiltered(file string, query string) {
 	bookmarks, err := db.BookmarksForFileFiltered(file, query)
 
 	if err == nil {
-		returnBookmarksForPdfFiltered(file, bookmarks)
+		returnBookmarksForFileFiltered(file, bookmarks)
 	} else {
 		wf.FatalError(err)
 	}
@@ -181,10 +181,8 @@ func cacheLastQuery(queryString string) {
 	)
 
 	cache := aw.NewCache(wf.CacheDir())
-
 	// The API uses bytes
 	data, _ := json.Marshal(value)
-
 	if err := cache.Store(name, data); err != nil {
 		panic(err)
 	}
@@ -197,7 +195,6 @@ func getLastQuery() string {
 	)
 
 	cache := aw.NewCache(wf.CacheDir())
-
 	data, err := cache.Load(name)
 	if err != nil {
 		panic(err)
@@ -215,23 +212,17 @@ func openCalibreBookmark(query string, file string) {
 	if file == "" {
 		file = calibreEpubFile()
 	}
-	//else {
-	//	file = "\"" + file + "\""
-	//}
-	fmt.Println("file:", file)
-	fmt.Println("query:", query)
 	// TODO: "--continue" needed?
-	cmdArgs := []string{`--open-at=toc:'` + query + `'`, file}
-	fmt.Println("args:", cmdArgs)
-	cmd := `--open-at=toc:'` + query + `' ` + file
+	cmdArgs := []string{"--open-at=toc:\"" + query + "\"", file}
 
-	_ = exec.Command(command, cmd).Start()
-	//for _, v := range cmd.Args {
-	//	fmt.Println(v)
-	//}
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
+	cmd := exec.Command(command, cmdArgs...)
+	for _, v := range cmd.Args {
+		fmt.Println(v)
+	}
+	err := cmd.Start()
+	if err != nil {
+		fmt.Println("error:", err)
+	}
 }
 
 func printLastQuery() {
@@ -255,17 +246,29 @@ func searchAllBookmarks(query string) {
 	returnSearchAllResults(results)
 }
 
-func returnBookmarksForEpub(bookmarks []Bookmark) {
+func returnBookmarksForFile(file string, bookmarks []Bookmark) {
 	var icon *aw.Icon
-	icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
+	var subtitle string
+	pdf := false
+	if strings.HasSuffix(file, "pdf") {
+		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
+		pdf = true
+	} else {
+		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
+	}
 
 	for _, bookmark := range bookmarks {
-		section := ""
-		if bookmark.Section.String != "" {
-			section = bookmark.Section.String
+		if pdf == true {
+			if bookmark.Section.String == "" {
+				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
+			} else {
+				subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.Section.String)
+			}
+		} else {
+			subtitle = bookmark.Section.String
 		}
 		wf.NewItem(bookmark.Title).
-			Subtitle(section).
+			Subtitle(subtitle).
 			UID(strconv.FormatInt(bookmark.ID, 10)).
 			Valid(true).
 			Icon(icon).
@@ -274,87 +277,85 @@ func returnBookmarksForEpub(bookmarks []Bookmark) {
 	wf.SendFeedback()
 }
 
-func returnBookmarksForPdf(file string, bookmarks []Bookmark) {
+func returnBookmarksForFileFiltered(file string, bookmarks []SearchAllResult) {
 	var icon *aw.Icon
+	var subtitle string
+	pdf := false
 	if strings.HasSuffix(file, "pdf") {
 		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
+		pdf = true
 	} else {
 		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 	}
 
 	for _, bookmark := range bookmarks {
-		subtitleSuffix := ""
-		if bookmark.Section.String != "" {
-			subtitleSuffix = ". " + bookmark.Section.String
+		if pdf == true {
+			if bookmark.Section.String == "" {
+				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
+			} else {
+				subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.Section.String)
+			}
+		} else {
+			subtitle = bookmark.Section.String
 		}
-
 		wf.NewItem(bookmark.Title).
-			Subtitle("Page " + bookmark.Destination + subtitleSuffix).
+			Subtitle(subtitle).
 			UID(strconv.FormatInt(bookmark.ID, 10)).
 			Valid(true).
 			Icon(icon).
 			Arg(bookmark.Destination)
 	}
-	wf.SendFeedback()
-}
-
-func returnBookmarksForPdfFiltered(file string, bookmarks []SearchAllResult) {
-	var icon *aw.Icon
-	if strings.HasSuffix(file, "pdf") {
-		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
-	} else {
-		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
-	}
-
-	for _, bookmark := range bookmarks {
-		subtitleSuffix := ""
-		if bookmark.Section.String != "" {
-			subtitleSuffix = ". " + bookmark.Section.String
-		}
-
-		wf.NewItem(bookmark.Title).
-			Subtitle("Page " + bookmark.Destination + subtitleSuffix).
-			UID(strconv.FormatInt(bookmark.ID, 10)).
-			Valid(true).
-			Icon(icon).
-			Arg(bookmark.Destination)
-	}
-
 	wf.SendFeedback()
 }
 
 // Parse database search results and return items to Alfred
 func returnSearchAllResults(bookmarks []SearchAllResult) {
+	var title string
+	var arg string
+	var subtitle string
 	for _, bookmark := range bookmarks {
-		uid := strconv.FormatInt(bookmark.ID, 10)
 		icon := iconForFileID(bookmark.FileID, bookmark.Path)
 
-		var title string
 		if bookmark.Section.String != "" {
-			title = bookmark.Title + " | " + bookmark.Section.String
+			title = fmt.Sprintf("%s | %s", bookmark.Title, bookmark.Section.String)
 		} else {
 			title = bookmark.Title
 		}
-
-		var arg string
-		var subtitle string
-		if strings.HasSuffix(bookmark.FileName, ".epub") {
-			subtitle = bookmark.FileName
-			arg = bookmark.Path + "/Page:\"" + bookmark.Title + "\""
+		if strings.HasSuffix(bookmark.FileName, ".pdf") {
+			subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.FileName)
+			arg = fmt.Sprintf("%s/Page:%s", bookmark.Path, bookmark.Destination)
 		} else {
-			subtitle = "Page " + bookmark.Destination + ". " + bookmark.FileName
-			arg = bookmark.Path + "/Page:" + bookmark.Destination
+			subtitle = bookmark.FileName
+			arg = fmt.Sprintf("%s/Page:\"%s\"", bookmark.Path, bookmark.Title)
 		}
-
 		wf.NewItem(title).
 			Subtitle(subtitle).
-			UID(uid).
+			UID(strconv.FormatInt(bookmark.ID, 10)).
 			Valid(true).
 			Icon(icon).
 			Arg(arg)
 	}
-
 	wf.SendFeedback()
+}
+
+func TestStuff(file string) {
+	//bookmarks, _ := bookmarksForPDF(file)
+	//fmt.Println("bookmarks", len(bookmarks))
+	bookmarks2, _ := FileBookmarks(file)
+	fmt.Println("Bookmarks", len(bookmarks2))
+
+	//if cmp.Equal(bookmarks, bookmarks2) {
+	//	fmt.Println("bookmarks:", len(bookmarks), len(bookmarks2), file, " equal")
+	//} else {
+	//	fmt.Println("bookmarks:", len(bookmarks), len(bookmarks2), file, " NOT EQUAL")
+	//}
+	//for i := range bookmarks {
+	//	if !cmp.Equal(bookmarks[i], bookmarks2[i]) {
+	//		fmt.Println("Title", bookmarks[i].Title, "/", bookmarks2[i].Title)
+	//		fmt.Println("Section", bookmarks[i].Section, "/", bookmarks2[i].Section)
+	//		fmt.Println("Dest", bookmarks[i].Destination, "/", bookmarks2[i].Destination)
+	//	}
+	//}
 }
 
 func runCommand() {
@@ -381,6 +382,9 @@ func runCommand() {
 	}
 	if options.Lastquery == true {
 		printLastQuery()
+	}
+	if options.Test == true {
+		TestStuff(options.File)
 	}
 }
 

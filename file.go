@@ -25,6 +25,7 @@ type File struct {
 	FileHash      string         `db:"hash"`
 }
 
+
 func (db *Database) GetFile(book string) (File, bool, error) {
 	var file File
 	var err error

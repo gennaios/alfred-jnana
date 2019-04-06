@@ -43,15 +43,16 @@ func (db *Database) Init(filepath string) {
 	}
 	db.conn = conn
 
-	_, _ = conn.Exec("PRAGMA auto_vacuum = 1")
-	_, _ = conn.Exec("PRAGMA foreign_keys = 1")
+	//_, _ = conn.Exec("PRAGMA auto_vacuum = 2") // incremental, added in build
+	//_, _ = conn.Exec("PRAGMA foreign_keys = 1") // added in build
 	_, _ = conn.Exec("PRAGMA ignore_check_constraints = 0")
 	_, _ = conn.Exec("PRAGMA journal_mode = WAL")
+	_, _ = conn.Exec("PRAGMA locking_mode = EXCLUSIVE")
 	_, _ = conn.Exec("PRAGMA synchronous = 0")
 	_, _ = conn.Exec("PRAGMA temp_store = 2") // MEMORY
 
 	_, _ = conn.Exec("PRAGMA cache_size = -31250")
-	_, _ = conn.Exec("PRAGMA page_size = 8192") // default 4096, match APFS block size?
+	//_, _ = conn.Exec("PRAGMA page_size = 8192") // default 4096, match APFS block size?
 
 	sess := conn.NewSession(nil)
 	db.sess = sess
@@ -72,25 +73,23 @@ func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
 
 	// file created or changed / or no bookmarks found
 	if changed == true || len(bookmarks) == 0 {
-		if strings.HasSuffix(file, ".pdf") {
-			var newBookmarks []FileBookmark
+		//if strings.HasSuffix(file, ".pdf") {
+		var newBookmarks []FileBookmark
 
-			// PDF get bookmarks from file
-			newBookmarks, _ = bookmarksForPDF(file)
-			// TODO: EPUB get bookmarks from file
-			// no bookmarks returned from first, get new
-			if len(bookmarks) == 0 {
-				// insert new
-				bookmarks, err = db.NewBookmarks(fileRecord, newBookmarks)
-			} else {
-				// file updated, compare bookmarks
-				if bookmarksEqual(bookmarks, newBookmarks) == false {
-					// update database
-					bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
-					_ = notification("Bookmarks updated.")
-				}
+		newBookmarks, _ = FileBookmarks(file) // go-fitz
+		// no bookmarks returned from first, get new
+		if len(bookmarks) == 0 {
+			// insert new
+			bookmarks, err = db.NewBookmarks(fileRecord, newBookmarks)
+		} else {
+			// file updated, compare bookmarks
+			if bookmarksEqual(bookmarks, newBookmarks) == false {
+				// update database
+				bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
+				_ = notification("Bookmarks updated.")
 			}
 		}
+		//}
 	}
 	return bookmarks, err
 }
@@ -149,14 +148,21 @@ func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 }
 
 func (db *Database) NewBookmarks(file File, bookmarks []FileBookmark) ([]Bookmark, error) {
+	var destination string
+
 	tx, err := db.sess.Begin()
 	// insert new bookmarks
 	for i := 0; i < len(bookmarks); i++ {
+		if strings.HasSuffix(file.Path, "pdf") {
+			destination = bookmarks[i].Destination
+		} else {
+			destination = bookmarks[i].Uri
+		}
 		_, err = db.sess.InsertInto("bookmarks").
 			Pair("file_id", file.ID).
 			Pair("title", bookmarks[i].Title).
 			Pair("section", dbr.NewNullString(bookmarks[i].Section)).
-			Pair("destination", bookmarks[i].Destination).
+			Pair("destination", destination).
 			Exec()
 	}
 	err = tx.Commit()
@@ -179,15 +185,14 @@ func (db *Database) UpdateBookmarks(file File, bookmarks []FileBookmark) ([]Book
 // Compare bookmarks from database with file
 func bookmarksEqual(bookmarks []Bookmark, newBookmarks []FileBookmark) bool {
 	var oldBookmarks []FileBookmark
+	var bookmark FileBookmark
 
 	for i := 0; i < len(bookmarks); i++ {
-		var bookmark FileBookmark
 		bookmark.Title = bookmarks[i].Title
 		bookmark.Section = bookmarks[i].Section.String
 		bookmark.Destination = bookmarks[i].Destination
 		oldBookmarks = append(oldBookmarks, bookmark)
 	}
-
 	if cmp.Equal(oldBookmarks, newBookmarks) {
 		return true
 	} else {
@@ -204,13 +209,15 @@ func stringForSQLite(query string) string {
 	slc := strings.Split(query, " ")
 	for i := range slc {
 		term := slc[i]
-
 		if strings.HasPrefix(term, "-") {
 			// exclude terms beginning with '-', change to 'NOT [term]'
 			queryArray = append(queryArray, "NOT "+term[1:]+"*")
 		} else if stringInSlice(term, queryOperators) {
 			// auto capitalize operators 'and', 'or', 'not'
 			queryArray = append(queryArray, strings.ToUpper(term))
+		} else if strings.Contains(term, ".") {
+			// quote terms containing dot
+			queryArray = append(queryArray, "\""+term+"*"+"\"")
 		} else {
 			queryArray = append(queryArray, term+"*")
 		}
