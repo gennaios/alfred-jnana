@@ -43,8 +43,6 @@ func (db *Database) Init(filepath string) {
 	}
 	db.conn = conn
 
-	//_, _ = conn.Exec("PRAGMA auto_vacuum = 2") // incremental, added in build
-	//_, _ = conn.Exec("PRAGMA foreign_keys = 1") // added in build
 	_, _ = conn.Exec("PRAGMA ignore_check_constraints = 0")
 	_, _ = conn.Exec("PRAGMA journal_mode = WAL")
 	_, _ = conn.Exec("PRAGMA locking_mode = EXCLUSIVE")
