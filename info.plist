@@ -220,7 +220,7 @@ end run</string>
 		
 	tell application "System Events"
 		set activeApp to name of first application process whose frontmost is true
-		log "Active app : " &amp; activeApp
+		-- log "Active app : " &amp; activeApp
 		if activeApp = "Preview" then
 			set theFile to my Preview()
 		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
@@ -237,46 +237,28 @@ end run</string>
 		end if
 	end tell
 	
-	if theFile is "epub" then
+	if theFile is not "epub" then
+		-- PDF
+		if length of theQuery is not 0 then
+			-- filtered bookmarks
+			set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
+		else
+			set cmd to "./jnana bm " &amp; (quoted form of theFile)
+		end if
+	else
 		if length of theQuery is 0 then
 			set cmd to "./jnana epub"
 		else
-			set queryString to (quoted form of theQuery)
-			set cmd to "./jnana epub " &amp; queryString
-		end if
-	else
-		-- PDF
-		--log "PDF : " &amp; theFile
-		set cmd to "./jnana bm " &amp; (quoted form of theFile)
-
-		if length of theQuery is not 0 then
-			-- filtered bookmarks
-			set cmd to "./jnana bmf "
-			set cmd to cmd &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
+			set cmd to "./jnana epub " &amp; (quoted form of theQuery)
 		end if
 	end if
 
-	-- set the clipboard to cmd
 	set bookmarks to do shell script cmd
 	return bookmarks
 end run
 
 on Preview()
-	tell application "System Events"
-		tell process "Preview"
-			set theFile to value of attribute "AXDocument" of window 1
-			set fileName to title of window 1
-		
-			set parentDirectory to (do shell script "dirname " &amp; quoted form of theFile)
-
-			set filePath to parentDirectory &amp; "/" &amp; fileName
-			set filePath to my replace_chars(filePath, "file://", "")
-			set filePath to my replace_chars(filePath, "%20", " ")
-			set filePath to my item 1 of theSplit(filePath, " (page ")
-			return filePath
-		end tell
-	end tell
-end Preview
+	tell application "Preview"		return path of document 1	end tellend Preview
 
 on AdobeAcrobat()
 	tell application "Adobe Acrobat"
@@ -291,36 +273,8 @@ on Skim()
 		set currentFile to file of document 1
 	end tell
 	
-	set posixPath to POSIX path of currentFile
-	return quoted form of posixPath
-end Skim
-
-on replace_chars(this_text, search_string, replacement_string)
-	if this_text contains the search_string then
-		set AppleScript's text item delimiters to the search_string
-		set the item_list to every text item of this_text
-		set AppleScript's text item delimiters to the replacement_string
-		set this_text to the item_list as string
-		set AppleScript's text item delimiters to ""
-	end if
-	return this_text
-end replace_chars
-
-on theSplit(theString, theDelimiter)
-	-- save delimiters to restore old settings
-	set oldDelimiters to AppleScript's text item delimiters
-	-- set delimiters to delimiter to be used
-	set AppleScript's text item delimiters to theDelimiter
-	-- create the array
-	set theArray to every text item of theString
-	-- restore the old setting
-	set AppleScript's text item delimiters to oldDelimiters
-	-- return the result
-	return theArray
-end theSplit
-
-
-</string>
+	return quoted form of POSIX path of currentFile
+end Skim</string>
 				<key>scriptargtype</key>
 				<integer>0</integer>
 				<key>scriptfile</key>
@@ -350,8 +304,7 @@ end theSplit
 				<integer>102</integer>
 				<key>script</key>
 				<string>on run
-	set cmd to "./jnana lastquery"
-	set last_query to do shell script cmd
+	set last_query to do shell script "./jnana lastquery"
 		
 	if last_query is not equal to "None"
 		set query to last_query
@@ -555,9 +508,7 @@ end explode</string>
 				<string>Getting bookmarks...</string>
 				<key>script</key>
 				<string>on run
-	set theQuery to quoted form of "{query}"	
-	set bookmarks to do shell script "./jnana all " &amp; theQuery
-	return bookmarks
+	return do shell script "./jnana all " &amp; quoted form of "{query}"
 end run</string>
 				<key>scriptargtype</key>
 				<integer>0</integer>

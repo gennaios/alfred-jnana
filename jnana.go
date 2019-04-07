@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/deanishe/awgo"
@@ -259,17 +258,17 @@ func returnBookmarksForFile(file string, bookmarks []Bookmark) {
 
 	for _, bookmark := range bookmarks {
 		if pdf == true {
-			if bookmark.Section.String == "" {
-				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
-			} else {
+			if bookmark.Section.String != "" {
 				subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.Section.String)
+			} else {
+				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
 			}
 		} else {
 			subtitle = bookmark.Section.String
 		}
 		wf.NewItem(bookmark.Title).
 			Subtitle(subtitle).
-			UID(strconv.FormatInt(bookmark.ID, 10)).
+			UID(fmt.Sprintf("%d", bookmark.ID)).
 			Valid(true).
 			Icon(icon).
 			Arg(bookmark.Destination)
@@ -290,17 +289,17 @@ func returnBookmarksForFileFiltered(file string, bookmarks []SearchAllResult) {
 
 	for _, bookmark := range bookmarks {
 		if pdf == true {
-			if bookmark.Section.String == "" {
-				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
-			} else {
+			if bookmark.Section.String != "" {
 				subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.Section.String)
+			} else {
+				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
 			}
 		} else {
 			subtitle = bookmark.Section.String
 		}
 		wf.NewItem(bookmark.Title).
 			Subtitle(subtitle).
-			UID(strconv.FormatInt(bookmark.ID, 10)).
+			UID(fmt.Sprintf("%d", bookmark.ID)).
 			Valid(true).
 			Icon(icon).
 			Arg(bookmark.Destination)
@@ -330,7 +329,7 @@ func returnSearchAllResults(bookmarks []SearchAllResult) {
 		}
 		wf.NewItem(title).
 			Subtitle(subtitle).
-			UID(strconv.FormatInt(bookmark.ID, 10)).
+			UID(fmt.Sprintf("%d", bookmark.ID)).
 			Valid(true).
 			Icon(icon).
 			Arg(arg)
