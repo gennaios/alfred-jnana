@@ -371,13 +371,13 @@ func runCommand() {
 		bookmarksForFile(options.File)
 	}
 	if options.Bmf == true {
-		bookmarksForFileFiltered(options.File, options.Query)
+		bookmarksForFileFiltered(options.File, query)
 	}
 	if options.Epub == true {
-		bookmarksForFileEpub(options.Query)
+		bookmarksForFileEpub(query)
 	}
 	if options.Openepub == true {
-		openCalibreBookmark(options.Query, options.File)
+		openCalibreBookmark(query, options.File)
 	}
 	if options.Lastquery == true {
 		printLastQuery()
