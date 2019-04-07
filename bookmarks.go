@@ -107,15 +107,15 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]Searc
 		and bookmarksindex match '{title section} : …' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';
 	*/
 
-	//_, err := sess.Select("bookmarks.id", "bookmarks.title", "bookmarks.section",
+	//_, err := db.sess.Select("bookmarks.id", "bookmarks.title", "bookmarks.section",
 	//	"bookmarks.destination").
 	//	From("bookmarks").
 	//	Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
 	//	Where("bookmarks.file_id = ?", fileRecord.ID).
-	//	Where("bookmarksindex MATCH ? ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)'", queryString).
+	//	Where("bookmarksindex.rowid = bookmarks.id").
+	//	Where("bookmarksindex MATCH '{title section}:?' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)'", queryString).
 	//	Load(&results)
 
-	// TODO: limit column matches not working
 	_, err := db.sess.SelectBySql("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = " + strconv.FormatInt(fileRecord.ID, 10) + " and bookmarksindex.rowid = bookmarks.id and bookmarksindex match '{title section} : " + queryString + "' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';").Load(&results)
 	return results, err
 }
