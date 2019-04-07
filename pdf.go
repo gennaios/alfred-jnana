@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gen2brain/go-fitz"
 	"log"
 	"os/exec"
-	"strconv"
 	"strings"
+
+	"github.com/gen2brain/go-fitz"
 )
 
 type FileBookmark struct {
@@ -95,8 +95,8 @@ func parseBookmarks(outline []fitz.Outline) []FileBookmark {
 		newBookmark := FileBookmark{
 			Title:       title,
 			Section:     section,
-			Destination: strconv.Itoa(page),
-			Uri:         bookmark.URI,
+			Destination: fmt.Sprintf("%d", page),
+			Uri:         strings.TrimSpace(bookmark.URI),
 		}
 		parsedBookmarks = append(parsedBookmarks, newBookmark)
 	}
