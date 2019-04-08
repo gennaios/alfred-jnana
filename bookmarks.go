@@ -24,7 +24,6 @@ type Bookmark struct {
 	Destination string         `db:"destination"`
 }
 
-// TODO: combine with above
 type SearchAllResult struct {
 	ID          int64
 	Title       string         `db:"title"`
@@ -38,6 +37,7 @@ type SearchAllResult struct {
 func (db *Database) Init(dbFilePath string) {
 	file := fmt.Sprintf("file:%s%s", dbFilePath, "?_ignore_check_constraints=0&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0")
 	conn, err := dbr.Open("sqlite3", file, nil)
+	// TODO: return error
 	if err != nil {
 		panic(err)
 	}
@@ -64,6 +64,7 @@ func (db *Database) Init(dbFilePath string) {
 	}
 }
 
+// BookmarksForFile: retrieve existing bookmarks, add new to database if needed and check if updated
 func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
 	var bookmarks []Bookmark
 	var err error
@@ -94,7 +95,7 @@ func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
 	return bookmarks, err
 }
 
-// Filtered bookmarks for file
+// BookmarksForFileFiltered: filtered bookmarks for file
 func (db *Database) BookmarksForFileFiltered(file string, query string) ([]SearchAllResult, error) {
 	queryString := stringForSQLite(query)
 	var results []SearchAllResult
@@ -122,7 +123,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]Searc
 	return results, err
 }
 
-// Search all bookmarks from FTS5 table, order by rank title, section, & file name
+// searchAll: Search all bookmarks from FTS5 table, order by rank title, section, & file name
 // Return results as slice of struct SearchAllResult, later prepped for Alfred script filter
 func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 	queryString := stringForSQLite(query)
@@ -147,13 +148,18 @@ func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 	return results, err
 }
 
+// NewBookmarks: insert new bookmarks into database
 func (db *Database) NewBookmarks(file File, bookmarks []FileBookmark) ([]Bookmark, error) {
 	var destination string
+	pdf := false
+	if strings.HasSuffix(file.Path, "pdf") {
+		pdf = true
+	}
 
 	tx, err := db.sess.Begin()
 	// insert new bookmarks
 	for i := 0; i < len(bookmarks); i++ {
-		if strings.HasSuffix(file.Path, "pdf") {
+		if pdf == true {
 			destination = bookmarks[i].Destination
 		} else {
 			destination = bookmarks[i].Uri
@@ -174,6 +180,7 @@ func (db *Database) NewBookmarks(file File, bookmarks []FileBookmark) ([]Bookmar
 	return newBookmarks, err
 }
 
+// UpdateBookmarks: update bookmarks, delete old first, then call NewBookmarks
 func (db *Database) UpdateBookmarks(file File, bookmarks []FileBookmark) ([]Bookmark, error) {
 	tx, err := db.sess.Begin()
 	_, err = db.sess.DeleteFrom("bookmarks").Where("file_id = ?", file.ID).Exec()
@@ -182,7 +189,7 @@ func (db *Database) UpdateBookmarks(file File, bookmarks []FileBookmark) ([]Book
 	return newBookmarks, err
 }
 
-// Compare bookmarks from database with file
+// bookmarksEqual: compare bookmarks from database with file, used for update check
 func bookmarksEqual(bookmarks []Bookmark, newBookmarks []FileBookmark) bool {
 	var oldBookmarks []FileBookmark
 	var bookmark FileBookmark
@@ -200,7 +207,7 @@ func bookmarksEqual(bookmarks []Bookmark, newBookmarks []FileBookmark) bool {
 	}
 }
 
-// Prepare string for SQLite FTS query
+// stringForSQLite: prepare string for SQLite FTS query
 // replace '–*' with 'NOT *'
 func stringForSQLite(query string) string {
 	var queryArray []string
@@ -226,7 +233,7 @@ func stringForSQLite(query string) string {
 	return strings.TrimSpace(strings.Join(queryArray[:], " "))
 }
 
-// macOS notification using github.com/deckarep/gosx-notifier
+// notification: macOS notification using github.com/deckarep/gosx-notifier
 func notification(message string) error {
 	note := gosxnotifier.NewNotification(message)
 	note.Title = "Jnana"
@@ -238,7 +245,7 @@ func notification(message string) error {
 	return nil
 }
 
-// Test if string is included in slice
+// stringInSlice: Test if string is included in slice
 func stringInSlice(a string, list []string) bool {
 	for _, b := range list {
 		if b == a {
