@@ -27,6 +27,7 @@ usage:
     jnana bm <file>
     jnana bmf <file> <query>
     jnana epub [<query>]
+    jnana getepub
     jnana openepub <query> [<file>]
     jnana pdf <file> [<query>]
     jnana test <file>
@@ -46,6 +47,7 @@ commands:
     bmf		Bookmarks for file filtered by query
     epub	Bookmarks for EPUB in calibre
     epubf	Bookmarks for EPUB in calibre filtered by query
+    getepub     Return opened EPUB
     openepub	open calibre to bookmark
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
     lastquery	Retrieve cached last query string for script filter
@@ -67,6 +69,7 @@ var options struct {
 	Bm        bool
 	Bmf       bool
 	Epub      bool
+	Getepub   bool
 	Openepub  bool
 	Pdf       bool
 	Lastquery bool
@@ -185,6 +188,11 @@ func cacheLastQuery(queryString string) {
 	if err := cache.Store(name, data); err != nil {
 		panic(err)
 	}
+}
+
+func getCurrentEpub() {
+	file := calibreEpubFile()
+	fmt.Println(file)
 }
 
 func getLastQuery() string {
@@ -375,6 +383,9 @@ func runCommand() {
 	}
 	if options.Epub == true {
 		bookmarksForFileEpub(query)
+	}
+	if options.Getepub == true {
+		getCurrentEpub()
 	}
 	if options.Openepub == true {
 		openCalibreBookmark(query, options.File)
