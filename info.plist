@@ -38,7 +38,7 @@
 		<array>
 			<dict>
 				<key>destinationuid</key>
-				<string>237DDB28-42BE-45FC-9017-CCE481F1BDB7</string>
+				<string>E9185D30-76E3-4BF8-BDF6-15309AA72290</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -65,6 +65,19 @@
 			<dict>
 				<key>destinationuid</key>
 				<string>A2D588C0-BDD4-417C-8DA0-4F2FDAA01103</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>E9185D30-76E3-4BF8-BDF6-15309AA72290</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>237DDB28-42BE-45FC-9017-CCE481F1BDB7</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -217,33 +230,15 @@ end run</string>
 				<key>script</key>
 				<string>on run
 	set theQuery to "{query}"
-		
-	tell application "System Events"
-		set activeApp to name of first application process whose frontmost is true
-		-- log "Active app : " &amp; activeApp
-		if activeApp = "Preview" then
-			set theFile to my Preview()
-		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
-			set theFile to "epub"
-		else if activeApp = "AdobeAcrobat" then
-			set theFile to my AdobeAcrobat()
-		else if activeApp = "Skim" then
-			set theFile to my Skim()
-		else if activeApp = "PDF Expert" then
-			set theFile to my PDF_Expert()
-		else
-			display notification "Some other app!"
-			return
-		end if
-	end tell
-	
+	set theFile to (system attribute "JNANA_FILE")
+			
 	if theFile is not "epub" then
 		-- PDF
 		if length of theQuery is not 0 then
 			-- filtered bookmarks
-			set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
+			set cmd to "./jnana bmf " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
 		else
-			set cmd to "./jnana bm " &amp; (quoted form of theFile)
+			set cmd to "./jnana bm " &amp; theFile
 		end if
 	else
 		if length of theQuery is 0 then
@@ -255,26 +250,7 @@ end run</string>
 
 	set bookmarks to do shell script cmd
 	return bookmarks
-end run
-
-on Preview()
-	tell application "Preview"		return path of document 1	end tellend Preview
-
-on AdobeAcrobat()
-	tell application "Adobe Acrobat"
-		set currentFile to file alias of active doc
-	end tell
-	
-	return POSIX path of currentFile
-end AdobeAcrobat
-
-on Skim()
-	tell application "Skim"
-		set currentFile to file of document 1
-	end tell
-	
-	return quoted form of POSIX path of currentFile
-end Skim</string>
+end run</string>
 				<key>scriptargtype</key>
 				<integer>0</integer>
 				<key>scriptfile</key>
@@ -301,15 +277,50 @@ end Skim</string>
 				<key>concurrently</key>
 				<false/>
 				<key>escaping</key>
-				<integer>102</integer>
+				<integer>68</integer>
 				<key>script</key>
 				<string>on run
-	set last_query to do shell script "./jnana lastquery"
-		
-	if last_query is not equal to "None"
-		set query to last_query
-	end if
-end run</string>
+	tell application "System Events"
+		set activeApp to name of first application process whose frontmost is true
+		-- log "Active app : " &amp; activeApp
+		if activeApp = "Preview" then
+			set theFile to my Preview()
+		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
+			set theFile to do shell script "./jnana getepub"
+		else if activeApp = "AdobeAcrobat" then
+			set theFile to my AdobeAcrobat()
+		else if activeApp = "Skim" then
+			set theFile to my Skim()
+		else if activeApp = "PDF Expert" then
+			set theFile to my PDF_Expert()
+		else
+			display notification "Some other app!"
+			set theFile to "other"
+		end if
+	end tell
+
+	set bundleID to (system attribute "alfred_workflow_bundleid")
+		tell application "Alfred 3"
+    			set configuration "JNANA_FILE" to value quoted form of theFile in workflow bundleID with exportable
+	end tell
+end run
+
+on Preview()
+	tell application "Preview"		return path of document 1	end tellend Preview
+
+on AdobeAcrobat()
+	tell application "Adobe Acrobat"
+		set currentFile to file alias of active doc
+	end tell
+	return POSIX path of currentFile
+end AdobeAcrobat
+
+on Skim()
+	tell application "Skim"
+		set currentFile to file of document 1
+	end tell
+	return POSIX path of currentFile
+end Skim</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -320,22 +331,9 @@ end run</string>
 			<key>type</key>
 			<string>alfred.workflow.action.script</string>
 			<key>uid</key>
-			<string>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</string>
+			<string>E9185D30-76E3-4BF8-BDF6-15309AA72290</string>
 			<key>version</key>
 			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>type</key>
-				<integer>0</integer>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.utility.transform</string>
-			<key>uid</key>
-			<string>B54D2E3B-BB66-40F0-8E97-C3B4008254B2</string>
-			<key>version</key>
-			<integer>1</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -533,6 +531,35 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string>on run
+	set last_query to do shell script "./jnana lastquery"
+		
+	if last_query is not equal to "None"
+		set query to last_query
+	end if
+end run</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>action</key>
 				<integer>0</integer>
 				<key>argument</key>
@@ -567,6 +594,19 @@ end run</string>
 			<string>F1593634-29B2-49EE-A175-6702794F2F0B</string>
 			<key>version</key>
 			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>type</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.transform</string>
+			<key>uid</key>
+			<string>B54D2E3B-BB66-40F0-8E97-C3B4008254B2</string>
+			<key>version</key>
+			<integer>1</integer>
 		</dict>
 	</array>
 	<key>readme</key>
@@ -604,30 +644,30 @@ Build from source : https://gist.github.com/deanishe/b16f018119ef3fe951af</strin
 		<key>237DDB28-42BE-45FC-9017-CCE481F1BDB7</key>
 		<dict>
 			<key>xpos</key>
-			<integer>250</integer>
+			<integer>350</integer>
 			<key>ypos</key>
 			<integer>30</integer>
 		</dict>
 		<key>323B4651-960B-4E68-81D9-678692A70188</key>
 		<dict>
 			<key>xpos</key>
-			<integer>480</integer>
+			<integer>600</integer>
 			<key>ypos</key>
-			<integer>290</integer>
+			<integer>180</integer>
 		</dict>
 		<key>4A2C10C6-084C-4101-A584-6C440EA5FC98</key>
 		<dict>
 			<key>xpos</key>
-			<integer>480</integer>
+			<integer>520</integer>
 			<key>ypos</key>
 			<integer>30</integer>
 		</dict>
 		<key>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</key>
 		<dict>
 			<key>xpos</key>
-			<integer>140</integer>
+			<integer>190</integer>
 			<key>ypos</key>
-			<integer>170</integer>
+			<integer>180</integer>
 		</dict>
 		<key>9BC020A0-E6C1-43EA-97D2-53583BC37A97</key>
 		<dict>
@@ -639,23 +679,30 @@ Build from source : https://gist.github.com/deanishe/b16f018119ef3fe951af</strin
 		<key>A2D588C0-BDD4-417C-8DA0-4F2FDAA01103</key>
 		<dict>
 			<key>xpos</key>
-			<integer>250</integer>
+			<integer>430</integer>
 			<key>ypos</key>
-			<integer>290</integer>
+			<integer>180</integer>
 		</dict>
 		<key>B54D2E3B-BB66-40F0-8E97-C3B4008254B2</key>
 		<dict>
 			<key>xpos</key>
-			<integer>290</integer>
+			<integer>350</integer>
 			<key>ypos</key>
-			<integer>200</integer>
+			<integer>210</integer>
+		</dict>
+		<key>E9185D30-76E3-4BF8-BDF6-15309AA72290</key>
+		<dict>
+			<key>xpos</key>
+			<integer>190</integer>
+			<key>ypos</key>
+			<integer>30</integer>
 		</dict>
 		<key>F1593634-29B2-49EE-A175-6702794F2F0B</key>
 		<dict>
 			<key>xpos</key>
 			<integer>30</integer>
 			<key>ypos</key>
-			<integer>290</integer>
+			<integer>180</integer>
 		</dict>
 	</dict>
 	<key>version</key>
