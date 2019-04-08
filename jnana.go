@@ -56,8 +56,7 @@ commands:
 
 	wf *aw.Workflow
 
-	dataDir        = "Library/Application Support/Alfred 3/Workflow Data/io.github.gennaios.gnosis"
-	dbFileName     = "gnosis.db"
+	dbFileName     = "jnana.db"
 	coversCacheDir string // directory generated icons are stored in
 )
 
@@ -85,8 +84,7 @@ func init() {
 	// Create a new Workflow using default settings.
 	wf = aw.New(update.GitHub(repo), aw.HelpURL(repo+"/issues"))
 
-	usr, _ := user.Current()
-	coversCacheDir = filepath.Join(usr.HomeDir, dataDir, "covers")
+	coversCacheDir = filepath.Join(wf.DataDir(), "covers")
 }
 
 // Bookmarks all for file, from database or imported, return results
@@ -95,8 +93,7 @@ func bookmarksForFile(file string) {
 		wf.FatalError(err)
 	}
 
-	usr, _ := user.Current()
-	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := Database{}
 	db.Init(dbFile)
 
@@ -119,8 +116,7 @@ func bookmarksForFileEpub(query string) {
 
 // Bookmarks filtered for file, from database or imported, return results
 func bookmarksForFileFiltered(file string, query string) {
-	usr, _ := user.Current()
-	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 
 	db := Database{}
 	db.Init(dbFile)
@@ -247,8 +243,7 @@ func printLastQuery() {
 
 // Query database for all bookmarks
 func searchAllBookmarks(query string) {
-	usr, _ := user.Current()
-	dbFile := filepath.Join(usr.HomeDir, dataDir, dbFileName)
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := Database{}
 	db.Init(dbFile)
 
