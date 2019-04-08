@@ -366,8 +366,8 @@ end Skim</string>
 	if fileAlias ends with ".pdf" then
 		tell application "Finder" to open file fileAlias
 	else if fileAlias ends with ".epub" then
-		set theFile to (quoted form of theFile)
-		set tocTitle to " " &amp; thePage
+		set theFile to quoted form of theFile
+		set tocTitle to quoted form of thePage
 		set cmd to "./jnana openepub " &amp; tocTitle &amp; " " &amp; theFile
 		do shell script cmd
 		return
@@ -705,6 +705,13 @@ Build from source : https://gist.github.com/deanishe/b16f018119ef3fe951af</strin
 			<integer>180</integer>
 		</dict>
 	</dict>
+	<key>variables</key>
+	<dict>
+		<key>JNANA_FILE</key>
+		<string>'/Users/xxxxxxxx/Dropbox/Lire/ePub/History of Indian Philosophy - Purushottama Bilimoria (Routledge History of World Philosophies).epub'</string>
+	</dict>
+	<key>variablesdontexport</key>
+	<array/>
 	<key>version</key>
 	<string>0.1</string>
 	<key>webaddress</key>
