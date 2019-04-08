@@ -219,17 +219,25 @@ func openCalibreBookmark(query string, file string) {
 	if file == "" {
 		file = calibreEpubFile()
 	}
+	file = "\"" + file + "\"" // for shell script
 	// TODO: "--continue" needed?
 	cmdArgs := []string{"--open-at=toc:\"" + query + "\"", file}
+	openCalibreBookmarkCommand(command, cmdArgs)
+	//_ = exec.Command(command, cmdArgs...).Start()
+}
 
-	cmd := exec.Command(command, cmdArgs...)
-	for _, v := range cmd.Args {
-		fmt.Println(v)
-	}
-	err := cmd.Start()
-	if err != nil {
-		fmt.Println("error:", err)
-	}
+// open calibre to bookmark
+// workaround command exec issues by creating shell script
+func openCalibreBookmarkCommand(command string, cmdArgs []string) {
+	//os.RemoveAll(output_path)
+	temp := "/tmp"
+	file, _ := os.Create(filepath.Join(temp, "alfred-jnana.sh"))
+	defer file.Close()
+	_, _ = file.WriteString("#!/bin/sh\n")
+	_, _ = file.WriteString(command + " " + strings.Join(cmdArgs, " "))
+	_, _ = file.WriteString("\n")
+	_ = os.Chdir(temp)
+	_ = exec.Command("sh", "alfred-jnana.sh").Start()
 }
 
 func printLastQuery() {
@@ -255,8 +263,10 @@ func searchAllBookmarks(query string) {
 
 func returnBookmarksForFile(file string, bookmarks []Bookmark) {
 	var icon *aw.Icon
+	var destination string
 	var subtitle string
 	pdf := false
+
 	if strings.HasSuffix(file, "pdf") {
 		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
 		pdf = true
@@ -266,12 +276,14 @@ func returnBookmarksForFile(file string, bookmarks []Bookmark) {
 
 	for _, bookmark := range bookmarks {
 		if pdf == true {
+			destination = bookmark.Destination
 			if bookmark.Section.String != "" {
 				subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.Section.String)
 			} else {
 				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
 			}
 		} else {
+			destination = bookmark.Title
 			subtitle = bookmark.Section.String
 		}
 		wf.NewItem(bookmark.Title).
@@ -279,15 +291,17 @@ func returnBookmarksForFile(file string, bookmarks []Bookmark) {
 			UID(fmt.Sprintf("%d", bookmark.ID)).
 			Valid(true).
 			Icon(icon).
-			Arg(bookmark.Destination)
+			Arg(destination)
 	}
 	wf.SendFeedback()
 }
 
 func returnBookmarksForFileFiltered(file string, bookmarks []SearchAllResult) {
 	var icon *aw.Icon
+	var destination string
 	var subtitle string
 	pdf := false
+
 	if strings.HasSuffix(file, "pdf") {
 		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
 		pdf = true
@@ -297,12 +311,14 @@ func returnBookmarksForFileFiltered(file string, bookmarks []SearchAllResult) {
 
 	for _, bookmark := range bookmarks {
 		if pdf == true {
+			destination = bookmark.Destination
 			if bookmark.Section.String != "" {
 				subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.Section.String)
 			} else {
 				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
 			}
 		} else {
+			destination = bookmark.Title
 			subtitle = bookmark.Section.String
 		}
 		wf.NewItem(bookmark.Title).
@@ -310,7 +326,7 @@ func returnBookmarksForFileFiltered(file string, bookmarks []SearchAllResult) {
 			UID(fmt.Sprintf("%d", bookmark.ID)).
 			Valid(true).
 			Icon(icon).
-			Arg(bookmark.Destination)
+			Arg(destination)
 	}
 	wf.SendFeedback()
 }
@@ -333,7 +349,7 @@ func returnSearchAllResults(bookmarks []SearchAllResult) {
 			arg = fmt.Sprintf("%s/Page:%s", bookmark.Path, bookmark.Destination)
 		} else {
 			subtitle = bookmark.FileName
-			arg = fmt.Sprintf("%s/Page:\"%s\"", bookmark.Path, bookmark.Title)
+			arg = fmt.Sprintf("%s/Page:%s", bookmark.Path, bookmark.Title)
 		}
 		wf.NewItem(title).
 			Subtitle(subtitle).
