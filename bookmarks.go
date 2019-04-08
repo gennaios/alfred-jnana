@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/deckarep/gosx-notifier"
 	"github.com/gocraft/dbr"
 	"github.com/google/go-cmp/cmp"
 	_ "github.com/mattn/go-sqlite3"
-	"strconv"
-	"strings"
 )
 
 type Database struct {
@@ -33,8 +35,9 @@ type SearchAllResult struct {
 	FileName    string         `db:"file_name"`
 }
 
-func (db *Database) Init(filepath string) {
-	conn, err := dbr.Open("sqlite3", filepath, nil)
+func (db *Database) Init(dbFilePath string) {
+	file := fmt.Sprintf("file:%s%s", dbFilePath, "?_ignore_check_constraints=0&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0")
+	conn, err := dbr.Open("sqlite3", file, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -43,10 +46,11 @@ func (db *Database) Init(filepath string) {
 	}
 	db.conn = conn
 
-	_, _ = conn.Exec("PRAGMA ignore_check_constraints = 0")
-	_, _ = conn.Exec("PRAGMA journal_mode = WAL")
-	_, _ = conn.Exec("PRAGMA locking_mode = EXCLUSIVE")
-	_, _ = conn.Exec("PRAGMA synchronous = 0")
+	// PRAGMAs now set in connection string
+	//_, _ = conn.Exec("PRAGMA ignore_check_constraints = 0")
+	//_, _ = conn.Exec("PRAGMA journal_mode = WAL")
+	//_, _ = conn.Exec("PRAGMA locking_mode = EXCLUSIVE")
+	//_, _ = conn.Exec("PRAGMA synchronous = 0")
 	_, _ = conn.Exec("PRAGMA temp_store = 2") // MEMORY
 
 	_, _ = conn.Exec("PRAGMA cache_size = -31250")
@@ -71,7 +75,6 @@ func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
 
 	// file created or changed / or no bookmarks found
 	if changed == true || len(bookmarks) == 0 {
-		//if strings.HasSuffix(file, ".pdf") {
 		var newBookmarks []FileBookmark
 
 		newBookmarks, _ = FileBookmarks(file) // go-fitz
@@ -87,7 +90,6 @@ func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
 				_ = notification("Bookmarks updated.")
 			}
 		}
-		//}
 	}
 	return bookmarks, err
 }
@@ -217,12 +219,14 @@ func stringForSQLite(query string) string {
 			// quote terms containing dot
 			queryArray = append(queryArray, "\""+term+"*"+"\"")
 		} else {
+			// make all terms wildcard
 			queryArray = append(queryArray, term+"*")
 		}
 	}
 	return strings.TrimSpace(strings.Join(queryArray[:], " "))
 }
 
+// macOS notification using github.com/deckarep/gosx-notifier
 func notification(message string) error {
 	note := gosxnotifier.NewNotification(message)
 	note.Title = "Jnana"
