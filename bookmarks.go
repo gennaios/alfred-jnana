@@ -92,6 +92,7 @@ func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
 			}
 		}
 	}
+	err = db.conn.Close()
 	return bookmarks, err
 }
 
@@ -120,6 +121,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]Searc
 	//	Load(&results)
 
 	_, err := db.sess.SelectBySql("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = " + strconv.FormatInt(fileRecord.ID, 10) + " and bookmarksindex.rowid = bookmarks.id and bookmarksindex match '{title section} : " + queryString + "' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';").Load(&results)
+	err = db.conn.Close()
 	return results, err
 }
 
@@ -145,6 +147,7 @@ func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 		Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
 		Where("bookmarksindex MATCH ? AND rank MATCH 'bm25(5.0, 2.0, 1.0)'", queryString).
 		OrderBy("rank").Limit(100).Load(&results)
+	err = db.conn.Close()
 	return results, err
 }
 
