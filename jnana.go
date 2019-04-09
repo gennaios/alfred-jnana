@@ -147,20 +147,15 @@ func calibreEpubFile() string {
 	return jsonData["viewer_open_history"][0]
 }
 
+// iconForFileID: retrieve cover image from covers folder, or return generic icon
 func iconForFileID(fileId string, filePath string) *aw.Icon {
-	iconFile := filepath.Join(coversCacheDir, fileId+".jp2")
+	iconFile := filepath.Join(coversCacheDir, fileId+".png")
 
 	var icon *aw.Icon
-
 	if _, err := os.Stat(iconFile); err == nil {
 		icon = &aw.Icon{
 			Value: iconFile,
 			Type:  aw.IconTypeImage,
-		}
-	} else if os.IsNotExist(err) {
-		icon = &aw.Icon{
-			Value: filePath,
-			Type:  aw.IconTypeFileIcon,
 		}
 	} else {
 		icon = &aw.Icon{
