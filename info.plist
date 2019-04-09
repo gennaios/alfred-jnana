@@ -302,9 +302,8 @@ end run</string>
 	end tell
 
 	-- save currently opened file as variable
-	set bundleID to (system attribute "alfred_workflow_bundleid")
 	tell application "Alfred 3"
-    		--	set configuration "JNANA_FILE" to value quoted form of theFile in workflow bundleID
+		set configuration "JNANA_FILE" to value quoted form of theFile in workflow system attribute "alfred_workflow_bundleid"
 	end tell
 end run
 
@@ -670,6 +669,15 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<integer>180</integer>
 		</dict>
 	</dict>
+	<key>variables</key>
+	<dict>
+		<key>JNANA_FILE</key>
+		<string>'/Users/xxxxxxxx/Livres/Inde/Hinduism and Law_ An Introduction - Timothy Lubin, Donald R. Davis Jr. &amp; Jayanth K. Krishnan.pdf'</string>
+	</dict>
+	<key>variablesdontexport</key>
+	<array>
+		<string>JNANA_FILE</string>
+	</array>
 	<key>version</key>
 	<string>0.1</string>
 	<key>webaddress</key>
