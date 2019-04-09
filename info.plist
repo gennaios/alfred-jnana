@@ -8,8 +8,6 @@
 	<string>Productivity</string>
 	<key>connections</key>
 	<dict>
-		<key>100D0E1A-DBD3-4359-82B2-86F68DA5B25E</key>
-		<array/>
 		<key>237DDB28-42BE-45FC-9017-CCE481F1BDB7</key>
 		<array>
 			<dict>
@@ -170,7 +168,7 @@
 			delay 0.25
 			keystroke return
 			keystroke return
-		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
+		else if activeApp = "ebook-viewer" then
 			do shell script "./jnana openepub " &amp; (quoted form of theQuery)
 		else if activeApp = "Skim" then
 			tell application "Skim"
@@ -180,7 +178,7 @@
 		else if activeApp = "AdobeAcrobat" then
 			tell application "Adobe Acrobat"
 				set thePage to theQuery
-				--tell PDF Window 1 to goto page (thePage as integer)
+				-- tell PDF Window 1 to goto page (thePage as integer)
 				tell PDF Window of active doc to goto page (thePage as integer)
 			end tell
 		else
@@ -188,6 +186,9 @@
 		end if
 	end tell
 
+	-- remove variable for currently opened file
+	set bundleID to (system attribute "alfred_workflow_bundleid")
+	tell application "Alfred 3" to remove configuration "JNANA_FILE" in workflow bundleID
 end run</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
@@ -275,24 +276,6 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>argument</key>
-				<string>{query}</string>
-				<key>variables</key>
-				<dict>
-					<key>JNANA_FILE</key>
-					<string>{query}</string>
-				</dict>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.utility.argument</string>
-			<key>uid</key>
-			<string>100D0E1A-DBD3-4359-82B2-86F68DA5B25E</string>
-			<key>version</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
 				<key>concurrently</key>
 				<false/>
 				<key>escaping</key>
@@ -304,7 +287,7 @@ end run</string>
 		-- log "Active app : " &amp; activeApp
 		if activeApp = "Preview" then
 			set theFile to my Preview()
-		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
+		else if activeApp = "ebook-viewer" then
 			set theFile to do shell script "./jnana getepub"
 		else if activeApp = "AdobeAcrobat" then
 			set theFile to my AdobeAcrobat()
@@ -318,10 +301,10 @@ end run</string>
 		end if
 	end tell
 
-	-- return theFile
+	-- save currently opened file as variable
 	set bundleID to (system attribute "alfred_workflow_bundleid")
-		tell application "Alfred 3"
-    			set configuration "JNANA_FILE" to value quoted form of theFile in workflow bundleID with exportable
+	tell application "Alfred 3"
+    		--	set configuration "JNANA_FILE" to value quoted form of theFile in workflow bundleID
 	end tell
 end run
 
@@ -610,36 +593,19 @@ Alfred 3.
 
 ## Usage
 
-### Config
-
-Workflow environment variable :
-
-* JNANA_DB=(default empty or sqlite), or optional 'postgresql'
-* JNANA_SPHINX=True - use Sphinx or Manticore for more performant full-text search
-
 ### Commands
 
-.jnathis - search and go to bookmarks for currently opened ePub or PDF
-.jna - search and go to any bookmark for file type: PDF when in PDF viewer, or ePub.
+.jna - search and go to bookmarks for currently opened ePub or PDF.
 .jnaall - bookmarks of any type
-.jnaedit - edit ePub (in BBEdit, later configurable)
 
 ### Command-line
 
 
 ## Git
 
-Repo :  https://github.com/gennaios/alfred-jnana
-Build from source : https://gist.github.com/deanishe/b16f018119ef3fe951af</string>
+Repo :  https://github.com/gennaios/alfred-jnana</string>
 	<key>uidata</key>
 	<dict>
-		<key>100D0E1A-DBD3-4359-82B2-86F68DA5B25E</key>
-		<dict>
-			<key>xpos</key>
-			<integer>360</integer>
-			<key>ypos</key>
-			<integer>30</integer>
-		</dict>
 		<key>237DDB28-42BE-45FC-9017-CCE481F1BDB7</key>
 		<dict>
 			<key>xpos</key>
