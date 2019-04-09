@@ -7,7 +7,6 @@ import (
 
 	"github.com/deckarep/gosx-notifier"
 	"github.com/gocraft/dbr"
-	"github.com/google/go-cmp/cmp"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -203,11 +202,27 @@ func bookmarksEqual(bookmarks []Bookmark, newBookmarks []FileBookmark) bool {
 		bookmark.Destination = bookmarks[i].Destination
 		oldBookmarks = append(oldBookmarks, bookmark)
 	}
-	if cmp.Equal(oldBookmarks, newBookmarks) {
-		return true
-	} else {
+
+	equal := true
+	if len(oldBookmarks) != len(newBookmarks) {
 		return false
+	} else {
+		for i := 0; i < len(oldBookmarks); i++ {
+			if oldBookmarks[i].Title != newBookmarks[i].Title {
+				equal = false
+				break
+			}
+			if oldBookmarks[i].Section != newBookmarks[i].Section {
+				equal = false
+				break
+			}
+			if oldBookmarks[i].Destination != newBookmarks[i].Destination {
+				equal = false
+				break
+			}
+		}
 	}
+	return equal
 }
 
 // stringForSQLite: prepare string for SQLite FTS query
