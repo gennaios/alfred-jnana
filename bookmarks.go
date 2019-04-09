@@ -190,36 +190,29 @@ func (db *Database) UpdateBookmarks(file File, bookmarks []FileBookmark) ([]Book
 
 // bookmarksEqual: compare bookmarks from database with file, used for update check
 func bookmarksEqual(bookmarks []Bookmark, newBookmarks []FileBookmark) bool {
-	var oldBookmarks []FileBookmark
-	var bookmark FileBookmark
-
-	for i := 0; i < len(bookmarks); i++ {
-		bookmark.Title = bookmarks[i].Title
-		bookmark.Section = bookmarks[i].Section.String
-		bookmark.Destination = bookmarks[i].Destination
-		oldBookmarks = append(oldBookmarks, bookmark)
-	}
-
-	equal := true
-	if len(oldBookmarks) != len(newBookmarks) {
+	//equal := true
+	if len(newBookmarks) != len(bookmarks) {
 		return false
 	} else {
-		for i := 0; i < len(oldBookmarks); i++ {
-			if oldBookmarks[i].Title != newBookmarks[i].Title {
-				equal = false
-				break
+		for i := 0; i < len(newBookmarks); i++ {
+			if newBookmarks[i].Title != bookmarks[i].Title {
+				//equal = false
+				//break
+				return false
 			}
-			if oldBookmarks[i].Section != newBookmarks[i].Section {
-				equal = false
-				break
+			if newBookmarks[i].Section != bookmarks[i].Section.String {
+				//equal = false
+				//break
+				return false
 			}
-			if oldBookmarks[i].Destination != newBookmarks[i].Destination {
-				equal = false
-				break
+			if newBookmarks[i].Destination != bookmarks[i].Destination {
+				//equal = false
+				//break
+				return false
 			}
 		}
 	}
-	return equal
+	return true
 }
 
 // stringForSQLite: prepare string for SQLite FTS query
@@ -237,9 +230,9 @@ func stringForSQLite(query string) string {
 		} else if stringInSlice(term, queryOperators) {
 			// auto capitalize operators 'and', 'or', 'not'
 			queryArray = append(queryArray, strings.ToUpper(term))
-		} else if strings.Contains(term, ".") {
+		} else if strings.Contains(term, ".") || strings.Contains(term, "-") {
 			// quote terms containing dot
-			queryArray = append(queryArray, "\""+term+"*"+"\"")
+			queryArray = append(queryArray, "\""+term+"*\"")
 		} else {
 			// make all terms wildcard
 			queryArray = append(queryArray, term+"*")
