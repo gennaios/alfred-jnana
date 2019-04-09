@@ -33,7 +33,10 @@ type SearchAllResult struct {
 	FileName    string         `db:"file_name"`
 }
 
+// Init: open SQLite database connection using dbr, create new session
 func (db *Database) Init(dbFilePath string) {
+	// open with PRAGMAs:
+	// ignore_check_constraints=0, journal_mode=WAL, locking_mode=EXCLUSIVE, synchronous=0
 	file := fmt.Sprintf("file:%s%s", dbFilePath, "?_ignore_check_constraints=0&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0")
 	conn, err := dbr.Open("sqlite3", file, nil)
 	// TODO: return error
@@ -45,15 +48,9 @@ func (db *Database) Init(dbFilePath string) {
 	}
 	db.conn = conn
 
-	// PRAGMAs now set in connection string
-	//_, _ = conn.Exec("PRAGMA ignore_check_constraints = 0")
-	//_, _ = conn.Exec("PRAGMA journal_mode = WAL")
-	//_, _ = conn.Exec("PRAGMA locking_mode = EXCLUSIVE")
-	//_, _ = conn.Exec("PRAGMA synchronous = 0")
 	_, _ = conn.Exec("PRAGMA temp_store = 2") // MEMORY
-
 	_, _ = conn.Exec("PRAGMA cache_size = -31250")
-	//_, _ = conn.Exec("PRAGMA page_size = 8192") // default 4096, match APFS block size?
+	//_, _ = conn.Exec("PRAGMA page_size = 8192") // default 4096, match APFS 4096 block size?
 
 	sess := conn.NewSession(nil)
 	db.sess = sess
