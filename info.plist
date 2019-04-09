@@ -8,6 +8,8 @@
 	<string>Productivity</string>
 	<key>connections</key>
 	<dict>
+		<key>100D0E1A-DBD3-4359-82B2-86F68DA5B25E</key>
+		<array/>
 		<key>237DDB28-42BE-45FC-9017-CCE481F1BDB7</key>
 		<array>
 			<dict>
@@ -156,8 +158,8 @@
 				<key>escaping</key>
 				<integer>68</integer>
 				<key>script</key>
-				<string>on run
-  set theQuery to "{query}"
+				<string>on run argv
+	set theQuery to item 1 of argv
 
 	tell application "System Events"
 		set activeApp to name of first application process whose frontmost is true
@@ -169,8 +171,7 @@
 			keystroke return
 			keystroke return
 		else if activeApp = "ebook-viewer" or activeApp = "calibre-parallel" then
-			set cmd to "./jnana openepub " &amp; (quoted form of theQuery)
-			do shell script cmd
+			do shell script "./jnana openepub " &amp; (quoted form of theQuery)
 		else if activeApp = "Skim" then
 			tell application "Skim"
 				set thePage to theQuery
@@ -189,7 +190,7 @@
 
 end run</string>
 				<key>scriptargtype</key>
-				<integer>0</integer>
+				<integer>1</integer>
 				<key>scriptfile</key>
 				<string></string>
 				<key>type</key>
@@ -228,8 +229,8 @@ end run</string>
 				<key>runningsubtext</key>
 				<string>Getting bookmarks</string>
 				<key>script</key>
-				<string>on run
-	set theQuery to "{query}"
+				<string>on run argv
+	set theQuery to item 1 of argv
 	set theFile to (system attribute "JNANA_FILE")
 			
 	if theFile is not "epub" then
@@ -238,6 +239,7 @@ end run</string>
 			-- filtered bookmarks
 			set cmd to "./jnana bmf " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
 		else
+			-- all bookmarks
 			set cmd to "./jnana bm " &amp; theFile
 		end if
 	else
@@ -248,11 +250,10 @@ end run</string>
 		end if
 	end if
 
-	set bookmarks to do shell script cmd
-	return bookmarks
+	return do shell script cmd
 end run</string>
 				<key>scriptargtype</key>
-				<integer>0</integer>
+				<integer>1</integer>
 				<key>scriptfile</key>
 				<string></string>
 				<key>subtext</key>
@@ -274,12 +275,30 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>argument</key>
+				<string>{query}</string>
+				<key>variables</key>
+				<dict>
+					<key>JNANA_FILE</key>
+					<string>{query}</string>
+				</dict>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.argument</string>
+			<key>uid</key>
+			<string>100D0E1A-DBD3-4359-82B2-86F68DA5B25E</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>concurrently</key>
 				<false/>
 				<key>escaping</key>
 				<integer>68</integer>
 				<key>script</key>
-				<string>on run
+				<string>on run argv
 	tell application "System Events"
 		set activeApp to name of first application process whose frontmost is true
 		-- log "Active app : " &amp; activeApp
@@ -299,6 +318,7 @@ end run</string>
 		end if
 	end tell
 
+	-- return theFile
 	set bundleID to (system attribute "alfred_workflow_bundleid")
 		tell application "Alfred 3"
     			set configuration "JNANA_FILE" to value quoted form of theFile in workflow bundleID with exportable
@@ -343,33 +363,28 @@ end Skim</string>
 				<key>escaping</key>
 				<integer>68</integer>
 				<key>script</key>
-				<string>on run
-	set query to "{query}"
-	
+				<string>on run argv
+	set theQuery to item 1 of argv
+		
+	--
+	-- Split file and page/title destination
+	--
+
 	set AppleScript's text item delimiters to " "
-	
-	--
-	-- Split command
-	--
-	set results to my explode("/Page:", query)
-	--	try
+	set results to my explode("/Page:", theQuery)
 	set theFile to item 1 of results as string
 	set thePage to item 2 of results as string
-	-- display notification theFile &amp; " - " &amp; thePage
 	set fileAlias to POSIX file theFile as Unicode text
-	-- display notification fileAlias as string
-	
-	
+		
 	--
 	-- vary actions by active app
 	--
+
 	if fileAlias ends with ".pdf" then
 		tell application "Finder" to open file fileAlias
 	else if fileAlias ends with ".epub" then
-		set theFile to quoted form of theFile
 		set tocTitle to quoted form of thePage
-		set cmd to "./jnana openepub " &amp; tocTitle &amp; " " &amp; theFile
-		do shell script cmd
+		do shell script "./jnana openepub " &amp; tocTitle &amp; " " &amp; quoted form of theFile
 		return
 	end if
 
@@ -406,16 +421,14 @@ on open_acrobat(theFile, thePage)
 	
 	tell application "Adobe Acrobat"
 		set documentName to ""
-		--
+
 		-- Switch to document and page if open
 		repeat with theDoc in documents
 			set filePath to file alias of theDoc
 			set posixPath to POSIX path of theFile
-			-- display notification filePath as string
 			
 			if (filePath as string) is equal to (theFile as string) then
 				set documentName to name of theDoc
-				-- display notification "File is open " &amp; name of theDoc
 				try
 					bring to front document documentName
 				end try
@@ -431,27 +444,6 @@ on open_acrobat(theFile, thePage)
 	end tell
 end open_acrobat
 
-on FileExists(theFile)
-	tell application "Finder"
-		if exists POSIX file theFile then
-			return true
-		else
-			return false
-		end if
-	end tell
-end FileExists
-
-on replace_chars(this_text, search_string, replacement_string)
-	if this_text contains the search_string then
-		set AppleScript's text item delimiters to the search_string
-		set the item_list to every text item of this_text
-		set AppleScript's text item delimiters to the replacement_string
-		set this_text to the item_list as string
-		set AppleScript's text item delimiters to ""
-	end if
-	return this_text
-end replace_chars
-
 on explode(delimiter, input)
 	local delimiter, input, ASTID
 	set ASTID to AppleScript's text item delimiters
@@ -466,7 +458,7 @@ on explode(delimiter, input)
 	end try
 end explode</string>
 				<key>scriptargtype</key>
-				<integer>0</integer>
+				<integer>1</integer>
 				<key>scriptfile</key>
 				<string></string>
 				<key>type</key>
@@ -505,11 +497,11 @@ end explode</string>
 				<key>runningsubtext</key>
 				<string>Getting bookmarks...</string>
 				<key>script</key>
-				<string>on run
-	return do shell script "./jnana all " &amp; quoted form of "{query}"
+				<string>on run argv
+	return do shell script "./jnana all " &amp; quoted form of item 1 of argv
 end run</string>
 				<key>scriptargtype</key>
-				<integer>0</integer>
+				<integer>1</integer>
 				<key>scriptfile</key>
 				<string></string>
 				<key>subtext</key>
@@ -536,7 +528,7 @@ end run</string>
 				<key>escaping</key>
 				<integer>102</integer>
 				<key>script</key>
-				<string>on run
+				<string>on run argv
 	set last_query to do shell script "./jnana lastquery"
 		
 	if last_query is not equal to "None"
@@ -641,10 +633,17 @@ Repo :  https://github.com/gennaios/alfred-jnana
 Build from source : https://gist.github.com/deanishe/b16f018119ef3fe951af</string>
 	<key>uidata</key>
 	<dict>
+		<key>100D0E1A-DBD3-4359-82B2-86F68DA5B25E</key>
+		<dict>
+			<key>xpos</key>
+			<integer>360</integer>
+			<key>ypos</key>
+			<integer>30</integer>
+		</dict>
 		<key>237DDB28-42BE-45FC-9017-CCE481F1BDB7</key>
 		<dict>
 			<key>xpos</key>
-			<integer>350</integer>
+			<integer>430</integer>
 			<key>ypos</key>
 			<integer>30</integer>
 		</dict>
@@ -658,7 +657,7 @@ Build from source : https://gist.github.com/deanishe/b16f018119ef3fe951af</strin
 		<key>4A2C10C6-084C-4101-A584-6C440EA5FC98</key>
 		<dict>
 			<key>xpos</key>
-			<integer>520</integer>
+			<integer>600</integer>
 			<key>ypos</key>
 			<integer>30</integer>
 		</dict>
@@ -705,13 +704,6 @@ Build from source : https://gist.github.com/deanishe/b16f018119ef3fe951af</strin
 			<integer>180</integer>
 		</dict>
 	</dict>
-	<key>variables</key>
-	<dict>
-		<key>JNANA_FILE</key>
-		<string>'/Users/xxxxxxxx/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/Inde/History of Indian Philosophy - Purushottama Bilimoria (Routledge History of World Philosophies).pdf'</string>
-	</dict>
-	<key>variablesdontexport</key>
-	<array/>
 	<key>version</key>
 	<string>0.1</string>
 	<key>webaddress</key>
