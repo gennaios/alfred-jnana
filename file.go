@@ -25,7 +25,6 @@ type File struct {
 	FileHash      string         `db:"hash"`
 }
 
-
 func (db *Database) GetFile(book string) (File, bool, error) {
 	var file File
 	var err error
@@ -140,6 +139,7 @@ func (db *Database) NewFile(book string) (File, error) {
 	return file, err
 }
 
+// UpdateFile: update file on change of path, file name, or date modified
 func (db *Database) UpdateFile(file File) error {
 	tx, err := db.sess.Begin()
 	_, err = db.sess.Update("files").
@@ -159,14 +159,13 @@ func (db *Database) UpdateFile(file File) error {
 	return err
 }
 
+// fileHash: create sha256 file hash for later comparison
 func fileHash(file string) (string, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
-
-	// sha256 hash of open file
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
 		return "", err
