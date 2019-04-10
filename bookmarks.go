@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -37,8 +36,8 @@ type SearchAllResult struct {
 func (db *Database) Init(dbFilePath string) {
 	// open with PRAGMAs:
 	// ignore_check_constraints=0, journal_mode=WAL, locking_mode=EXCLUSIVE, synchronous=0
-	file := fmt.Sprintf("file:%s%s", dbFilePath, "?_ignore_check_constraints=0&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0")
-	conn, err := dbr.Open("sqlite3", file, nil)
+	//file := fmt.Sprintf("file:%s%s", dbFilePath, "?&_synchronous=0")
+	conn, err := dbr.Open("sqlite3", dbFilePath, nil)
 	// TODO: return error
 	if err != nil {
 		panic(err)
