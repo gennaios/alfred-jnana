@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -35,10 +34,8 @@ type SearchAllResult struct {
 
 // Init: open SQLite database connection using dbr, create new session
 func (db *Database) Init(dbFilePath string) {
-	// open with PRAGMAs:
-	// ignore_check_constraints=0, journal_mode=WAL, locking_mode=EXCLUSIVE, synchronous=0
-	file := fmt.Sprintf("file:%s%s", dbFilePath, "?_ignore_check_constraints=0&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0")
-	conn, err := dbr.Open("sqlite3", file, nil)
+	// PRAGMAs set with compile-time options
+	conn, err := dbr.Open("sqlite3", dbFilePath, nil)
 	// TODO: return error
 	if err != nil {
 		panic(err)
@@ -48,7 +45,7 @@ func (db *Database) Init(dbFilePath string) {
 	}
 	db.conn = conn
 
-	_, _ = conn.Exec("PRAGMA temp_store = 2") // MEMORY
+	//_, _ = conn.Exec("PRAGMA temp_store = 2") // MEMORY
 	_, _ = conn.Exec("PRAGMA cache_size = -31250")
 	//_, _ = conn.Exec("PRAGMA page_size = 8192") // default 4096, match APFS 4096 block size?
 
