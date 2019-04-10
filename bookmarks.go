@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -34,8 +35,11 @@ type SearchAllResult struct {
 
 // Init: open SQLite database connection using dbr, create new session
 func (db *Database) Init(dbFilePath string) {
-	// PRAGMAs set with compile-time options
-	conn, err := dbr.Open("sqlite3", dbFilePath, nil)
+	// open with PRAGMAs:
+	// journal_mode=WAL, locking_mode=EXCLUSIVE, synchronous=0
+	file := fmt.Sprintf("file:%s%s", dbFilePath, "?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0")
+	conn, err := dbr.Open("sqlite3", file, nil)
+
 	// TODO: return error
 	if err != nil {
 		panic(err)
@@ -43,10 +47,12 @@ func (db *Database) Init(dbFilePath string) {
 	if conn == nil {
 		panic("db nil")
 	}
+
 	db.conn = conn
 
-	//_, _ = conn.Exec("PRAGMA temp_store = 2") // MEMORY
-	_, _ = conn.Exec("PRAGMA cache_size = -31250")
+	//_, err = conn.Exec("PRAGMA auto_vacuum=2;") // unsure if set
+	//_, _ = conn.Exec("PRAGMA temp_store = 2;") // MEMORY
+	_, _ = conn.Exec("PRAGMA cache_size = -31250;")
 	//_, _ = conn.Exec("PRAGMA page_size = 8192") // default 4096, match APFS 4096 block size?
 
 	sess := conn.NewSession(nil)
@@ -130,7 +136,7 @@ func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 	//FROM bookmarks
 	//JOIN files ON bookmarks.file_id = files.id
 	//JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
-	//WHERE bookmarksindex MATCH '?' AND rank MATCH 'bm25(5.0, 2.0, 1.0)'
+	//WHERE bookmarksindex MATCH '?' AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0)'
 
 	// NOTE: AND rank MATCH 'bm25(10.0, 5.0)' ORDER BY rank faster than ORDER BY bm25(fts, …)
 	_, err := db.sess.Select("bookmarks.id", "bookmarks.title", "bookmarks.section",
@@ -138,7 +144,7 @@ func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 		From("bookmarks").
 		Join("files", "bookmarks.file_id = files.id").
 		Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
-		Where("bookmarksindex MATCH ? AND rank MATCH 'bm25(5.0, 2.0, 1.0)'", queryString).
+		Where("bookmarksindex MATCH ? AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0)'", queryString).
 		OrderBy("rank").Limit(100).Load(&results)
 	err = db.conn.Close()
 	return results, err

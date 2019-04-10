@@ -87,15 +87,21 @@ func init() {
 	coversCacheDir = filepath.Join(wf.DataDir(), "covers")
 }
 
-// Bookmarks all for file, from database or imported, return results
-func bookmarksForFile(file string) {
-	if _, err := os.Stat(file); err != nil {
-		wf.FatalError(err)
-	}
-
+// initDatabase: initialize SQLite database
+func initDatabase() Database {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := Database{}
 	db.Init(dbFile)
+	return db
+}
+
+// Bookmarks all for file, from database or imported, return results
+func bookmarksForFile(file string) {
+	// ensure EPUB or PDF file exists
+	if _, err := os.Stat(file); err != nil {
+		wf.FatalError(err)
+	}
+	db := initDatabase()
 
 	bookmarks, err := db.BookmarksForFile(file)
 	if err == nil {
@@ -116,10 +122,7 @@ func bookmarksForFileEpub(query string) {
 
 // Bookmarks filtered for file, from database or imported, return results
 func bookmarksForFileFiltered(file string, query string) {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-
-	db := Database{}
-	db.Init(dbFile)
+	db := initDatabase()
 	bookmarks, err := db.BookmarksForFileFiltered(file, query)
 
 	if err == nil {
@@ -232,12 +235,8 @@ func printLastQuery() {
 
 // Query database for all bookmarks
 func searchAllBookmarks(query string) {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := Database{}
-	db.Init(dbFile)
-
+	db := initDatabase()
 	cacheLastQuery(query)
-
 	results, err := db.searchAll(query)
 	if err != nil {
 		wf.FatalError(err)
@@ -318,8 +317,8 @@ func returnBookmarksForFileFiltered(file string, bookmarks []SearchAllResult) {
 // Parse database search results and return items to Alfred
 func returnSearchAllResults(bookmarks []SearchAllResult) {
 	var title string
-	var arg string
 	var subtitle string
+	var arg string
 	for _, bookmark := range bookmarks {
 		icon := iconForFileID(bookmark.FileID, bookmark.Path)
 
