@@ -17,11 +17,12 @@ type File struct {
 	Path          string         `db:"path"`
 	FileName      string         `db:"file_name"`
 	FileExtension string         `db:"file_extension"`
-	Title         dbr.NullString `db:"title"`
-	Authors       dbr.NullString `db:"authors"`
-	Subjects      dbr.NullString `db:"subjects"`
+	Title         dbr.NullString `db:"file_title"`
+	Authors       dbr.NullString `db:"file_authors"`
+	Subjects      dbr.NullString `db:"file_subjects"`
+	Publisher     dbr.NullString `db:"file_publisher"`
 	DateCreated   string         `db:"date_created"`
-	DateModified  string         `db:"file_modified_date"` // TODO: rename -> date_modified
+	DateModified  string         `db:"date_modified"`
 	FileHash      string         `db:"hash"`
 }
 
@@ -94,7 +95,7 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 // return columns needed by GetFile
 func (db *Database) GetFileFromPath(book string) (File, error) {
 	var file File
-	err := db.sess.Select("id", "path", "file_modified_date").
+	err := db.sess.Select("id", "path", "date_modified").
 		From("files").Where("path = ?", book).LoadOne(&file)
 	return file, err
 }
@@ -103,7 +104,7 @@ func (db *Database) GetFileFromPath(book string) (File, error) {
 // return columns needed by GetFile
 func (db *Database) GetFileFromHash(hash string) (File, error) {
 	var file File
-	err := db.sess.Select("id", "path", "file_modified_date").
+	err := db.sess.Select("id", "path", "date_modified").
 		From("files").Where("hash = ?", hash).LoadOne(&file)
 	return file, err
 }
@@ -131,7 +132,7 @@ func (db *Database) NewFile(book string) (File, error) {
 		Pair("file_name", filepath.Base(book)).
 		Pair("file_extension", filepath.Ext(book)[1:]).
 		Pair("date_created", time.Now().UTC().Format("2006-01-02 15:04:05")).
-		Pair("file_modified_date", dateModified).
+		Pair("date_modified", dateModified).
 		Pair("hash", hash).
 		Exec()
 	err = tx.Commit()
@@ -145,7 +146,7 @@ func (db *Database) UpdateFile(file File) error {
 	_, err = db.sess.Update("files").
 		Set("path", file.Path).
 		Set("file_name", filepath.Base(file.Path)).
-		Set("file_modified_date", file.DateModified).
+		Set("date_modified", file.DateModified).
 		Set("hash", file.FileHash).
 		Where("id = ?", file.ID).
 		Exec()
