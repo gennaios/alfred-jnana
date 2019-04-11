@@ -33,7 +33,7 @@ type SearchAllResult struct {
 	FileName    string         `db:"file_name"`
 }
 
-// Init: open SQLite database connection using dbr, createTables new session
+// Init: open SQLite database connection using dbr, create new session
 func (db *Database) Init(dbFilePath string) {
 	createTables := false
 	if fileExists(dbFilePath) == false {
