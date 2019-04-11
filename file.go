@@ -7,6 +7,7 @@ import (
 	"github.com/gocraft/dbr"
 	_ "github.com/mattn/go-sqlite3"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -154,10 +155,10 @@ func (db *Database) UpdateFile(file File) error {
 	_, err = db.sess.Update("files").
 		Set("path", file.Path).
 		Set("file_name", filepath.Base(file.Path)).
-		Set("file_title", dbr.NewNullString(file.Title)).
-		Set("file_authors", dbr.NewNullString(file.Authors)).
-		Set("file_subjects", dbr.NewNullString(file.Subjects)).
-		Set("file_publisher", dbr.NewNullString(file.Publisher)).
+		Set("file_title", dbr.NewNullString(file.Title.String)).
+		Set("file_authors", dbr.NewNullString(file.Authors.String)).
+		Set("file_subjects", dbr.NewNullString(file.Subjects.String)).
+		Set("file_publisher", dbr.NewNullString(file.Publisher.String)).
 		Set("date_modified", file.DateModified).
 		Set("hash", file.FileHash).
 		Where("id = ?", file.ID).
@@ -178,28 +179,53 @@ func (db *Database) UpdateFileCheck(file File) (bool, error) {
 	if _, err = os.Stat(file.Path); err != nil {
 		return false, err
 	}
-	metadata := FileMetadata(file.Path)
-
-	fmt.Println("File:", file.Path)
-	//fmt.Println("Title:", metadata["title"])
-	//fmt.Println("Author:", metadata["author"])
-	fmt.Println("subject:", metadata["subject"])
-	fmt.Println("keywords:", metadata["keywords"])
-	fmt.Println("creator:", metadata["producer"])
-	fmt.Println("producer:", metadata["producer"])
-
 	update := false
-	if file.Title.String != metadata["title"] {
-		file.Title.String = strings.TrimSpace(metadata["title"])
-		update = true
+
+	if strings.HasSuffix(file.Path, "pdf") {
+		metadata := FileMetadata(file.Path)
+
+		title := strings.Trim(metadata["title"], `'"; `)
+		if file.Title.String != title && title != "" {
+			file.Title.String = title
+			update = true
+		}
+		authors := strings.Trim(metadata["author"], `'"; `)
+		if file.Authors.String != authors && authors != "" {
+			file.Authors.String = authors
+			update = true
+		}
+	} else {
+		epub := Epub{}
+		if err = epub.Init(file.Path); err != nil {
+			log.Println("Error: ", file.FileName)
+			log.Print(err)
+		}
+
+		if file.Title.String != epub.title && epub.title != "" {
+			fmt.Println("Title:", epub.title)
+			file.Title.String = epub.title
+			update = true
+		}
+		if file.Authors.String != epub.authors && epub.authors != "" {
+			//fmt.Println("Authors:", epub.authors)
+			file.Authors.String = epub.authors
+			update = true
+		}
+		if file.Subjects.String != epub.subjects && epub.subjects != "" {
+			//fmt.Println("Subjects:", epub.subjects)
+			file.Subjects.String = epub.subjects
+			update = true
+		}
+		if file.Publisher.String != epub.publisher && epub.publisher != "" {
+			//fmt.Println("Publisher:", epub.publisher)
+			file.Publisher.String = epub.publisher
+			update = true
+		}
 	}
-	if file.Authors.String != metadata["author"] {
-		file.Authors.String = strings.TrimSpace(metadata["author"])
-		update = true
-	}
+
 	if update == true {
 		err = db.UpdateFile(file)
-		if err != nil {
+		if err == nil {
 			return true, err
 		}
 	}
