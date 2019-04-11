@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"os/user"
@@ -33,6 +34,7 @@ usage:
     jnana test <file>
     jnana lastquery
     jnana test <file>
+    jnana update [<file>]
     jnana -h
 
 options:
@@ -52,6 +54,7 @@ commands:
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
     lastquery	Retrieve cached last query string for script filter
     test        Testing stuff
+    update      Update file metadata
 `
 
 	wf *aw.Workflow
@@ -73,6 +76,7 @@ var options struct {
 	Pdf       bool
 	Lastquery bool
 	Test      bool
+	Update    bool
 
 	// parameters
 	Query  string
@@ -364,6 +368,37 @@ func TestStuff(file string) {
 	//}
 }
 
+// UpdateFile: check one file for metadata updates, not including bookmarks
+func UpdateFile(db Database, fileRecord File) {
+	updated, err := db.UpdateFileCheck(fileRecord)
+	if err != nil {
+		fmt.Println(fmt.Sprintf("Update error: %s, %s", fileRecord.Path, err))
+	}
+	if updated == true {
+		fmt.Println("Updated:", fileRecord.Path)
+	}
+}
+
+// UpdateFiles: check passed file or all files for metadata changes, not including bookmarks
+func UpdateFiles(file string) {
+	db := initDatabase()
+
+	if _, err := os.Stat(file); err == nil {
+		fileRecord, _, _ := db.GetFile(file)
+		UpdateFile(db, fileRecord)
+	} else {
+		files, err := db.AllFiles()
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, aFile := range files {
+			if fileExists(aFile.Path) {
+				UpdateFile(db, aFile)
+			}
+		}
+	}
+}
+
 func runCommand() {
 	// show options for debug
 	//fmt.Println(options)
@@ -394,6 +429,9 @@ func runCommand() {
 	}
 	if options.Test == true {
 		TestStuff(options.File)
+	}
+	if options.Update == true {
+		UpdateFiles(options.File)
 	}
 }
 
