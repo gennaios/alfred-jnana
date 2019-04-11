@@ -231,10 +231,11 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	//	Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
 	//	Where("bookmarks.file_id = ?", fileRecord.ID).
 	//	Where("bookmarksindex.rowid = bookmarks.id").
-	//	Where("bookmarksindex MATCH '{title section}:?' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)'", queryString).
+	//	Where("bookmarksindex MATCH '{title section}:?' ORDER BY rank", queryString).
 	//	Load(&results)
 
-	_, err := db.sess.SelectBySql("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = " + strconv.FormatInt(fileRecord.ID, 10) + " and bookmarksindex.rowid = bookmarks.id and bookmarksindex match '{title section} : " + queryString + "' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';").Load(&results)
+	sql := fmt.Sprintf("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = %s and bookmarksindex.rowid = bookmarks.id and bookmarksindex match '{title section}: %s' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';", strconv.FormatInt(fileRecord.ID, 10), queryString)
+	_, err := db.sess.SelectBySql(sql).Load(&results)
 	err = db.conn.Close()
 	return results, err
 }
