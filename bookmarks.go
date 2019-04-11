@@ -33,8 +33,12 @@ type SearchAllResult struct {
 	FileName    string         `db:"file_name"`
 }
 
-// Init: open SQLite database connection using dbr, create new session
+// Init: open SQLite database connection using dbr, createTables new session
 func (db *Database) Init(dbFilePath string) {
+	createTables := false
+	if fileExists(dbFilePath) == false {
+		createTables = true
+	}
 	// open with PRAGMAs:
 	// journal_mode=WAL, locking_mode=EXCLUSIVE, synchronous=0
 	file := fmt.Sprintf("file:%s%s", dbFilePath, "?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0")
@@ -47,8 +51,11 @@ func (db *Database) Init(dbFilePath string) {
 	if conn == nil {
 		panic("db nil")
 	}
-
 	db.conn = conn
+
+	if createTables == true {
+		db.createTables()
+	}
 
 	//_, err = conn.Exec("PRAGMA auto_vacuum=2;") // unsure if set
 	//_, _ = conn.Exec("PRAGMA temp_store = 2;") // MEMORY
@@ -61,6 +68,114 @@ func (db *Database) Init(dbFilePath string) {
 	if err != nil {
 		panic(err)
 	}
+	db.createTriggers()
+}
+
+// createTables: create tables files, bookmarks, view bookmarks_view for FTS updates, and FTS5 bookmarksindex
+func (db *Database) createTables() {
+	var schemaFiles = `
+	CREATE TABLE files (
+		id INTEGER NOT NULL PRIMARY KEY,
+		path TEXT NOT NULL,
+	    	file_name TEXT,
+	    	file_extension VARCHAR(255) NOT NULL,
+	    	file_title TEXT,
+	    	file_authors TEXT,
+	    	file_subjects TEXT,
+	    	file_publisher TEXT,
+	    	date_created DATETIME NOT NULL,
+	    	date_modified DATETIME,
+	    	hash VARCHAR(64) NOT NULL
+	)`
+	var schemaBookmarks = `
+	CREATE TABLE bookmarks (
+		id INTEGER NOT NULL PRIMARY KEY,
+		file_id INTEGER NOT NULL,
+		title TEXT,
+		section TEXT,
+		destination TEXT NOT NULL,
+		FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE ON UPDATE CASCADE
+	)`
+	var schemaView = `
+	CREATE VIEW bookmarks_view AS SELECT
+		bookmarks.id,
+		bookmarks.title,
+		bookmarks.section,
+		files.file_name,
+		files.file_title,
+		files.file_authors,
+		files.file_subjects,
+		files.file_publisher
+		FROM bookmarks
+		INNER JOIN files ON files.id = bookmarks.file_id
+	`
+	// prefix: tokenize by length
+	var schemaFTS = `
+	CREATE VIRTUAL TABLE bookmarksindex USING fts5(
+		title,
+		section,
+		file_name,
+		file_title,
+		file_authors,
+		file_subjects,
+		file_publisher,
+		content='bookmarks_view',
+		content_rowid='id',
+		prefix='2 3',
+		tokenize='porter unicode61 remove_diacritics 2'
+	)`
+	_, _ = db.conn.Exec(schemaFiles)
+	_, _ = db.conn.Exec(schemaBookmarks)
+	_, _ = db.conn.Exec(schemaView)
+	_, _ = db.conn.Exec(schemaFTS)
+	db.createTriggers()
+}
+
+// createTriggers: triggers to update FTS index upon insert, delete, and update
+func (db *Database) createTriggers() {
+	var triggers = `
+	CREATE TRIGGER IF NOT EXISTS update_file_name
+		INSTEAD OF UPDATE OF file_name ON bookmarks_view
+		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
+		INSERT INTO bookmarksindex(
+		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_file_title
+		INSTEAD OF UPDATE OF file_title ON bookmarks_view
+		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
+		INSERT INTO bookmarksindex(
+		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_file_authors
+		INSTEAD OF UPDATE OF file_authors ON bookmarks_view
+		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
+		INSERT INTO bookmarksindex(
+		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_file_subjects
+		INSTEAD OF UPDATE OF file_subjects ON bookmarks_view
+		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
+		INSERT INTO bookmarksindex(
+		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_file_publisher
+		INSTEAD OF UPDATE OF file_publisher ON bookmarks_view
+		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
+		INSERT INTO bookmarksindex(
+		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	`
+	_, _ = db.conn.Exec(triggers)
 }
 
 // BookmarksForFile: retrieve existing bookmarks, add new to database if needed and check if updated

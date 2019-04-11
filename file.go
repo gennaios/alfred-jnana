@@ -60,7 +60,7 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 		}
 	}
 
-	// not found by path or hash, create new
+	// not found by path or hash, createTables new
 	if err == dbr.ErrNotFound {
 		file, err = db.NewFile(book)
 		if err != nil {
@@ -109,7 +109,7 @@ func (db *Database) GetFileFromHash(hash string) (File, error) {
 	return file, err
 }
 
-// NewFile create new file entry.
+// NewFile createTables new file entry.
 // File struct comes in with only path.
 // Required fields: path, name, extension, created, modified, hash
 func (db *Database) NewFile(book string) (File, error) {
@@ -160,7 +160,14 @@ func (db *Database) UpdateFile(file File) error {
 	return err
 }
 
-// fileHash: create sha256 file hash for later comparison
+func fileExists(file string) bool {
+	if _, err := os.Stat(file); err == nil {
+		return true
+	}
+	return false
+}
+
+// fileHash: createTables sha256 file hash for later comparison
 func fileHash(file string) (string, error) {
 	f, err := os.Open(file)
 	if err != nil {
