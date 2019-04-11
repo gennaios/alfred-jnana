@@ -234,7 +234,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	//	Where("bookmarksindex MATCH '{title section}:?' ORDER BY rank", queryString).
 	//	Load(&results)
 
-	sql := fmt.Sprintf("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = %s and bookmarksindex.rowid = bookmarks.id and bookmarksindex match '{title section}: %s' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';", strconv.FormatInt(fileRecord.ID, 10), queryString)
+	sql := fmt.Sprintf("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = %s and bookmarksindex.rowid = bookmarks.id and bookmarksindex match '{title section}: %s' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';", strconv.FormatInt(fileRecord.ID, 10), *queryString)
 	_, err := db.sess.SelectBySql(sql).Load(&results)
 	err = db.conn.Close()
 	return results, err
@@ -267,7 +267,7 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 }
 
 // NewBookmarks: insert new bookmarks into database
-func (db *Database) NewBookmarks(file File, bookmarks []*FileBookmark) ([]*Bookmark, error) {
+func (db *Database) NewBookmarks(file *File, bookmarks []*FileBookmark) ([]*Bookmark, error) {
 	var destination string
 	pdf := false
 	if strings.HasSuffix(file.Path, "pdf") {
@@ -299,7 +299,7 @@ func (db *Database) NewBookmarks(file File, bookmarks []*FileBookmark) ([]*Bookm
 }
 
 // UpdateBookmarks: update bookmarks, delete old first, then call NewBookmarks
-func (db *Database) UpdateBookmarks(file File, bookmarks []*FileBookmark) ([]*Bookmark, error) {
+func (db *Database) UpdateBookmarks(file *File, bookmarks []*FileBookmark) ([]*Bookmark, error) {
 	tx, err := db.sess.Begin()
 	_, err = db.sess.DeleteFrom("bookmarks").Where("file_id = ?", file.ID).Exec()
 	err = tx.Commit()
@@ -336,7 +336,7 @@ func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
 
 // stringForSQLite: prepare string for SQLite FTS query
 // replace '–*' with 'NOT *'
-func stringForSQLite(query string) string {
+func stringForSQLite(query string) *string {
 	var queryArray []string
 	queryOperators := []string{"AND", "OR", "NOT", "and", "or", "not"}
 
@@ -357,7 +357,8 @@ func stringForSQLite(query string) string {
 			queryArray = append(queryArray, fmt.Sprintf("%s*", term))
 		}
 	}
-	return strings.TrimSpace(strings.Join(queryArray[:], " "))
+	s := strings.TrimSpace(strings.Join(queryArray[:], " "))
+	return &s
 }
 
 // notification: macOS notification using github.com/deckarep/gosx-notifier

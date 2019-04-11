@@ -46,11 +46,12 @@ func TestInitDatabase(t *testing.T) {
 	_ = db.conn.Close()
 }
 
-func TestInitMemory(t *testing.T) {
-	db := Database{}
-	db.Init("file::memory:?mode=memory&cache=shared")
+//func TestInitMemory(t *testing.T) {
+//	db := Database{}
+//	db.Init("file::memory:?mode=memory&cache=shared")
+//
+//}
 
-}
 func BenchmarkSearchAllBookmarks100(b *testing.B) {
 	// run the searchAllBookmarks function b.N times
 	query := "emblica"

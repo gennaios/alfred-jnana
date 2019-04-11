@@ -356,7 +356,7 @@ func TestStuff(file string) {
 }
 
 // UpdateFile: check one file for metadata updates, not including bookmarks
-func UpdateFile(db Database, fileRecord File) {
+func UpdateFile(db Database, fileRecord *File) {
 	updated, _ := db.UpdateFileCheck(fileRecord)
 	if updated == true {
 		fmt.Println("Updated:", fileRecord.Path)
