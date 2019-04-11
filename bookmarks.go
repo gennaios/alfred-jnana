@@ -223,7 +223,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 		select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
 		from bookmarks
 		JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
-		where bookmarks.file_id = ? and bookmarksindex.rowid = bookmarks.id
+		where bookmarks.file_id = ?
 		and bookmarksindex match '{title section} : …' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';
 	*/
 
@@ -232,11 +232,10 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	//	From("bookmarks").
 	//	Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
 	//	Where("bookmarks.file_id = ?", fileRecord.ID).
-	//	Where("bookmarksindex.rowid = bookmarks.id").
 	//	Where("bookmarksindex MATCH '{title section}:?' ORDER BY rank", queryString).
 	//	Load(&results)
 
-	sql := fmt.Sprintf("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = %s and bookmarksindex.rowid = bookmarks.id and bookmarksindex match '{title section}: %s' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';", strconv.FormatInt(fileRecord.ID, 10), *queryString)
+	sql := fmt.Sprintf("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = %s and bookmarksindex match '{title section}: %s' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';", strconv.FormatInt(fileRecord.ID, 10), *queryString)
 	_, err := db.sess.SelectBySql(sql).Load(&results)
 	err = db.conn.Close()
 	return results, err
@@ -262,7 +261,7 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 		From("bookmarks").
 		Join("files", "bookmarks.file_id = files.id").
 		Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
-		Where("bookmarksindex MATCH ? AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0)'", queryString).
+		Where("bookmarksindex MATCH ? AND rank MATCH 'bm25(10.0, 5.0, 2.5, 1.0, 1.0, 1.0, 1.0)'", queryString).
 		OrderBy("rank").Limit(100).Load(&results)
 	err = db.conn.Close()
 	return results, err
