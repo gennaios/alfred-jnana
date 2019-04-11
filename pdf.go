@@ -32,6 +32,16 @@ func FileBookmarks(file string) ([]FileBookmark, error) {
 	return parseBookmarks(outlines), err
 }
 
+// FileBookmarks: for EPUB and PDF file, using go-fitz
+func FileMetadata(file string) map[string]string {
+	doc, err := fitz.New(file)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	defer doc.Close()
+	return doc.Metadata()
+}
+
 // FBookmarks for EPUB and PDF file, using Python script ./pdf.py
 func bookmarksForPDF(file string) ([]FileBookmark, error) {
 	cmdArgs := []string{"FileBookmarks", file}

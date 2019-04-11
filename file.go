@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -24,6 +25,13 @@ type File struct {
 	DateCreated   string         `db:"date_created"`
 	DateModified  string         `db:"date_modified"`
 	FileHash      string         `db:"hash"`
+}
+
+// AllFiles: get all files, used for update
+func (db *Database) AllFiles() ([]File, error) {
+	var files []File
+	_, err := db.sess.Select("*").From("files").Load(&files)
+	return files, err
 }
 
 func (db *Database) GetFile(book string) (File, bool, error) {
@@ -146,6 +154,10 @@ func (db *Database) UpdateFile(file File) error {
 	_, err = db.sess.Update("files").
 		Set("path", file.Path).
 		Set("file_name", filepath.Base(file.Path)).
+		Set("file_title", dbr.NewNullString(file.Title)).
+		Set("file_authors", dbr.NewNullString(file.Authors)).
+		Set("file_subjects", dbr.NewNullString(file.Subjects)).
+		Set("file_publisher", dbr.NewNullString(file.Publisher)).
 		Set("date_modified", file.DateModified).
 		Set("hash", file.FileHash).
 		Where("id = ?", file.ID).
@@ -158,6 +170,41 @@ func (db *Database) UpdateFile(file File) error {
 		fmt.Println("error committing:", err)
 	}
 	return err
+}
+
+// UpdateFileCheck: check for updates to metadata
+func (db *Database) UpdateFileCheck(file File) (bool, error) {
+	var err error
+	if _, err = os.Stat(file.Path); err != nil {
+		return false, err
+	}
+	metadata := FileMetadata(file.Path)
+
+	fmt.Println("File:", file.Path)
+	//fmt.Println("Title:", metadata["title"])
+	//fmt.Println("Author:", metadata["author"])
+	fmt.Println("subject:", metadata["subject"])
+	fmt.Println("keywords:", metadata["keywords"])
+	fmt.Println("creator:", metadata["producer"])
+	fmt.Println("producer:", metadata["producer"])
+
+	update := false
+	if file.Title.String != metadata["title"] {
+		file.Title.String = strings.TrimSpace(metadata["title"])
+		update = true
+	}
+	if file.Authors.String != metadata["author"] {
+		file.Authors.String = strings.TrimSpace(metadata["author"])
+		update = true
+	}
+	if update == true {
+		err = db.UpdateFile(file)
+		if err != nil {
+			return true, err
+		}
+	}
+
+	return false, err
 }
 
 func fileExists(file string) bool {
