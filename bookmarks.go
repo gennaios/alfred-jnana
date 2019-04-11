@@ -35,10 +35,6 @@ type SearchAllResult struct {
 
 // Init: open SQLite database connection using dbr, create new session
 func (db *Database) Init(dbFilePath string) {
-	createTables := false
-	if fileExists(dbFilePath) == false {
-		createTables = true
-	}
 	// open with PRAGMAs:
 	// journal_mode=WAL, locking_mode=EXCLUSIVE, synchronous=0
 	file := fmt.Sprintf("file:%s%s", dbFilePath, "?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0")
@@ -53,10 +49,6 @@ func (db *Database) Init(dbFilePath string) {
 	}
 	db.conn = conn
 
-	if createTables == true {
-		db.createTables()
-	}
-
 	//_, err = conn.Exec("PRAGMA auto_vacuum=2;") // unsure if set
 	//_, _ = conn.Exec("PRAGMA temp_store = 2;") // MEMORY
 	_, _ = conn.Exec("PRAGMA cache_size = -31250;")
@@ -65,10 +57,20 @@ func (db *Database) Init(dbFilePath string) {
 	sess := conn.NewSession(nil)
 	db.sess = sess
 	_, err = sess.Begin()
+
+	// create tables and triggers if 'files' does not exist
+	tables := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='files'")
+	var result string
+	if err := tables.Scan(&result); err == nil {
+		if result != "files" {
+			db.createTables()
+			db.createTriggers()
+		}
+	}
+
 	if err != nil {
 		panic(err)
 	}
-	db.createTriggers()
 }
 
 // createTables: create tables files, bookmarks, view bookmarks_view for FTS updates, and FTS5 bookmarksindex
