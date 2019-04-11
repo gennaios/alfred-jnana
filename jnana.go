@@ -353,27 +353,11 @@ func TestStuff(file string) {
 	//fmt.Println("bookmarks", len(bookmarks))
 	bookmarks2, _ := FileBookmarks(file)
 	fmt.Println("Bookmarks", len(bookmarks2))
-
-	//if cmp.Equal(bookmarks, bookmarks2) {
-	//	fmt.Println("bookmarks:", len(bookmarks), len(bookmarks2), file, " equal")
-	//} else {
-	//	fmt.Println("bookmarks:", len(bookmarks), len(bookmarks2), file, " NOT EQUAL")
-	//}
-	//for i := range bookmarks {
-	//	if !cmp.Equal(bookmarks[i], bookmarks2[i]) {
-	//		fmt.Println("Title", bookmarks[i].Title, "/", bookmarks2[i].Title)
-	//		fmt.Println("Section", bookmarks[i].Section, "/", bookmarks2[i].Section)
-	//		fmt.Println("Dest", bookmarks[i].Destination, "/", bookmarks2[i].Destination)
-	//	}
-	//}
 }
 
 // UpdateFile: check one file for metadata updates, not including bookmarks
 func UpdateFile(db Database, fileRecord File) {
-	updated, err := db.UpdateFileCheck(fileRecord)
-	if err != nil {
-		fmt.Println(fmt.Sprintf("Update error: %s, %s", fileRecord.Path, err))
-	}
+	updated, _ := db.UpdateFileCheck(fileRecord)
 	if updated == true {
 		fmt.Println("Updated:", fileRecord.Path)
 	}
