@@ -18,7 +18,7 @@ type FileBookmark struct {
 }
 
 // FileBookmarks: for EPUB and PDF file, using go-fitz
-func FileBookmarks(file string) ([]FileBookmark, error) {
+func FileBookmarks(file string) ([]*FileBookmark, error) {
 	doc, err := fitz.New(file)
 	if err != nil {
 		fmt.Println("error:", err)
@@ -43,7 +43,7 @@ func FileMetadata(file string) map[string]string {
 }
 
 // FBookmarks for EPUB and PDF file, using Python script ./pdf.py
-func bookmarksForPDF(file string) ([]FileBookmark, error) {
+func bookmarksForPDF(file string) ([]*FileBookmark, error) {
 	cmdArgs := []string{"FileBookmarks", file}
 
 	output, err := exec.Command("./pdf.py", cmdArgs...).Output()
@@ -52,17 +52,17 @@ func bookmarksForPDF(file string) ([]FileBookmark, error) {
 	}
 
 	// JSON stdout as []bytes, convert before return
-	var bookmarks []FileBookmark
+	var bookmarks []*FileBookmark
 	bookmarks, err = bookmarksFromJson(output)
 
 	return bookmarks, err
 }
 
 // Take JSON []bytes and return as slice of FileBookmark structs
-func bookmarksFromJson(jsonBytes []byte) ([]FileBookmark, error) {
-	var bookmarks []FileBookmark
+func bookmarksFromJson(jsonBytes []byte) ([]*FileBookmark, error) {
+	var bookmarks []*FileBookmark
 
-	err := json.Unmarshal(jsonBytes, &bookmarks)
+	err := json.Unmarshal(jsonBytes, bookmarks)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -70,9 +70,9 @@ func bookmarksFromJson(jsonBytes []byte) ([]FileBookmark, error) {
 }
 
 // Parse bookmarks from go-fitz
-func parseBookmarks(outline []fitz.Outline) []FileBookmark {
+func parseBookmarks(outline []fitz.Outline) []*FileBookmark {
 	sections := []string{"", "", "", "", "", "", "", "", "", "", "", "", ""}
-	var parsedBookmarks []FileBookmark
+	var parsedBookmarks []*FileBookmark
 	var page int
 	var currentLevel int
 	var section string
@@ -97,7 +97,7 @@ func parseBookmarks(outline []fitz.Outline) []FileBookmark {
 				if section == "" {
 					section = sections[currentLevel-1]
 				} else {
-					section = sections[currentLevel-1] + " > " + section
+					section = fmt.Sprintf("%s > %s", sections[currentLevel-1], section)
 				}
 				currentLevel -= 1
 			}
@@ -108,7 +108,7 @@ func parseBookmarks(outline []fitz.Outline) []FileBookmark {
 			Destination: fmt.Sprintf("%d", page),
 			Uri:         strings.TrimSpace(bookmark.URI),
 		}
-		parsedBookmarks = append(parsedBookmarks, newBookmark)
+		parsedBookmarks = append(parsedBookmarks, &newBookmark)
 	}
 	return parsedBookmarks
 }

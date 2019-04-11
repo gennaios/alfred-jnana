@@ -86,7 +86,7 @@ var options struct {
 
 func init() {
 	// Create a new Workflow using default settings.
-	wf = aw.New(update.GitHub(repo), aw.HelpURL(repo+"/issues"))
+	wf = aw.New(update.GitHub(repo), aw.HelpURL(fmt.Sprintf("%s%s", repo, "/issues")))
 
 	coversCacheDir = filepath.Join(wf.DataDir(), "covers")
 }
@@ -248,7 +248,7 @@ func searchAllBookmarks(query string) {
 	returnSearchAllResults(results)
 }
 
-func returnBookmarksForFile(file string, bookmarks []Bookmark) {
+func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 	var icon *aw.Icon
 	var destination string
 	var subtitle string
@@ -283,7 +283,7 @@ func returnBookmarksForFile(file string, bookmarks []Bookmark) {
 	wf.SendFeedback()
 }
 
-func returnBookmarksForFileFiltered(file string, bookmarks []SearchAllResult) {
+func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 	var icon *aw.Icon
 	var destination string
 	var subtitle string
@@ -319,7 +319,7 @@ func returnBookmarksForFileFiltered(file string, bookmarks []SearchAllResult) {
 }
 
 // Parse database search results and return items to Alfred
-func returnSearchAllResults(bookmarks []SearchAllResult) {
+func returnSearchAllResults(bookmarks []*SearchAllResult) {
 	var title string
 	var subtitle string
 	var arg string

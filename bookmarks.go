@@ -179,8 +179,8 @@ func (db *Database) createTriggers() {
 }
 
 // BookmarksForFile: retrieve existing bookmarks, add new to database if needed and check if updated
-func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
-	var bookmarks []Bookmark
+func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
+	var bookmarks []*Bookmark
 	var err error
 
 	fileRecord, changed, _ := db.GetFile(file)
@@ -190,7 +190,7 @@ func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
 
 	// file created or changed / or no bookmarks found
 	if changed == true || len(bookmarks) == 0 {
-		var newBookmarks []FileBookmark
+		var newBookmarks []*FileBookmark
 
 		newBookmarks, _ = FileBookmarks(file) // go-fitz
 		// no bookmarks returned from first, get new
@@ -211,9 +211,9 @@ func (db *Database) BookmarksForFile(file string) ([]Bookmark, error) {
 }
 
 // BookmarksForFileFiltered: filtered bookmarks for file
-func (db *Database) BookmarksForFileFiltered(file string, query string) ([]SearchAllResult, error) {
+func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
-	var results []SearchAllResult
+	var results []*SearchAllResult
 
 	fileRecord, _, _ := db.GetFile(file)
 
@@ -241,9 +241,9 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]Searc
 
 // searchAll: Search all bookmarks from FTS5 table, order by rank title, section, & file name
 // Return results as slice of struct SearchAllResult, later prepped for Alfred script filter
-func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
+func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
-	var results []SearchAllResult
+	var results []*SearchAllResult
 
 	//SELECT
 	//bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination,
@@ -266,7 +266,7 @@ func (db *Database) searchAll(query string) ([]SearchAllResult, error) {
 }
 
 // NewBookmarks: insert new bookmarks into database
-func (db *Database) NewBookmarks(file File, bookmarks []FileBookmark) ([]Bookmark, error) {
+func (db *Database) NewBookmarks(file File, bookmarks []*FileBookmark) ([]*Bookmark, error) {
 	var destination string
 	pdf := false
 	if strings.HasSuffix(file.Path, "pdf") {
@@ -290,7 +290,7 @@ func (db *Database) NewBookmarks(file File, bookmarks []FileBookmark) ([]Bookmar
 	}
 	err = tx.Commit()
 	// get newly inserted bookmarks
-	var newBookmarks []Bookmark
+	var newBookmarks []*Bookmark
 	err = db.sess.Select("id", "title", "section", "destination").
 		From("bookmarks").Where("file_id == ?", file.ID).
 		LoadOne(&newBookmarks)
@@ -298,7 +298,7 @@ func (db *Database) NewBookmarks(file File, bookmarks []FileBookmark) ([]Bookmar
 }
 
 // UpdateBookmarks: update bookmarks, delete old first, then call NewBookmarks
-func (db *Database) UpdateBookmarks(file File, bookmarks []FileBookmark) ([]Bookmark, error) {
+func (db *Database) UpdateBookmarks(file File, bookmarks []*FileBookmark) ([]*Bookmark, error) {
 	tx, err := db.sess.Begin()
 	_, err = db.sess.DeleteFrom("bookmarks").Where("file_id = ?", file.ID).Exec()
 	err = tx.Commit()
@@ -307,7 +307,7 @@ func (db *Database) UpdateBookmarks(file File, bookmarks []FileBookmark) ([]Book
 }
 
 // bookmarksEqual: compare bookmarks from database with file, used for update check
-func bookmarksEqual(bookmarks []Bookmark, newBookmarks []FileBookmark) bool {
+func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
 	//equal := true
 	if len(newBookmarks) != len(bookmarks) {
 		return false
@@ -344,16 +344,16 @@ func stringForSQLite(query string) string {
 		term := slc[i]
 		if strings.HasPrefix(term, "-") {
 			// exclude terms beginning with '-', change to 'NOT [term]'
-			queryArray = append(queryArray, "NOT "+term[1:]+"*")
+			queryArray = append(queryArray, fmt.Sprintf("NOT %s*", term[1:]))
 		} else if stringInSlice(term, queryOperators) {
 			// auto capitalize operators 'and', 'or', 'not'
 			queryArray = append(queryArray, strings.ToUpper(term))
 		} else if strings.Contains(term, ".") || strings.Contains(term, "-") {
 			// quote terms containing dot
-			queryArray = append(queryArray, "\""+term+"*\"")
+			queryArray = append(queryArray, fmt.Sprintf("\"%s*\"", term))
 		} else {
 			// make all terms wildcard
-			queryArray = append(queryArray, term+"*")
+			queryArray = append(queryArray, fmt.Sprintf("%s*", term))
 		}
 	}
 	return strings.TrimSpace(strings.Join(queryArray[:], " "))
