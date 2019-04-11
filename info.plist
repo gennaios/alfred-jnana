@@ -669,6 +669,10 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<integer>180</integer>
 		</dict>
 	</dict>
+	<key>variables</key>
+	<dict/>
+	<key>variablesdontexport</key>
+	<array/>
 	<key>version</key>
 	<string>0.1.1</string>
 	<key>webaddress</key>
