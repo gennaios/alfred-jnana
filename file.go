@@ -29,14 +29,14 @@ type File struct {
 }
 
 // AllFiles: get all files, used for update
-func (db *Database) AllFiles() ([]File, error) {
-	var files []File
+func (db *Database) AllFiles() ([]*File, error) {
+	var files []*File
 	_, err := db.sess.Select("*").From("files").Load(&files)
 	return files, err
 }
 
-func (db *Database) GetFile(book string) (File, bool, error) {
-	var file File
+func (db *Database) GetFile(book string) (*File, bool, error) {
+	var file *File
 	var err error
 	var hash string
 	created := false // check for update if found
@@ -60,7 +60,7 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 				// old path doesn't exist, moved, same hash
 				_ = notification("File moved: " + file.Path)
 				file.Path = book
-				err = db.UpdateFile(file)
+				err = db.UpdateFile(*file)
 				// hash match, no changes needed
 				return file, false, err
 			}
@@ -94,7 +94,7 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 			changed = true
 			file.FileHash, _ = fileHash(book)
 			file.DateModified = modDate.Format("2006-01-02 15:04:05")
-			err = db.UpdateFile(file)
+			err = db.UpdateFile(*file)
 		}
 	}
 	return file, changed, err
@@ -102,8 +102,8 @@ func (db *Database) GetFile(book string) (File, bool, error) {
 
 // GetFileFromPath: Look for existing record by file path
 // return columns needed by GetFile
-func (db *Database) GetFileFromPath(book string) (File, error) {
-	var file File
+func (db *Database) GetFileFromPath(book string) (*File, error) {
+	var file *File
 	err := db.sess.Select("id", "path", "date_modified").
 		From("files").Where("path = ?", book).LoadOne(&file)
 	return file, err
@@ -111,8 +111,8 @@ func (db *Database) GetFileFromPath(book string) (File, error) {
 
 // GetFromHash: look for existing by file hash (sha256)
 // return columns needed by GetFile
-func (db *Database) GetFileFromHash(hash string) (File, error) {
-	var file File
+func (db *Database) GetFileFromHash(hash string) (*File, error) {
+	var file *File
 	err := db.sess.Select("id", "path", "date_modified").
 		From("files").Where("hash = ?", hash).LoadOne(&file)
 	return file, err
@@ -121,10 +121,10 @@ func (db *Database) GetFileFromHash(hash string) (File, error) {
 // NewFile create new file entry.
 // File struct comes in with only path.
 // Required fields: path, name, extension, created, modified, hash
-func (db *Database) NewFile(book string) (File, error) {
+func (db *Database) NewFile(book string) (*File, error) {
 	stat, err := os.Stat(book)
 	if err != nil {
-		return File{}, err
+		return &File{}, err
 	}
 	// format string for insert, strange set then get by format doesn't work
 	dateModified := stat.ModTime().UTC().Format("2006-01-02 15:04:05")
@@ -132,7 +132,7 @@ func (db *Database) NewFile(book string) (File, error) {
 
 	tx, err := db.sess.Begin()
 	if err != nil {
-		return File{}, err
+		return &File{}, err
 	}
 	defer tx.RollbackUnlessCommitted()
 	// filepath.Ext returns with dot
@@ -174,7 +174,7 @@ func (db *Database) UpdateFile(file File) error {
 }
 
 // UpdateFileCheck: check for updates to metadata
-func (db *Database) UpdateFileCheck(file File) (bool, error) {
+func (db *Database) UpdateFileCheck(file *File) (bool, error) {
 	var err error
 	if _, err = os.Stat(file.Path); err != nil {
 		return false, err
@@ -224,7 +224,7 @@ func (db *Database) UpdateFileCheck(file File) (bool, error) {
 	}
 
 	if update == true {
-		err = db.UpdateFile(file)
+		err = db.UpdateFile(*file)
 		if err == nil {
 			return true, err
 		}
