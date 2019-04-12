@@ -55,6 +55,17 @@ func TestInitDatabase(t *testing.T) {
 //
 //}
 
+func TestDatabase_BookmarksForFile(t *testing.T) {
+	file, _ := filepath.Abs("./tests/pdf.pdf")
+	if _, err := os.Stat(file); err != nil {
+		log.Fatal(err)
+	}
+
+	db := initDatabase()
+	bookmarks, _ := db.BookmarksForFile(file)
+	assert.Equal(t, len(bookmarks), 4, "Bookmarks count should be 4")
+}
+
 // run the bookmarksForFile function b.N times
 func BenchmarkBookmarksForFile(b *testing.B) {
 	file, _ := filepath.Abs("./tests/pdf.pdf")
