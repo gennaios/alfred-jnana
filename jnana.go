@@ -257,21 +257,21 @@ func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 	}
 
-	for _, bookmark := range bookmarks {
+	for i := range bookmarks {
 		if pdf == true {
-			destination = bookmark.Destination
-			if bookmark.Section.String != "" {
-				subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.Section.String)
+			destination = bookmarks[i].Destination
+			if bookmarks[i].Section.String != "" {
+				subtitle = fmt.Sprintf("Page %s. %s", bookmarks[i].Destination, bookmarks[i].Section.String)
 			} else {
-				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
+				subtitle = fmt.Sprintf("Page %s", bookmarks[i].Destination)
 			}
 		} else {
-			destination = bookmark.Title
-			subtitle = bookmark.Section.String
+			destination = bookmarks[i].Title
+			subtitle = bookmarks[i].Section.String
 		}
-		wf.NewItem(bookmark.Title).
+		wf.NewItem(bookmarks[i].Title).
 			Subtitle(subtitle).
-			UID(fmt.Sprintf("%d", bookmark.ID)).
+			UID(fmt.Sprintf("%d", bookmarks[i].ID)).
 			Valid(true).
 			Icon(icon).
 			Arg(destination)
@@ -292,21 +292,21 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 	}
 
-	for _, bookmark := range bookmarks {
+	for i := range bookmarks {
 		if pdf == true {
-			destination = bookmark.Destination
-			if bookmark.Section.String != "" {
-				subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.Section.String)
+			destination = bookmarks[i].Destination
+			if bookmarks[i].Section.String != "" {
+				subtitle = fmt.Sprintf("Page %s. %s", bookmarks[i].Destination, bookmarks[i].Section.String)
 			} else {
-				subtitle = fmt.Sprintf("Page %s", bookmark.Destination)
+				subtitle = fmt.Sprintf("Page %s", bookmarks[i].Destination)
 			}
 		} else {
-			destination = bookmark.Title
-			subtitle = bookmark.Section.String
+			destination = bookmarks[i].Title
+			subtitle = bookmarks[i].Section.String
 		}
-		wf.NewItem(bookmark.Title).
+		wf.NewItem(bookmarks[i].Title).
 			Subtitle(subtitle).
-			UID(fmt.Sprintf("%d", bookmark.ID)).
+			UID(fmt.Sprintf("%d", bookmarks[i].ID)).
 			Valid(true).
 			Icon(icon).
 			Arg(destination)
@@ -319,24 +319,24 @@ func returnSearchAllResults(bookmarks []*SearchAllResult) {
 	var title string
 	var subtitle string
 	var arg string
-	for _, bookmark := range bookmarks {
-		icon := iconForFileID(bookmark.FileID, bookmark.Path)
+	for i := range bookmarks {
+		icon := iconForFileID(bookmarks[i].FileID, bookmarks[i].Path)
 
-		if bookmark.Section.String != "" {
-			title = fmt.Sprintf("%s | %s", bookmark.Title, bookmark.Section.String)
+		if bookmarks[i].Section.String != "" {
+			title = fmt.Sprintf("%s | %s", bookmarks[i].Title, bookmarks[i].Section.String)
 		} else {
-			title = bookmark.Title
+			title = bookmarks[i].Title
 		}
-		if strings.HasSuffix(bookmark.FileName, ".pdf") {
-			subtitle = fmt.Sprintf("Page %s. %s", bookmark.Destination, bookmark.FileName)
-			arg = fmt.Sprintf("%s/Page:%s", bookmark.Path, bookmark.Destination)
+		if strings.HasSuffix(bookmarks[i].FileName, ".pdf") {
+			subtitle = fmt.Sprintf("Page %s. %s", bookmarks[i].Destination, bookmarks[i].FileName)
+			arg = fmt.Sprintf("%s/Page:%s", bookmarks[i].Path, bookmarks[i].Destination)
 		} else {
-			subtitle = bookmark.FileName
-			arg = fmt.Sprintf("%s/Page:%s", bookmark.Path, bookmark.Title)
+			subtitle = bookmarks[i].FileName
+			arg = fmt.Sprintf("%s/Page:%s", bookmarks[i].Path, bookmarks[i].Title)
 		}
 		wf.NewItem(title).
 			Subtitle(subtitle).
-			UID(fmt.Sprintf("%d", bookmark.ID)).
+			UID(fmt.Sprintf("%d", bookmarks[i].ID)).
 			Valid(true).
 			Icon(icon).
 			Arg(arg)
