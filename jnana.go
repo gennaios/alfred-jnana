@@ -168,14 +168,8 @@ func iconForFileID(fileId string, filePath string) *aw.Icon {
 }
 
 func cacheLastQuery(queryString string) {
-	var (
-		name  = "LastQuery"
-		value = queryString
-	)
-	cache := aw.NewCache(wf.CacheDir())
-	data, _ := json.Marshal(value)
-	if err := cache.Store(name, data); err != nil {
-		panic(err)
+	if err := wf.Cache.StoreJSON("LastQuery", queryString); err != nil {
+		wf.FatalError(err)
 	}
 }
 
@@ -185,17 +179,10 @@ func getCurrentEpub() {
 }
 
 func getLastQuery() string {
-	var (
-		name = "LastQuery"
-	)
-	cache := aw.NewCache(wf.CacheDir())
-	data, err := cache.Load(name)
-	if err != nil {
-		panic(err)
-	}
-
 	var lastQuery string
-	err = json.Unmarshal(data, &lastQuery)
+	if err := wf.Cache.LoadJSON("LastQuery", &lastQuery); err != nil {
+		wf.FatalError(err)
+	}
 	return lastQuery
 }
 
