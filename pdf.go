@@ -17,6 +17,11 @@ type FileBookmark struct {
 	Uri         string
 }
 
+type PDFMetadata struct {
+	Title   string
+	Authors string
+}
+
 // FileBookmarks: for EPUB and PDF file, using go-fitz
 func FileBookmarks(file string) ([]*FileBookmark, error) {
 	doc, err := fitz.New(file)
@@ -32,14 +37,27 @@ func FileBookmarks(file string) ([]*FileBookmark, error) {
 	return parseBookmarks(outlines), err
 }
 
-// FileBookmarks: for EPUB and PDF file, using go-fitz
-func FileMetadata(file string) map[string]string {
+// FileBookmarks: for PDF file, using go-fitz
+func MetadataForPDF(file string) PDFMetadata {
 	doc, err := fitz.New(file)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
 	defer doc.Close()
-	return doc.Metadata()
+
+	fileMetadata := doc.Metadata()
+	var metadata PDFMetadata
+
+	title := strings.Trim(fileMetadata["title"], `'"; `)
+	if title != "" {
+		metadata.Title = title
+	}
+
+	authors := strings.Trim(fileMetadata["author"], `'"; `)
+	if authors != "" {
+		metadata.Authors = authors
+	}
+	return metadata
 }
 
 // FBookmarks for EPUB and PDF file, using Python script ./pdf.py

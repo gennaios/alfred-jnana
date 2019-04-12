@@ -138,6 +138,8 @@ func (db *Database) NewFile(book string) (*File, error) {
 	dateModified := stat.ModTime().UTC().Format("2006-01-02 15:04:05")
 	hash, _ := fileHash(book)
 
+	// TODO: get file metadata
+
 	tx, err := db.sess.Begin()
 	if err != nil {
 		return &File{}, err
@@ -190,16 +192,14 @@ func (db *Database) UpdateFileCheck(file *File) (bool, error) {
 	update := false
 
 	if strings.HasSuffix(file.Path, "pdf") {
-		metadata := FileMetadata(file.Path)
+		metadata := MetadataForPDF(file.Path)
 
-		title := strings.Trim(metadata["title"], `'"; `)
-		if file.Title.String != title && title != "" {
-			file.Title.String = title
+		if file.Title.String != metadata.Title && metadata.Title != "" {
+			file.Title.String = metadata.Title
 			update = true
 		}
-		authors := strings.Trim(metadata["author"], `'"; `)
-		if file.Authors.String != authors && authors != "" {
-			file.Authors.String = authors
+		if file.Authors.String != metadata.Authors && metadata.Authors != "" {
+			file.Authors.String = metadata.Authors
 			update = true
 		}
 	} else {
@@ -210,7 +210,7 @@ func (db *Database) UpdateFileCheck(file *File) (bool, error) {
 		}
 
 		if file.Title.String != epub.title && epub.title != "" {
-			fmt.Println("Title:", epub.title)
+			//fmt.Println("Title:", epub.title)
 			file.Title.String = epub.title
 			update = true
 		}
