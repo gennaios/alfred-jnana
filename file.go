@@ -53,8 +53,15 @@ func (db *Database) GetFile(book string, check bool) (*File, bool, error) {
 		created = false
 	}
 
-	// found by hash, verify not dupe
-	if file.ID != 0 && book != file.Path {
+	// not found by path or hash, create new
+	if err == dbr.ErrNotFound {
+		file, err = db.NewFile(book)
+		if err != nil {
+			return file, true, err
+		}
+		created = true
+	} else if file.ID != 0 && book != file.Path {
+		// found by hash, verify not dupe
 		if _, err = os.Stat(file.Path); err != nil {
 			if os.IsNotExist(err) {
 				// old path doesn't exist, moved, same hash
@@ -72,15 +79,6 @@ func (db *Database) GetFile(book string, check bool) (*File, bool, error) {
 				}
 			}
 		}
-	}
-
-	// not found by path or hash, create new
-	if err == dbr.ErrNotFound {
-		file, err = db.NewFile(book)
-		if err != nil {
-			return file, true, err
-		}
-		created = true
 	}
 
 	// not created, check if different

@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"github.com/stretchr/testify/assert"
 	"log"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -16,6 +18,7 @@ func assertPragma(t *testing.T, row *sql.Row, expected string, pragma string) {
 	}
 	assert.Equal(t, result, expected, pragma)
 }
+
 func TestInitDatabase(t *testing.T) {
 	db := initDatabase()
 	var row *sql.Row
@@ -52,8 +55,20 @@ func TestInitDatabase(t *testing.T) {
 //
 //}
 
+// run the bookmarksForFile function b.N times
+func BenchmarkBookmarksForFile(b *testing.B) {
+	file, _ := filepath.Abs("./tests/pdf.pdf")
+	if _, err := os.Stat(file); err != nil {
+		log.Fatal(err)
+	}
+
+	for n := 0; n < b.N; n++ {
+		bookmarksForFile(file)
+	}
+}
+
+// run the searchAllBookmarks function b.N times
 func BenchmarkSearchAllBookmarks100(b *testing.B) {
-	// run the searchAllBookmarks function b.N times
 	query := "emblica"
 	for n := 0; n < b.N; n++ {
 		searchAllBookmarks(query)
