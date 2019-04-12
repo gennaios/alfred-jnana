@@ -316,24 +316,17 @@ func (db *Database) UpdateBookmarks(file *File, bookmarks []*FileBookmark) ([]*B
 
 // bookmarksEqual: compare bookmarks from database with file, used for update check
 func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
-	//equal := true
 	if len(newBookmarks) != len(bookmarks) {
 		return false
 	} else {
 		for i := range newBookmarks {
 			if newBookmarks[i].Title != bookmarks[i].Title {
-				//equal = false
-				//break
 				return false
 			}
 			if newBookmarks[i].Section != bookmarks[i].Section.String {
-				//equal = false
-				//break
 				return false
 			}
 			if newBookmarks[i].Destination != bookmarks[i].Destination {
-				//equal = false
-				//break
 				return false
 			}
 		}
