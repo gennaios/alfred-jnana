@@ -283,7 +283,7 @@ func (db *Database) NewBookmarks(file *File, bookmarks []*FileBookmark) ([]*Book
 
 	tx, err := db.sess.Begin()
 	// insert new bookmarks
-	for i := 0; i < len(bookmarks); i++ {
+	for i := range bookmarks {
 		if pdf == true {
 			destination = bookmarks[i].Destination
 		} else {
@@ -320,7 +320,7 @@ func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
 	if len(newBookmarks) != len(bookmarks) {
 		return false
 	} else {
-		for i := 0; i < len(newBookmarks); i++ {
+		for i := range newBookmarks {
 			if newBookmarks[i].Title != bookmarks[i].Title {
 				//equal = false
 				//break
