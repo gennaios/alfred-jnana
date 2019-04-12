@@ -65,7 +65,12 @@ func (db *Database) GetFile(book string) (*File, bool, error) {
 				return file, false, err
 			}
 		} else {
-			_ = notification("Dupe of: " + file.Path)
+			// check file exists, or notification will be triggered if not
+			if _, err = os.Stat(book); err != nil {
+				if !os.IsNotExist(err) {
+					_ = notification("Dupe of: " + file.Path)
+				}
+			}
 		}
 	}
 
@@ -81,7 +86,10 @@ func (db *Database) GetFile(book string) (*File, bool, error) {
 	// not created, check if different
 	if created == false {
 		// check book changed against date in database
-		stat, _ := os.Stat(book)
+		stat, err := os.Stat(book)
+		if err != nil {
+			return file, false, err
+		}
 		modDate := stat.ModTime().UTC()
 		oldDate, _ := time.Parse(time.RFC3339, file.DateModified)
 		if err != nil {
@@ -242,6 +250,9 @@ func fileExists(file string) bool {
 
 // fileHash: create sha256 file hash for later comparison
 func fileHash(file string) (string, error) {
+	if _, err := os.Stat(file); err != nil {
+		return "", err
+	}
 	f, err := os.Open(file)
 	if err != nil {
 		return "", err
