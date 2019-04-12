@@ -101,10 +101,6 @@ func initDatabase() Database {
 
 // Bookmarks all for file, from database or imported, return results
 func bookmarksForFile(file string) {
-	// ensure EPUB or PDF file exists
-	if _, err := os.Stat(file); err != nil {
-		wf.FatalError(err)
-	}
 	db := initDatabase()
 
 	bookmarks, err := db.BookmarksForFile(file)

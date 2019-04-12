@@ -185,7 +185,10 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 	var bookmarks []*Bookmark
 	var err error
 
-	fileRecord, changed, _ := db.GetFile(file)
+	fileRecord, changed, err := db.GetFile(file)
+	if err != nil {
+		return bookmarks, err
+	}
 	err = db.sess.Select("id", "title", "section", "destination").
 		From("bookmarks").Where("file_id = ?", fileRecord.ID).
 		LoadOne(&bookmarks)
@@ -217,7 +220,10 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	queryString := stringForSQLite(query)
 	var results []*SearchAllResult
 
-	fileRecord, _, _ := db.GetFile(file)
+	fileRecord, _, err := db.GetFile(file)
+	if err != nil {
+		return results, err
+	}
 
 	/*
 		select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
@@ -236,7 +242,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	//	Load(&results)
 
 	sql := fmt.Sprintf("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = %s and bookmarksindex match '{title section}: %s' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';", strconv.FormatInt(fileRecord.ID, 10), *queryString)
-	_, err := db.sess.SelectBySql(sql).Load(&results)
+	_, err = db.sess.SelectBySql(sql).Load(&results)
 	err = db.conn.Close()
 	return results, err
 }
