@@ -185,7 +185,7 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 	var bookmarks []*Bookmark
 	var err error
 
-	fileRecord, changed, err := db.GetFile(file)
+	fileRecord, changed, err := db.GetFile(file, true)
 	if err != nil {
 		return bookmarks, err
 	}
@@ -220,7 +220,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	queryString := stringForSQLite(query)
 	var results []*SearchAllResult
 
-	fileRecord, _, err := db.GetFile(file)
+	fileRecord, _, err := db.GetFile(file, false)
 	if err != nil {
 		return results, err
 	}

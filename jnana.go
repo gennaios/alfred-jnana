@@ -349,7 +349,7 @@ func UpdateFiles(file string) {
 	db := initDatabase()
 
 	if _, err := os.Stat(file); err == nil {
-		fileRecord, _, _ := db.GetFile(file)
+		fileRecord, _, _ := db.GetFile(file, false)
 		UpdateFile(db, fileRecord)
 	} else {
 		files, err := db.AllFiles()

@@ -35,7 +35,7 @@ func (db *Database) AllFiles() ([]*File, error) {
 	return files, err
 }
 
-func (db *Database) GetFile(book string) (*File, bool, error) {
+func (db *Database) GetFile(book string, check bool) (*File, bool, error) {
 	var file *File
 	var err error
 	var hash string
@@ -84,20 +84,20 @@ func (db *Database) GetFile(book string) (*File, bool, error) {
 	}
 
 	// not created, check if different
-	if created == false {
+	// NOTE: run each time with file and file filtered bookmarks, try to speed up
+	if check == true && created == false {
 		// check book changed against date in database
 		stat, err := os.Stat(book)
 		if err != nil {
 			return file, false, err
 		}
-		modDate := stat.ModTime().UTC()
-		oldDate, _ := time.Parse(time.RFC3339, file.DateModified)
+		modDate := stat.ModTime().UTC().Truncate(time.Second)
+		oldDate, err := time.Parse(time.RFC3339, file.DateModified)
 		if err != nil {
 			fmt.Println("date error:", err)
 		}
-		diff := modDate.Sub(oldDate).Seconds()
 
-		if diff > 1 {
+		if modDate.After(oldDate) {
 			//date different, check hash value
 			changed = true
 			file.FileHash, _ = fileHash(book)
@@ -109,19 +109,19 @@ func (db *Database) GetFile(book string) (*File, bool, error) {
 }
 
 // GetFileFromPath: Look for existing record by file path
-// return columns needed by GetFile
+// return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromPath(book string) (*File, error) {
 	var file *File
-	err := db.sess.Select("id", "path", "date_modified").
+	err := db.sess.Select("*").
 		From("files").Where("path = ?", book).LoadOne(&file)
 	return file, err
 }
 
 // GetFromHash: look for existing by file hash (sha256)
-// return columns needed by GetFile
+// return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromHash(hash string) (*File, error) {
 	var file *File
-	err := db.sess.Select("id", "path", "date_modified").
+	err := db.sess.Select("*").
 		From("files").Where("hash = ?", hash).LoadOne(&file)
 	return file, err
 }
