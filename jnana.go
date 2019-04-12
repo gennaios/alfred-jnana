@@ -136,9 +136,7 @@ func calibreEpubFile() string {
 	usr, _ := user.Current()
 	var path string
 	calibreJsonFile := "~/Library/Preferences/calibre/viewer.json"
-	if strings.HasPrefix(calibreJsonFile, "~/") {
-		path = filepath.Join(usr.HomeDir, calibreJsonFile[2:])
-	}
+	path = filepath.Join(usr.HomeDir, calibreJsonFile[2:])
 
 	fileBytes, err := ioutil.ReadFile(path)
 	if err != nil {
