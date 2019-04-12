@@ -202,13 +202,11 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 		if len(bookmarks) == 0 {
 			// insert new
 			bookmarks, err = db.NewBookmarks(fileRecord, newBookmarks)
-		} else {
+		} else if bookmarksEqual(bookmarks, newBookmarks) == false {
 			// file updated, compare bookmarks
-			if bookmarksEqual(bookmarks, newBookmarks) == false {
-				// update database
-				bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
-				_ = notification("Bookmarks updated.")
-			}
+			// update database
+			bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
+			_ = notification("Bookmarks updated.")
 		}
 	}
 	err = db.conn.Close()
@@ -357,7 +355,7 @@ func stringForSQLite(query string) *string {
 			queryArray = append(queryArray, fmt.Sprintf("%s*", term))
 		}
 	}
-	s := strings.TrimSpace(strings.Join(queryArray[:], " "))
+	s := strings.TrimSpace(strings.Join(queryArray, " "))
 	return &s
 }
 
