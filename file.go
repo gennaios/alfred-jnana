@@ -39,7 +39,6 @@ func (db *Database) GetFile(book string, check bool) (*File, bool, error) {
 	var file *File
 	var err error
 	var hash string
-	created := false // check for update if found
 	changed := false // return value, to later recheck bookmarks
 
 	// first lookup by file path
@@ -49,8 +48,6 @@ func (db *Database) GetFile(book string, check bool) (*File, bool, error) {
 	if err == dbr.ErrNotFound {
 		hash, err = fileHash(book)
 		file, err = db.GetFileFromHash(hash)
-	} else {
-		created = false
 	}
 
 	// not found by path or hash, create new
@@ -59,7 +56,6 @@ func (db *Database) GetFile(book string, check bool) (*File, bool, error) {
 		if err != nil {
 			return file, true, err
 		}
-		created = true
 	} else if file.ID != 0 && book != file.Path {
 		// found by hash, verify not dupe
 		if _, err = os.Stat(file.Path); err != nil {
@@ -76,6 +72,7 @@ func (db *Database) GetFile(book string, check bool) (*File, bool, error) {
 			if _, err = os.Stat(book); err != nil {
 				if !os.IsNotExist(err) {
 					_ = notification("Dupe of: " + file.Path)
+					check = false
 				}
 			}
 		}
@@ -83,7 +80,7 @@ func (db *Database) GetFile(book string, check bool) (*File, bool, error) {
 
 	// not created, check if different
 	// NOTE: run each time with file and file filtered bookmarks, try to speed up
-	if check == true && created == false {
+	if check == true {
 		// check book changed against date in database
 		stat, err := os.Stat(book)
 		if err != nil {
