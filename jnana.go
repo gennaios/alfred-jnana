@@ -113,10 +113,10 @@ func bookmarksForFile(file string) {
 
 func bookmarksForFileEpub(query string) {
 	epub := calibreEpubFile()
-	if query == "" {
-		bookmarksForFile(epub)
-	} else {
+	if query != "" {
 		bookmarksForFileFiltered(epub, query)
+	} else {
+		bookmarksForFile(epub)
 	}
 }
 
@@ -152,19 +152,17 @@ func calibreEpubFile() string {
 func iconForFileID(fileId string, filePath string) *aw.Icon {
 	iconFile := filepath.Join(coversCacheDir, fileId+".png")
 
-	var icon *aw.Icon
 	if _, err := os.Stat(iconFile); err == nil {
-		icon = &aw.Icon{
+		return &aw.Icon{
 			Value: iconFile,
 			Type:  aw.IconTypeImage,
 		}
 	} else {
-		icon = &aw.Icon{
+		return &aw.Icon{
 			Value: filePath,
 			Type:  aw.IconTypeFileIcon,
 		}
 	}
-	return icon
 }
 
 func cacheLastQuery(queryString string) {
@@ -174,8 +172,7 @@ func cacheLastQuery(queryString string) {
 }
 
 func getCurrentEpub() {
-	file := calibreEpubFile()
-	fmt.Println(file)
+	fmt.Println(calibreEpubFile())
 }
 
 func getLastQuery() string {
@@ -214,8 +211,7 @@ func openCalibreBookmarkCommand(command string, cmdArgs []string) {
 }
 
 func printLastQuery() {
-	lastQuery := getLastQuery()
-	fmt.Println(lastQuery)
+	fmt.Println(getLastQuery())
 }
 
 // Query database for all bookmarks
@@ -231,70 +227,69 @@ func searchAllBookmarks(query string) {
 
 func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 	var icon *aw.Icon
-	var destination string
-	var subtitle string
-	pdf := false
 
 	if strings.HasSuffix(file, "pdf") {
+		var destination string
+		var subtitle string
 		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
-		pdf = true
-	} else {
-		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
-	}
-
-	for i := range bookmarks {
-		if pdf == true {
+		for i := range bookmarks {
 			destination = bookmarks[i].Destination
 			if bookmarks[i].Section.String != "" {
 				subtitle = fmt.Sprintf("Page %s. %s", bookmarks[i].Destination, bookmarks[i].Section.String)
 			} else {
 				subtitle = fmt.Sprintf("Page %s", bookmarks[i].Destination)
 			}
-		} else {
-			destination = bookmarks[i].Title
-			subtitle = bookmarks[i].Section.String
+			wf.NewItem(bookmarks[i].Title).
+				Subtitle(subtitle).
+				UID(fmt.Sprintf("%d", bookmarks[i].ID)).
+				Valid(true).
+				Icon(icon).
+				Arg(destination)
 		}
-		wf.NewItem(bookmarks[i].Title).
-			Subtitle(subtitle).
-			UID(fmt.Sprintf("%d", bookmarks[i].ID)).
-			Valid(true).
-			Icon(icon).
-			Arg(destination)
+	} else {
+		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
+		for i := range bookmarks {
+			wf.NewItem(bookmarks[i].Title).
+				Subtitle(bookmarks[i].Section.String).
+				UID(fmt.Sprintf("%d", bookmarks[i].ID)).
+				Valid(true).
+				Icon(icon).
+				Arg(bookmarks[i].Title)
+		}
+
 	}
 	wf.SendFeedback()
 }
 
 func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 	var icon *aw.Icon
-	var destination string
-	var subtitle string
-	pdf := false
 
 	if strings.HasSuffix(file, "pdf") {
+		var subtitle string
 		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
-		pdf = true
-	} else {
-		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
-	}
-
-	for i := range bookmarks {
-		if pdf == true {
-			destination = bookmarks[i].Destination
+		for i := range bookmarks {
 			if bookmarks[i].Section.String != "" {
 				subtitle = fmt.Sprintf("Page %s. %s", bookmarks[i].Destination, bookmarks[i].Section.String)
 			} else {
 				subtitle = fmt.Sprintf("Page %s", bookmarks[i].Destination)
 			}
-		} else {
-			destination = bookmarks[i].Title
-			subtitle = bookmarks[i].Section.String
+			wf.NewItem(bookmarks[i].Title).
+				Subtitle(subtitle).
+				UID(fmt.Sprintf("%d", bookmarks[i].ID)).
+				Valid(true).
+				Icon(icon).
+				Arg(bookmarks[i].Destination)
 		}
-		wf.NewItem(bookmarks[i].Title).
-			Subtitle(subtitle).
-			UID(fmt.Sprintf("%d", bookmarks[i].ID)).
-			Valid(true).
-			Icon(icon).
-			Arg(destination)
+	} else {
+		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
+		for i := range bookmarks {
+			wf.NewItem(bookmarks[i].Title).
+				Subtitle(bookmarks[i].Section.String).
+				UID(fmt.Sprintf("%d", bookmarks[i].ID)).
+				Valid(true).
+				Icon(icon).
+				Arg(bookmarks[i].Title)
+		}
 	}
 	wf.SendFeedback()
 }
