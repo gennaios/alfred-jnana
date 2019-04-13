@@ -281,25 +281,14 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 
 // NewBookmarks: insert new bookmarks into database
 func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) ([]*Bookmark, error) {
-	var destination string
-	pdf := false
-	if strings.HasSuffix(file.Path, "pdf") {
-		pdf = true
-	}
-
 	tx, err := db.sess.Begin()
 	// insert new bookmarks
 	for i := range bookmarks {
-		if pdf == true {
-			destination = bookmarks[i].Destination
-		} else {
-			destination = bookmarks[i].Uri
-		}
 		_, err = db.sess.InsertInto("bookmarks").
 			Pair("file_id", file.ID).
 			Pair("title", bookmarks[i].Title).
 			Pair("section", dbr.NewNullString(bookmarks[i].Section)).
-			Pair("destination", destination).
+			Pair("destination", bookmarks[i].Destination).
 			Exec()
 	}
 	err = tx.Commit()
