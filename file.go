@@ -155,9 +155,8 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 		Exec()
 	err = tx.Commit()
 
-	if strings.HasSuffix(book, ".pdf") {
-		err = f.pdf.Close()
-	} else {
+	err = f.file.Close()
+	if strings.HasSuffix(book, ".epub") {
 		f.epub.Close()
 	}
 
