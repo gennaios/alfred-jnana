@@ -92,8 +92,7 @@ func init() {
 }
 
 // initDatabase: initialize SQLite database
-func initDatabase() Database {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+func initDatabase(dbFile string) Database {
 	db := Database{}
 	db.Init(dbFile)
 	return db
@@ -101,7 +100,8 @@ func initDatabase() Database {
 
 // Bookmarks all for file, from database or imported, return results
 func bookmarksForFile(file string) {
-	db := initDatabase()
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabase(dbFile)
 
 	bookmarks, err := db.BookmarksForFile(file)
 	if err == nil {
@@ -122,7 +122,9 @@ func bookmarksForFileEpub(query string) {
 
 // Bookmarks filtered for file, from database or imported, return results
 func bookmarksForFileFiltered(file string, query string) {
-	db := initDatabase()
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabase(dbFile)
+
 	bookmarks, err := db.BookmarksForFileFiltered(file, query)
 
 	if err == nil {
@@ -216,7 +218,9 @@ func printLastQuery() {
 
 // Query database for all bookmarks
 func searchAllBookmarks(query string) {
-	db := initDatabase()
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabase(dbFile)
+
 	cacheLastQuery(query)
 	results, err := db.searchAll(query)
 	if err != nil {
@@ -341,7 +345,8 @@ func UpdateFile(db Database, fileRecord *File) {
 
 // UpdateFiles: check passed file or all files for metadata changes, not including bookmarks
 func UpdateFiles(file string) {
-	db := initDatabase()
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabase(dbFile)
 
 	if _, err := os.Stat(file); err == nil {
 		fileRecord, _, _ := db.GetFile(file, false)

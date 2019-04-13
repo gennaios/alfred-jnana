@@ -1,23 +1,11 @@
 package main
 
 import (
-	"database/sql"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"path/filepath"
 	"testing"
 )
-
-// 	"github.com/stretchr/testify/require"
-
-func assertPragma(t *testing.T, row *sql.Row, expected string, pragma string) {
-	var result string
-	if err := row.Scan(&result); err != nil {
-		log.Fatal(err)
-	}
-	assert.Equal(t, result, expected, pragma)
-}
 
 // run the bookmarksForFile function b.N times
 func BenchmarkBookmarksForFile(b *testing.B) {
