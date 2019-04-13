@@ -106,8 +106,7 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 // return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromPath(book string) (*DatabaseFile, error) {
 	var file *DatabaseFile
-	err := db.sess.Select("*").
-		From("files").Where("path = ?", book).LoadOne(&file)
+	err := db.sess.SelectBySql("SELECT * FROM files WHERE path = ?", book).LoadOne(&file)
 	return file, err
 }
 
@@ -115,8 +114,7 @@ func (db *Database) GetFileFromPath(book string) (*DatabaseFile, error) {
 // return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromHash(hash string) (*DatabaseFile, error) {
 	var file *DatabaseFile
-	err := db.sess.Select("*").
-		From("files").Where("hash = ?", hash).LoadOne(&file)
+	err := db.sess.SelectBySql("SELECT * FROM files WHERE hash = ?", hash).LoadOne(&file)
 	return file, err
 }
 
