@@ -24,7 +24,6 @@ type FileBookmark struct {
 	Title       string `json:"title"`
 	Section     string `json:"section"`
 	Destination string `json:"destination"`
-	Uri         string
 }
 
 // Init EPUB or PDF path and fill struct fields with metadata
@@ -51,7 +50,7 @@ func (f *File) Bookmarks() ([]*FileBookmark, error) {
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	return f.parseBookmarks(outlines), err
+	return f.parseBookmarks(f.path, outlines), err
 }
 
 func (f *File) Metadata() {
@@ -102,20 +101,27 @@ func (f *File) MetadataForPDF() {
 }
 
 // Parse bookmarks from go-fitz
-func (f *File) parseBookmarks(outline []fitz.Outline) []*FileBookmark {
+func (f *File) parseBookmarks(file string, outline []fitz.Outline) []*FileBookmark {
 	sections := []string{"", "", "", "", "", "", "", "", "", "", "", "", ""}
 	var parsedBookmarks []*FileBookmark
 	var page int
 	var currentLevel int
 	var section string
 	var title string
+	var destination string
 
 	for _, bookmark := range outline {
-		if bookmark.Page != -1 {
-			page = bookmark.Page + 1
+		if strings.HasSuffix(file, ".pdf") {
+			if bookmark.Page != -1 {
+				page = bookmark.Page + 1
+			} else {
+				page = -1
+			}
+			destination = fmt.Sprintf("%d", page)
 		} else {
-			page = -1
+			destination = strings.TrimSpace(bookmark.URI)
 		}
+
 		title = strings.TrimSpace(bookmark.Title)
 
 		section = ""
@@ -134,11 +140,11 @@ func (f *File) parseBookmarks(outline []fitz.Outline) []*FileBookmark {
 				currentLevel -= 1
 			}
 		}
+
 		newBookmark := FileBookmark{
 			Title:       title,
 			Section:     section,
-			Destination: fmt.Sprintf("%d", page),
-			Uri:         strings.TrimSpace(bookmark.URI),
+			Destination: destination,
 		}
 		parsedBookmarks = append(parsedBookmarks, &newBookmark)
 	}
