@@ -13,7 +13,6 @@ type File struct {
 
 	epub *epubgo.Epub
 	nav  *epubgo.NavigationIterator
-	pdf  *fitz.Document
 
 	title     string
 	authors   string
@@ -89,7 +88,8 @@ func (f *File) MetadataForEPUB() {
 
 // MetadataForPDF: for PDF path, using go-fitz
 func (f *File) MetadataForPDF() {
-	fileMetadata := f.pdf.Metadata()
+	f.file, _ = fitz.New(f.path)
+	fileMetadata := f.file.Metadata()
 
 	title := strings.Trim(fileMetadata["title"], `'"; `)
 	if title != "" {

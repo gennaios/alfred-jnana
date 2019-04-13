@@ -66,11 +66,10 @@ func (db *Database) Init(dbFilePath string) {
 	// create tables and triggers if 'files' does not exist
 	tables := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='files'")
 	var result string
-	if err := tables.Scan(&result); err == nil {
-		if result != "files" {
-			db.createTables()
-			db.createTriggers()
-		}
+	_ = tables.Scan(&result)
+	if result != "files" || dbFilePath == "memory" {
+		db.createTables()
+		db.createTriggers()
 	}
 
 	if err != nil {
