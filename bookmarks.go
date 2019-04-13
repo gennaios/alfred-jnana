@@ -35,9 +35,14 @@ type SearchAllResult struct {
 
 // Init: open SQLite database connection using dbr, create new session
 func (db *Database) Init(dbFilePath string) {
+	var file string
 	// open with PRAGMAs:
 	// journal_mode=WAL, locking_mode=EXCLUSIVE, synchronous=0
-	file := fmt.Sprintf("file:%s%s", dbFilePath, "?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0")
+	if dbFilePath != "memory" {
+		file = fmt.Sprintf("file:%s%s", dbFilePath, "?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0&_foreign_keys=1")
+	} else {
+		file = "file::memory:?mode=memory&cache=shared&_locking_mode=EXCLUSIVE&_synchronous=0&_foreign_keys=1"
+	}
 	conn, err := dbr.Open("sqlite3", file, nil)
 
 	// TODO: return error
