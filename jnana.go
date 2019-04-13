@@ -45,8 +45,8 @@ commands:
     all		Search all bookmarks.
     allepub	Search all EPUB bookmarks.
     allpdf	Search all PDF bookmarks.
-    bm		Bookmarks for file
-    bmf		Bookmarks for file filtered by query
+    bm		Bookmarks for path
+    bmf		Bookmarks for path filtered by query
     epub	Bookmarks for EPUB in calibre
     epubf	Bookmarks for EPUB in calibre filtered by query
     getepub     Return opened EPUB
@@ -54,7 +54,7 @@ commands:
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
     lastquery	Retrieve cached last query string for script filter
     test        Testing stuff
-    update      Update file metadata
+    update      Update path metadata
 `
 
 	wf *aw.Workflow
@@ -98,7 +98,7 @@ func initDatabase(dbFile string) Database {
 	return db
 }
 
-// Bookmarks all for file, from database or imported, return results
+// Bookmarks all for path, from database or imported, return results
 func bookmarksForFile(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
@@ -120,7 +120,7 @@ func bookmarksForFileEpub(query string) {
 	}
 }
 
-// Bookmarks filtered for file, from database or imported, return results
+// Bookmarks filtered for path, from database or imported, return results
 func bookmarksForFileFiltered(file string, query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
@@ -204,7 +204,10 @@ func openCalibreBookmarkCommand(command string, cmdArgs []string) {
 	//os.RemoveAll(output_path)
 	temp := "/tmp"
 	file, _ := os.Create(filepath.Join(temp, "alfred-jnana.sh"))
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
+
 	_, _ = file.WriteString("#!/bin/sh\n")
 	_, _ = file.WriteString(command + " " + strings.Join(cmdArgs, " "))
 	_, _ = file.WriteString("\n")
@@ -329,21 +332,26 @@ func returnSearchAllResults(bookmarks []*SearchAllResult) {
 }
 
 func TestStuff(file string) {
-	//bookmarks, _ := bookmarksForPDF(file)
+	//bookmarks, _ := bookmarksForPDF(path)
 	//fmt.Println("bookmarks", len(bookmarks))
-	bookmarks2, _ := FileBookmarks(file)
+	f := File{}
+	if err := f.Init(file); err != nil {
+		log.Println(err)
+	}
+	_ = f.Init(file)
+	bookmarks2, _ := f.Bookmarks()
 	fmt.Println("Bookmarks", len(bookmarks2))
 }
 
-// UpdateFile: check one file for metadata updates, not including bookmarks
-func UpdateFile(db Database, fileRecord *File) {
-	updated, _ := db.UpdateFileCheck(fileRecord)
+// UpdateFile: check one path for metadata updates, not including bookmarks
+func UpdateFile(db Database, fileRecord *DatabaseFile) {
+	updated, _ := db.UpdateMetadata(fileRecord)
 	if updated == true {
 		fmt.Println("Updated:", fileRecord.Path)
 	}
 }
 
-// UpdateFiles: check passed file or all files for metadata changes, not including bookmarks
+// UpdateFiles: check passed path or all files for metadata changes, not including bookmarks
 func UpdateFiles(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)

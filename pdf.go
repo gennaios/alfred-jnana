@@ -1,14 +1,25 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
-	"os/exec"
-	"strings"
-
 	"github.com/gen2brain/go-fitz"
+	"github.com/meskio/epubgo"
+	"strings"
 )
+
+type File struct {
+	path string
+	file *fitz.Document
+
+	epub *epubgo.Epub
+	nav  *epubgo.NavigationIterator
+	pdf  *fitz.Document
+
+	title     string
+	authors   string
+	subjects  string
+	publisher string
+}
 
 type FileBookmark struct {
 	Title       string `json:"title"`
@@ -17,78 +28,81 @@ type FileBookmark struct {
 	Uri         string
 }
 
-type PDFMetadata struct {
-	Title   string
-	Authors string
+// Init EPUB or PDF path and fill struct fields with metadata
+func (f *File) Init(file string) error {
+	var err error
+	f.path = file
+
+	if strings.HasSuffix(f.path, ".epub") {
+		f.epub, err = epubgo.Open(file)
+		f.nav, err = f.epub.Navigation()
+	}
+	f.Metadata()
+	return err
+
 }
 
-// FileBookmarks: for EPUB and PDF file, using go-fitz
-func FileBookmarks(file string) ([]*FileBookmark, error) {
-	doc, err := fitz.New(file)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	defer doc.Close()
+// Bookmarks: for EPUB and PDF path, using go-fitz
+func (f *File) Bookmarks() ([]*FileBookmark, error) {
+	var outlines []fitz.Outline
+	var err error
 
-	outlines, err := doc.ToC()
+	f.file, err = fitz.New(f.path)
+	outlines, err = f.file.ToC()
 	if err != nil {
 		fmt.Println("error:", err)
 	}
-	return parseBookmarks(outlines), err
+	return f.parseBookmarks(outlines), err
 }
 
-// FileBookmarks: for PDF file, using go-fitz
-func MetadataForPDF(file string) PDFMetadata {
-	doc, err := fitz.New(file)
-	if err != nil {
-		fmt.Println("error:", err)
+func (f *File) Metadata() {
+	if strings.HasSuffix(f.path, ".pdf") {
+		f.MetadataForPDF()
+	} else if strings.HasSuffix(f.path, ".epub") {
+		f.MetadataForEPUB()
 	}
-	defer doc.Close()
+}
 
-	fileMetadata := doc.Metadata()
-	var metadata PDFMetadata
+// MetadataForEPUB: for PDF path, using go-fitz
+func (f *File) MetadataForEPUB() {
+	var title []string
+	var authors []string
+	var subjects []string
+	var publisher []string
+
+	title, _ = f.epub.Metadata("title")
+	title = trimMetadata(title)
+	f.title = strings.TrimSpace(strings.Join(title[:], "; "))
+
+	authors, _ = f.epub.Metadata("creator")
+	authors = trimMetadata(authors)
+	f.authors = strings.TrimSpace(strings.Join(authors[:], "; "))
+
+	subjects, _ = f.epub.Metadata("subject")
+	subjects = trimMetadata(subjects)
+	f.subjects = strings.TrimSpace(strings.Join(subjects[:], "; "))
+
+	publisher, _ = f.epub.Metadata("publisher")
+	publisher = trimMetadata(publisher)
+	f.publisher = strings.TrimSpace(strings.Join(publisher[:], "; "))
+}
+
+// MetadataForPDF: for PDF path, using go-fitz
+func (f *File) MetadataForPDF() {
+	fileMetadata := f.pdf.Metadata()
 
 	title := strings.Trim(fileMetadata["title"], `'"; `)
 	if title != "" {
-		metadata.Title = title
+		f.title = title
 	}
-
 	authors := strings.Trim(fileMetadata["author"], `'"; `)
 	if authors != "" {
-		metadata.Authors = authors
+		f.authors = authors
 	}
-	return metadata
-}
-
-// FBookmarks for EPUB and PDF file, using Python script ./pdf.py
-func bookmarksForPDF(file string) ([]*FileBookmark, error) {
-	cmdArgs := []string{"FileBookmarks", file}
-
-	output, err := exec.Command("./pdf.py", cmdArgs...).Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// JSON stdout as []bytes, convert before return
-	var bookmarks []*FileBookmark
-	bookmarks, err = bookmarksFromJson(output)
-
-	return bookmarks, err
-}
-
-// Take JSON []bytes and return as slice of FileBookmark structs
-func bookmarksFromJson(jsonBytes []byte) ([]*FileBookmark, error) {
-	var bookmarks []*FileBookmark
-
-	err := json.Unmarshal(jsonBytes, bookmarks)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return bookmarks, err
 }
 
 // Parse bookmarks from go-fitz
-func parseBookmarks(outline []fitz.Outline) []*FileBookmark {
+func (f *File) parseBookmarks(outline []fitz.Outline) []*FileBookmark {
 	sections := []string{"", "", "", "", "", "", "", "", "", "", "", "", ""}
 	var parsedBookmarks []*FileBookmark
 	var page int
@@ -129,4 +143,11 @@ func parseBookmarks(outline []fitz.Outline) []*FileBookmark {
 		parsedBookmarks = append(parsedBookmarks, &newBookmark)
 	}
 	return parsedBookmarks
+}
+
+func trimMetadata(slc []string) []string {
+	for i := range slc {
+		slc[i] = strings.Trim(slc[i], `'"; `)
+	}
+	return slc
 }

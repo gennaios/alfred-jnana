@@ -191,6 +191,7 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 	var err error
 
 	fileRecord, changed, err := db.GetFile(file, true)
+
 	if err != nil {
 		return bookmarks, err
 	}
@@ -198,17 +199,20 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 		From("bookmarks").Where("file_id = ?", fileRecord.ID).
 		LoadOne(&bookmarks)
 
-	// file created or changed / or no bookmarks found
+	// path created or changed / or no bookmarks found
 	if changed == true || len(bookmarks) == 0 {
 		var newBookmarks []*FileBookmark
 
-		newBookmarks, _ = FileBookmarks(file) // go-fitz
+		f := File{}
+		_ = f.Init(file)
+		newBookmarks, _ = f.Bookmarks()
+
 		// no bookmarks returned from first, get new
 		if len(bookmarks) == 0 {
 			// insert new
 			bookmarks, err = db.NewBookmarks(fileRecord, newBookmarks)
 		} else if bookmarksEqual(bookmarks, newBookmarks) == false {
-			// file updated, compare bookmarks
+			// path updated, compare bookmarks
 			// update database
 			bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
 			_ = notification("Bookmarks updated.")
@@ -218,7 +222,7 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 	return bookmarks, err
 }
 
-// BookmarksForFileFiltered: filtered bookmarks for file
+// BookmarksForFileFiltered: filtered bookmarks for path
 func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
 	var results []*SearchAllResult
@@ -250,7 +254,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	return results, err
 }
 
-// searchAll: Search all bookmarks from FTS5 table, order by rank title, section, & file name
+// searchAll: Search all bookmarks from FTS5 table, order by rank title, section, & path name
 // Return results as slice of struct SearchAllResult, later prepped for Alfred script filter
 func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
@@ -277,7 +281,7 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 }
 
 // NewBookmarks: insert new bookmarks into database
-func (db *Database) NewBookmarks(file *File, bookmarks []*FileBookmark) ([]*Bookmark, error) {
+func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) ([]*Bookmark, error) {
 	var destination string
 	pdf := false
 	if strings.HasSuffix(file.Path, "pdf") {
@@ -309,7 +313,7 @@ func (db *Database) NewBookmarks(file *File, bookmarks []*FileBookmark) ([]*Book
 }
 
 // UpdateBookmarks: update bookmarks, delete old first, then call NewBookmarks
-func (db *Database) UpdateBookmarks(file *File, bookmarks []*FileBookmark) ([]*Bookmark, error) {
+func (db *Database) UpdateBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) ([]*Bookmark, error) {
 	tx, err := db.sess.Begin()
 	_, err = db.sess.DeleteFrom("bookmarks").Where("file_id = ?", file.ID).Exec()
 	err = tx.Commit()
@@ -317,7 +321,7 @@ func (db *Database) UpdateBookmarks(file *File, bookmarks []*FileBookmark) ([]*B
 	return newBookmarks, err
 }
 
-// bookmarksEqual: compare bookmarks from database with file, used for update check
+// bookmarksEqual: compare bookmarks from database with path, used for update check
 func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
 	if len(newBookmarks) != len(bookmarks) {
 		return false
