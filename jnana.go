@@ -45,8 +45,8 @@ commands:
     all		Search all bookmarks.
     allepub	Search all EPUB bookmarks.
     allpdf	Search all PDF bookmarks.
-    bm		Bookmarks for path
-    bmf		Bookmarks for path filtered by query
+    bm		Bookmarks for file
+    bmf		Bookmarks for file filtered by query
     epub	Bookmarks for EPUB in calibre
     epubf	Bookmarks for EPUB in calibre filtered by query
     getepub     Return opened EPUB
@@ -98,7 +98,7 @@ func initDatabase(dbFile string) Database {
 	return db
 }
 
-// Bookmarks all for path, from database or imported, return results
+// Bookmarks all for file, from database or imported, return results
 func bookmarksForFile(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
@@ -120,7 +120,7 @@ func bookmarksForFileEpub(query string) {
 	}
 }
 
-// Bookmarks filtered for path, from database or imported, return results
+// Bookmarks filtered for file, from database or imported, return results
 func bookmarksForFileFiltered(file string, query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)

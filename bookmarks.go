@@ -221,7 +221,7 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 	return bookmarks, err
 }
 
-// BookmarksForFileFiltered: filtered bookmarks for path
+// BookmarksForFileFiltered: filtered bookmarks for file
 func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
 	var results []*SearchAllResult
@@ -237,7 +237,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
 			WHERE bookmarks.file_id = %s
 			AND bookmarksindex MATCH '{title section}: %s'
-			ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)'`,
+		 	AND rank MATCH 'bm25(10.0, 5.0)'`,
 		strconv.FormatInt(fileRecord.ID, 10), *queryString)
 	_, err = db.sess.SelectBySql(sql).Load(&results)
 
