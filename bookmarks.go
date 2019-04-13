@@ -190,12 +190,12 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 	var err error
 
 	fileRecord, changed, err := db.GetFile(file, true)
-
 	if err != nil {
 		return bookmarks, err
 	}
-	err = db.sess.Select("id", "title", "section", "destination").
-		From("bookmarks").Where("file_id = ?", fileRecord.ID).
+
+	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmarks
+					WHERE file_id = ?`, fileRecord.ID).
 		LoadOne(&bookmarks)
 
 	// path created or changed / or no bookmarks found
@@ -231,24 +231,16 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 		return results, err
 	}
 
-	/*
-		select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
-		from bookmarks
-		JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
-		where bookmarks.file_id = ?
-		and bookmarksindex match '{title section} : …' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';
-	*/
-
-	//_, err := db.sess.Select("bookmarks.id", "bookmarks.title", "bookmarks.section",
-	//	"bookmarks.destination").
-	//	From("bookmarks").
-	//	Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
-	//	Where("bookmarks.file_id = ?", fileRecord.ID).
-	//	Where("bookmarksindex MATCH '{title section}:?' ORDER BY rank", queryString).
-	//	Load(&results)
-
-	sql := fmt.Sprintf("select bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination from bookmarks JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid where bookmarks.file_id = %s and bookmarksindex match '{title section}: %s' ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)';", strconv.FormatInt(fileRecord.ID, 10), *queryString)
+	sql := fmt.Sprintf(
+		`SELECT bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
+			FROM bookmarks
+			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
+			WHERE bookmarks.file_id = %s
+			AND bookmarksindex MATCH '{title section}: %s'
+			ORDER BY 'bm25(bookmarksindex, 5.0, 2.0)'`,
+		strconv.FormatInt(fileRecord.ID, 10), *queryString)
 	_, err = db.sess.SelectBySql(sql).Load(&results)
+
 	err = db.conn.Close()
 	return results, err
 }
@@ -259,22 +251,18 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
 	var results []*SearchAllResult
 
-	//SELECT
-	//bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination,
-	//bookmarks.file_id, files.path, files.file_name
-	//FROM bookmarks
-	//JOIN files ON bookmarks.file_id = files.id
-	//JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
-	//WHERE bookmarksindex MATCH '?' AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0)'
-
 	// NOTE: AND rank MATCH 'bm25(10.0, 5.0)' ORDER BY rank faster than ORDER BY bm25(fts, …)
-	_, err := db.sess.Select("bookmarks.id", "bookmarks.title", "bookmarks.section",
-		"bookmarks.destination", "bookmarks.file_id", "files.path", "files.file_name").
-		From("bookmarks").
-		Join("files", "bookmarks.file_id = files.id").
-		Join("bookmarksindex", "bookmarks.id = bookmarksindex.rowid").
-		Where("bookmarksindex MATCH ? AND rank MATCH 'bm25(10.0, 5.0, 2.5, 1.0, 1.0, 1.0, 1.0)'", queryString).
-		OrderBy("rank").Limit(100).Load(&results)
+	_, err := db.sess.SelectBySql(`SELECT
+			bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination,
+			bookmarks.file_id, files.path, files.file_name
+			FROM bookmarks
+			JOIN files ON bookmarks.file_id = files.id
+			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
+			WHERE bookmarksindex MATCH ?
+			AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0)'
+			ORDER BY rank`,
+		queryString).Limit(100).Load(&results)
+
 	err = db.conn.Close()
 	return results, err
 }
