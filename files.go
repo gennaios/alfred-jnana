@@ -143,10 +143,10 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 		Pair("path", book).
 		Pair("file_name", filepath.Base(book)).
 		Pair("file_extension", filepath.Ext(book)[1:]).
-		Pair("file_title", dbr.NewNullString(f.title)).
-		Pair("file_authors", dbr.NewNullString(f.authors)).
-		Pair("file_subjects", dbr.NewNullString(f.subjects)).
-		Pair("file_publisher", dbr.NewNullString(f.publisher)).
+		Pair("file_title", NewNullString(f.title)).
+		Pair("file_authors", NewNullString(f.authors)).
+		Pair("file_subjects", NewNullString(f.subjects)).
+		Pair("file_publisher", NewNullString(f.publisher)).
 		Pair("date_created", time.Now().UTC().Format("2006-01-02 15:04:05")).
 		Pair("date_modified", dateModified).
 		Pair("hash", hash).
@@ -168,10 +168,10 @@ func (db *Database) UpdateFile(file DatabaseFile) error {
 	_, err = db.sess.Update("files").
 		Set("path", file.Path).
 		Set("file_name", filepath.Base(file.Path)).
-		Set("file_title", dbr.NewNullString(file.Title.String)).
-		Set("file_authors", dbr.NewNullString(file.Authors.String)).
-		Set("file_subjects", dbr.NewNullString(file.Subjects.String)).
-		Set("file_publisher", dbr.NewNullString(file.Publisher.String)).
+		Set("file_title", NewNullString(file.Title.String)).
+		Set("file_authors", NewNullString(file.Authors.String)).
+		Set("file_subjects", NewNullString(file.Subjects.String)).
+		Set("file_publisher", NewNullString(file.Publisher.String)).
 		Set("date_modified", file.DateModified).
 		Set("hash", file.FileHash).
 		Where("id = ?", file.ID).
@@ -253,4 +253,11 @@ func fileHash(file string) (string, error) {
 	}
 	hashString := hex.EncodeToString(h.Sum(nil))
 	return hashString, err
+}
+
+func NewNullString(s string) dbr.NullString {
+	if len(s) == 0 {
+		return dbr.NullString{}
+	}
+	return dbr.NewNullString(s)
 }
