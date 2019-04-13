@@ -237,7 +237,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
 			WHERE bookmarks.file_id = %s
 			AND bookmarksindex MATCH '{title section}: %s'
-		 	AND rank MATCH 'bm25(10.0, 5.0)'`,
+			ORDER BY 'rank(bookmarksindex)'`,
 		strconv.FormatInt(fileRecord.ID, 10), *queryString)
 	_, err = db.sess.SelectBySql(sql).Load(&results)
 
