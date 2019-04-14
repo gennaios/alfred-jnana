@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/deanishe/awgo"
@@ -299,13 +300,13 @@ func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 		for i := range bookmarks {
 			destination = bookmarks[i].Destination
 			if bookmarks[i].Section.String != "" {
-				subtitle = fmt.Sprintf("Page %s. %s", bookmarks[i].Destination, bookmarks[i].Section.String)
+				subtitle = "Page " + bookmarks[i].Destination + ". " + bookmarks[i].Section.String
 			} else {
-				subtitle = fmt.Sprintf("Page %s", bookmarks[i].Destination)
+				subtitle = "Page " + bookmarks[i].Destination
 			}
 			wf.NewItem(bookmarks[i].Title).
 				Subtitle(subtitle).
-				UID(fmt.Sprintf("%d", bookmarks[i].ID)).
+				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
 				Arg(destination)
@@ -315,7 +316,7 @@ func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 		for i := range bookmarks {
 			wf.NewItem(bookmarks[i].Title).
 				Subtitle(bookmarks[i].Section.String).
-				UID(fmt.Sprintf("%d", bookmarks[i].ID)).
+				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
 				Arg(bookmarks[i].Title)
@@ -331,25 +332,27 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 	if strings.HasSuffix(file, "pdf") {
 		var subtitle string
 		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
+
 		for i := range bookmarks {
 			if bookmarks[i].Section.String != "" {
-				subtitle = fmt.Sprintf("Page %s. %s", bookmarks[i].Destination, bookmarks[i].Section.String)
+				subtitle = "Page " + bookmarks[i].Destination + ". " + bookmarks[i].Section.String
 			} else {
-				subtitle = fmt.Sprintf("Page %s", bookmarks[i].Destination)
+				subtitle = "Page " + bookmarks[i].Destination
 			}
 			wf.NewItem(bookmarks[i].Title).
 				Subtitle(subtitle).
-				UID(fmt.Sprintf("%d", bookmarks[i].ID)).
+				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
 				Arg(bookmarks[i].Destination)
 		}
 	} else {
 		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
+
 		for i := range bookmarks {
 			wf.NewItem(bookmarks[i].Title).
 				Subtitle(bookmarks[i].Section.String).
-				UID(fmt.Sprintf("%d", bookmarks[i].ID)).
+				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
 				Arg(bookmarks[i].Title)
@@ -367,20 +370,20 @@ func returnSearchAllResults(bookmarks []*SearchAllResult) {
 		icon := iconForFileID(bookmarks[i].FileID, bookmarks[i].Path)
 
 		if bookmarks[i].Section.String != "" {
-			title = fmt.Sprintf("%s | %s", bookmarks[i].Title, bookmarks[i].Section.String)
+			title = bookmarks[i].Title + " | " + bookmarks[i].Section.String
 		} else {
 			title = bookmarks[i].Title
 		}
 		if strings.HasSuffix(bookmarks[i].FileName, ".pdf") {
-			subtitle = fmt.Sprintf("Page %s. %s", bookmarks[i].Destination, bookmarks[i].FileName)
-			arg = fmt.Sprintf("%s/Page:%s", bookmarks[i].Path, bookmarks[i].Destination)
+			subtitle = "Page " + bookmarks[i].Destination + ". " + bookmarks[i].FileName
+			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Destination
 		} else {
 			subtitle = bookmarks[i].FileName
-			arg = fmt.Sprintf("%s/Page:%s", bookmarks[i].Path, bookmarks[i].Title)
+			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Title
 		}
 		wf.NewItem(title).
 			Subtitle(subtitle).
-			UID(fmt.Sprintf("%d", bookmarks[i].ID)).
+			UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 			Valid(true).
 			Icon(icon).
 			Arg(arg)
