@@ -294,7 +294,7 @@ func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) 
 			bookmarks
 			(file_id, title, section, destination) VALUES (?, ?, ?, ?)
 			`,
-			file.ID, bookmarks[i].Title, dbr.NewNullString(bookmarks[i].Section), bookmarks[i].Destination).
+			file.ID, NewNullString(bookmarks[i].Title), NewNullString(bookmarks[i].Section), bookmarks[i].Destination).
 			Exec()
 	}
 
