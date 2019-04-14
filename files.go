@@ -154,7 +154,7 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 		Exec()
 
 	if err != nil {
-		// TODO: workaround PDF metadata isssue
+		// TODO: workaround PDF metadata issue
 		_, err = tx.InsertInto("files").
 			Pair("path", book).
 			Pair("file_name", filepath.Base(book)).

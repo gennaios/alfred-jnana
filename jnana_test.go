@@ -8,7 +8,7 @@ import (
 )
 
 // run the bookmarksForFile function b.N times
-func BenchmarkBookmarksForFile(b *testing.B) {
+func BenchmarkDatabase_BookmarksForFile(b *testing.B) {
 	file, _ := filepath.Abs("./tests/pdf.pdf")
 	if _, err := os.Stat(file); err != nil {
 		log.Fatal(err)
@@ -16,6 +16,18 @@ func BenchmarkBookmarksForFile(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		bookmarksForFile(file)
+	}
+}
+
+// run the bookmarksForFile function b.N times
+func BenchmarkDatabase_BookmarksForFileFiltered(b *testing.B) {
+	file, _ := filepath.Abs("./tests/pdf.pdf")
+	if _, err := os.Stat(file); err != nil {
+		log.Fatal(err)
+	}
+
+	for n := 0; n < b.N; n++ {
+		bookmarksForFileFiltered(file, "links")
 	}
 }
 
