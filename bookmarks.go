@@ -219,7 +219,9 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 		var newBookmarks []*FileBookmark
 
 		f := File{}
-		_ = f.Init(file)
+		if err = f.Init(file); err != nil {
+			return bookmarks, err
+		}
 		newBookmarks, _ = f.Bookmarks()
 
 		// no bookmarks returned from first, get new

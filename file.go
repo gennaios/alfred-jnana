@@ -31,6 +31,11 @@ func (f *File) Init(file string) error {
 	var err error
 	f.path = file
 
+	f.file, err = fitz.New(f.path)
+	if err != nil {
+		return err
+	}
+
 	if strings.HasSuffix(f.path, ".epub") {
 		f.epub, err = epubgo.Open(file)
 		f.nav, err = f.epub.Navigation()
@@ -45,7 +50,6 @@ func (f *File) Bookmarks() ([]*FileBookmark, error) {
 	var outlines []fitz.Outline
 	var err error
 
-	f.file, err = fitz.New(f.path)
 	outlines, err = f.file.ToC()
 	if err != nil {
 		fmt.Println("error:", err)
@@ -92,7 +96,6 @@ func (f *File) MetadataForEPUB() {
 
 // MetadataForPDF: for PDF path, using go-fitz
 func (f *File) MetadataForPDF() {
-	f.file, _ = fitz.New(f.path)
 	fileMetadata := f.file.Metadata()
 
 	f.title = strings.Trim(fileMetadata["title"], `'"; `)
@@ -109,8 +112,14 @@ func (f *File) parseBookmarks(file string, outline []fitz.Outline) []*FileBookma
 	var title string
 	var destination string
 
+	pdf := true
+
+	if strings.HasSuffix(file, ".epub") {
+		pdf = false
+	}
+
 	for _, bookmark := range outline {
-		if strings.HasSuffix(file, ".pdf") {
+		if pdf == true {
 			if bookmark.Page != -1 {
 				page = bookmark.Page + 1
 			} else {

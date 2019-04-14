@@ -412,7 +412,10 @@ func TestStuff(file string) {
 
 // UpdateFile: check one file for metadata updates, not including bookmarks
 func UpdateFile(db Database, fileRecord *DatabaseFile) {
-	updated, _ := db.UpdateMetadata(fileRecord)
+	updated, err := db.UpdateMetadata(fileRecord)
+	if err != nil {
+		log.Println("Error:", fileRecord.Path)
+	}
 	if updated == true {
 		fmt.Println("Updated:", fileRecord.Path)
 	}
