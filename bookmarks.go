@@ -77,6 +77,22 @@ func (db *Database) Init(dbFilePath string) {
 	}
 }
 
+// Init: open SQLite database connection using dbr, for reading, doesn't create tables etc
+func (db *Database) InitForReading(dbFilePath string) {
+	conn, _ := dbr.Open("sqlite3",
+		"file:"+dbFilePath+
+			"?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0&_foreign_keys=1",
+		nil)
+	db.conn = conn
+
+	_, _ = conn.Exec("PRAGMA temp_store = 2;") // MEMORY
+	_, _ = conn.Exec("PRAGMA cache_size = -31250;")
+
+	sess := conn.NewSession(nil)
+	db.sess = sess
+	_, _ = sess.Begin()
+}
+
 // createTables: create tables files, bookmarks, view bookmarks_view for FTS updates, and FTS5 bookmarksindex
 func (db *Database) createTables() {
 	var schemaFiles = `

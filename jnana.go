@@ -102,6 +102,13 @@ func initDatabase(dbFile string) Database {
 	return db
 }
 
+// initDatabase: initialize SQLite database
+func initDatabaseForReading(dbFile string) Database {
+	db := Database{}
+	db.InitForReading(dbFile)
+	return db
+}
+
 // Bookmarks all for file, from database or imported, return results
 func bookmarksForFile(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
@@ -127,7 +134,7 @@ func bookmarksForFileEpub(query string) {
 // Bookmarks filtered for file, from database or imported, return results
 func bookmarksForFileFiltered(file string, query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabase(dbFile)
+	db := initDatabaseForReading(dbFile)
 
 	bookmarks, err := db.BookmarksForFileFiltered(file, query)
 
@@ -191,7 +198,7 @@ func getLastQuery() string {
 
 // ImportFiles: import file or all files in folder
 func ImportFile(db Database, file string) {
-	if strings.HasSuffix(file, ".epub") {
+	if strings.HasSuffix(file, ".epub") || strings.HasSuffix(file, ".pdf") {
 
 		_, err := db.GetFileFromPath(file)
 
@@ -272,7 +279,7 @@ func printLastQuery() {
 // Query database for all bookmarks
 func searchAllBookmarks(query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabase(dbFile)
+	db := initDatabaseForReading(dbFile)
 
 	cacheLastQuery(query)
 	results, err := db.searchAll(query)
