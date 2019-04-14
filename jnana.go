@@ -436,34 +436,26 @@ func runCommand() {
 	// normalize white space, remove dupes
 	query := strings.Join(strings.Fields(strings.TrimSpace(options.Query)), " ")
 
-	if options.All == true {
+	switch true {
+	case options.All:
 		searchAllBookmarks(query)
-	}
-	if options.Bm == true {
+	case options.Bm:
 		bookmarksForFile(options.File)
-	}
-	if options.Bmf == true {
+	case options.Bmf:
 		bookmarksForFileFiltered(options.File, query)
-	}
-	if options.Epub == true {
+	case options.Epub:
 		bookmarksForFileEpub(query)
-	}
-	if options.Import == true {
+	case options.Import:
 		ImportFiles(options.File)
-	}
-	if options.Getepub == true {
+	case options.Getepub:
 		getCurrentEpub()
-	}
-	if options.Openepub == true {
+	case options.Openepub:
 		openCalibreBookmark(query, options.File)
-	}
-	if options.Lastquery == true {
+	case options.Lastquery:
 		printLastQuery()
-	}
-	if options.Test == true {
+	case options.Test:
 		TestStuff(options.File)
-	}
-	if options.Update == true {
+	case options.Update:
 		UpdateFiles(options.File)
 	}
 }
