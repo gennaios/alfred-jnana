@@ -25,8 +25,6 @@ var (
 
 usage:
     jnana all [<query>]
-    jnana allepub [<query>]
-    jnana allpdf [<query>]
     jnana bm <file>
     jnana bmf <file> <query>
     jnana epub [<query>]
@@ -46,12 +44,9 @@ options:
 
 commands:
     all		Search all bookmarks.
-    allepub	Search all EPUB bookmarks.
-    allpdf	Search all PDF bookmarks.
     bm		Bookmarks for file
     bmf		Bookmarks for file filtered by query
     epub	Bookmarks for EPUB in calibre
-    epubf	Bookmarks for EPUB in calibre filtered by query
     getepub     Return opened EPUB
     import      Import file or files from folder	
     openepub	open calibre to bookmark
@@ -70,8 +65,6 @@ commands:
 var options struct {
 	// commands
 	All       bool
-	Allepub   bool
-	Allpdf    bool
 	Bm        bool
 	Bmf       bool
 	Epub      bool
@@ -84,9 +77,9 @@ var options struct {
 	Update    bool
 
 	// parameters
-	Query  string
 	File   string
 	Fileid string
+	Query  string
 }
 
 func init() {
@@ -198,23 +191,31 @@ func getLastQuery() string {
 }
 
 // ImportFiles: import file or all files in folder
-func ImportFile(db Database, file string) {
-	if strings.HasSuffix(file, ".epub") || strings.HasSuffix(file, ".pdf") {
+func ImportFile(db Database, file string) error {
+	var err error
 
-		_, err := db.GetFileFromPath(file)
+	if strings.HasSuffix(file, ".epub") || strings.HasSuffix(file, ".pdf") {
+		_, err = db.GetFileFromPath(file)
 
 		if err == dbr.ErrNotFound {
 			fmt.Println("trying:", file)
-			fileRecord, changed, _ := db.GetFile(file, false)
+			fileRecord, changed, err := db.GetFile(file, false)
+			if err != nil {
+				return err
+			}
 
 			if fileRecord.ID > 1 && changed == true {
-				bookmarks, _ := db.BookmarksForFile(file)
+				bookmarks, err := db.BookmarksForFile(file)
+				if err != nil {
+					return err
+				}
 				if len(bookmarks) != 0 {
 					log.Println("Imported:", fileRecord.FileName)
 				}
 			}
 		}
 	}
+	return err
 }
 
 // ImportFiles: import file or all files in folder
@@ -234,12 +235,16 @@ func ImportFiles(file string) {
 		_ = filepath.Walk(file, func(path string, f os.FileInfo, err error) error {
 			//ImportFile(db, path)
 			aFile, _ := filepath.Abs(path)
-			ImportFile(db, aFile)
+			if err := ImportFile(db, aFile); err != nil {
+				log.Println("ERROR:", aFile+" / "+err.Error())
+			}
 			return nil
 		})
 	case mode.IsRegular():
 		aFile, _ := filepath.Abs(file)
-		ImportFile(db, aFile)
+		if err := ImportFile(db, aFile); err != nil {
+			log.Println("ERROR:", aFile+" / "+err.Error())
+		}
 	}
 }
 
