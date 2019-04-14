@@ -54,8 +54,8 @@ func (db *Database) Init(dbFilePath string) {
 	}
 	db.conn = conn
 
-	//_, err = conn.Exec("PRAGMA auto_vacuum=2;") // unsure if set
-	//_, _ = conn.Exec("PRAGMA temp_store = 2;") // MEMORY
+	_, err = conn.Exec("PRAGMA auto_vacuum=2;") // unsure if set
+	_, _ = conn.Exec("PRAGMA temp_store = 2;")  // MEMORY
 	_, _ = conn.Exec("PRAGMA cache_size = -31250;")
 	//_, _ = conn.Exec("PRAGMA page_size = 8192") // default 4096, match APFS 4096 block size?
 
@@ -67,7 +67,7 @@ func (db *Database) Init(dbFilePath string) {
 	tables := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='files'")
 	var result string
 	_ = tables.Scan(&result)
-	if result != "files" || dbFilePath == "memory" {
+	if result != "files" {
 		db.createTables()
 		db.createTriggers()
 	}
