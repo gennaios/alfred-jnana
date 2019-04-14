@@ -138,6 +138,7 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 		return &DatabaseFile{}, err
 	}
 	defer tx.RollbackUnlessCommitted()
+
 	// filepath.Ext returns with dot
 	_, err = tx.InsertInto("files").
 		Pair("path", book).
@@ -151,6 +152,19 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 		Pair("date_modified", dateModified).
 		Pair("hash", hash).
 		Exec()
+
+	if err != nil {
+		// TODO: workaround PDF metadata isssue
+		_, err = tx.InsertInto("files").
+			Pair("path", book).
+			Pair("file_name", filepath.Base(book)).
+			Pair("file_extension", filepath.Ext(book)[1:]).
+			Pair("date_created", time.Now().UTC().Format("2006-01-02 15:04:05")).
+			Pair("date_modified", dateModified).
+			Pair("hash", hash).
+			Exec()
+	}
+
 	err = tx.Commit()
 
 	err = f.file.Close()
@@ -187,6 +201,7 @@ func (db *Database) UpdateFile(file DatabaseFile) error {
 			file.Path, filepath.Base(file.Path), file.DateModified, file.FileHash,
 			file.ID).Exec()
 	}
+
 	err = tx.Commit()
 	if err != nil {
 		fmt.Println("error committing:", err)
