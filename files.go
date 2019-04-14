@@ -118,7 +118,7 @@ func (db *Database) GetFileFromHash(hash string) (*DatabaseFile, error) {
 	return file, err
 }
 
-// NewFile create new path entry.
+// NewFile create new file entry.
 // DatabaseFile struct comes in with only path.
 // Required fields: path, name, extension, created, modified, hash
 func (db *Database) NewFile(book string) (*DatabaseFile, error) {
@@ -162,22 +162,30 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 	return file, err
 }
 
-// UpdateFile: update path on change of path, path name, or date modified
+// UpdateFile: update file on change of path, path name, or date modified
 func (db *Database) UpdateFile(file DatabaseFile) error {
+	f := File{}
+	_ = f.Init(file.Path)
+
 	tx, err := db.sess.Begin()
-	_, err = db.sess.Update("files").
-		Set("path", file.Path).
-		Set("file_name", filepath.Base(file.Path)).
-		Set("file_title", NewNullString(file.Title.String)).
-		Set("file_authors", NewNullString(file.Authors.String)).
-		Set("file_subjects", NewNullString(file.Subjects.String)).
-		Set("file_publisher", NewNullString(file.Publisher.String)).
-		Set("date_modified", file.DateModified).
-		Set("hash", file.FileHash).
-		Where("id = ?", file.ID).
-		Exec()
+
+	_, err = db.sess.UpdateBySql(`UPDATE files SET
+			path = ?, file_name = ?,
+			file_title = ?, file_authors = ?, file_subjects = ?, file_publisher = ?,
+			date_modified = ?, hash = ?
+			WHERE id = ?`,
+		file.Path, filepath.Base(file.Path),
+		NewNullString(f.title), NewNullString(f.authors), NewNullString(f.subjects), NewNullString(f.publisher),
+		file.DateModified, file.FileHash,
+		file.ID).Exec()
+
 	if err != nil {
-		fmt.Println("error updating:", err)
+		// TODO: PDF metadata "unrecognized token", workaround don't update metadata
+		_, err = db.sess.UpdateBySql(`UPDATE files SET
+			path = ?, file_name = ?, date_modified = ?, hash = ?
+			WHERE id = ?`,
+			file.Path, filepath.Base(file.Path), file.DateModified, file.FileHash,
+			file.ID).Exec()
 	}
 	err = tx.Commit()
 	if err != nil {
