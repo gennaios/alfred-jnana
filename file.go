@@ -54,6 +54,11 @@ func (f *File) Bookmarks() ([]*FileBookmark, error) {
 }
 
 func (f *File) Metadata() {
+	f.title = ""
+	f.authors = ""
+	f.subjects = ""
+	f.publisher = ""
+
 	if strings.HasSuffix(f.path, ".pdf") {
 		f.MetadataForPDF()
 	} else if strings.HasSuffix(f.path, ".epub") {
@@ -90,14 +95,8 @@ func (f *File) MetadataForPDF() {
 	f.file, _ = fitz.New(f.path)
 	fileMetadata := f.file.Metadata()
 
-	title := strings.Trim(fileMetadata["title"], `'"; `)
-	if title != "" {
-		f.title = title
-	}
-	authors := strings.Trim(fileMetadata["author"], `'"; `)
-	if authors != "" {
-		f.authors = authors
-	}
+	f.title = strings.Trim(fileMetadata["title"], `'"; `)
+	f.authors = strings.Trim(fileMetadata["author"], `'"; `)
 }
 
 // Parse bookmarks from go-fitz
