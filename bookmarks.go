@@ -226,7 +226,9 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	queryString := stringForSQLite(query)
 	var results []*SearchAllResult
 
-	fileRecord, _, err := db.GetFile(file, false)
+	// only ID needed, no additional fields or checks
+	var fileRecord *DatabaseFile
+	err := db.sess.SelectBySql("SELECT id FROM files WHERE path = ?", file).LoadOne(&fileRecord)
 	if err != nil {
 		return results, err
 	}
