@@ -131,7 +131,9 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 	hash, _ := fileHash(book)
 
 	f := File{}
-	err = f.Init(book)
+	if err = f.Init(book); err != nil {
+		return &DatabaseFile{}, err
+	}
 
 	tx, err := db.sess.Begin()
 	if err != nil {
@@ -179,7 +181,9 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 // UpdateFile: update file on change of path, path name, or date modified
 func (db *Database) UpdateFile(file DatabaseFile) error {
 	f := File{}
-	_ = f.Init(file.Path)
+	if err := f.Init(file.Path); err != nil {
+		return err
+	}
 
 	tx, err := db.sess.Begin()
 
@@ -218,10 +222,8 @@ func (db *Database) UpdateMetadata(file *DatabaseFile) (bool, error) {
 	update := false
 
 	f := File{}
-	err = f.Init(file.Path)
-	if err != nil {
+	if err = f.Init(file.Path); err != nil {
 		return false, err
-
 	}
 
 	if file.Title.String != f.title && f.title != "" {
