@@ -270,28 +270,32 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 // NewBookmarks: insert new bookmarks into database
 func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) ([]*Bookmark, error) {
 	tx, err := db.sess.Begin()
+
 	// insert new bookmarks
 	for i := range bookmarks {
-		_, err = db.sess.InsertInto("bookmarks").
-			Pair("file_id", file.ID).
-			Pair("title", bookmarks[i].Title).
-			Pair("section", dbr.NewNullString(bookmarks[i].Section)).
-			Pair("destination", bookmarks[i].Destination).
+		_, err = db.sess.InsertBySql(`INSERT INTO
+			bookmarks
+			(file_id, title, section, destination) VALUES (?, ?, ?, ?)
+			`,
+			file.ID, bookmarks[i].Title, dbr.NewNullString(bookmarks[i].Section), bookmarks[i].Destination).
 			Exec()
 	}
+
 	err = tx.Commit()
+
 	// get newly inserted bookmarks
 	var newBookmarks []*Bookmark
-	err = db.sess.Select("id", "title", "section", "destination").
-		From("bookmarks").Where("file_id == ?", file.ID).
-		LoadOne(&newBookmarks)
+	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmarks
+		WHERE file_id = ?`, file.ID).LoadOne(&newBookmarks)
 	return newBookmarks, err
 }
 
 // UpdateBookmarks: update bookmarks, delete old first, then call NewBookmarks
 func (db *Database) UpdateBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) ([]*Bookmark, error) {
 	tx, err := db.sess.Begin()
-	_, err = db.sess.DeleteFrom("bookmarks").Where("file_id = ?", file.ID).Exec()
+
+	_, err = db.sess.DeleteBySql(`DELETE from bookmarks WHERE file_id = ?`, file.ID).Exec()
+
 	err = tx.Commit()
 	newBookmarks, err := db.NewBookmarks(file, bookmarks)
 	return newBookmarks, err
