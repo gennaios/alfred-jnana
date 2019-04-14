@@ -167,7 +167,7 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 
 	err = tx.Commit()
 
-	err = f.file.Close()
+	//err = f.file.Close() // TODO: invalid memory address or nil pointer, maybe closed in File?
 	if strings.HasSuffix(book, ".epub") {
 		f.epub.Close()
 	}

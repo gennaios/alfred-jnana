@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gocraft/dbr"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,6 +29,7 @@ usage:
     jnana bm <file>
     jnana bmf <file> <query>
     jnana epub [<query>]
+    jnana import <file>
     jnana getepub
     jnana openepub <query> [<file>]
     jnana pdf <file> [<query>]
@@ -50,6 +52,7 @@ commands:
     epub	Bookmarks for EPUB in calibre
     epubf	Bookmarks for EPUB in calibre filtered by query
     getepub     Return opened EPUB
+    import      Import file or files from folder	
     openepub	open calibre to bookmark
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
     lastquery	Retrieve cached last query string for script filter
@@ -72,6 +75,7 @@ var options struct {
 	Bmf       bool
 	Epub      bool
 	Getepub   bool
+	Import    bool
 	Openepub  bool
 	Pdf       bool
 	Lastquery bool
@@ -183,6 +187,52 @@ func getLastQuery() string {
 		wf.FatalError(err)
 	}
 	return lastQuery
+}
+
+// ImportFiles: import file or all files in folder
+func ImportFile(db Database, file string) {
+	if strings.HasSuffix(file, ".epub") {
+
+		_, err := db.GetFileFromPath(file)
+
+		if err == dbr.ErrNotFound {
+			fmt.Println("trying:", file)
+			fileRecord, changed, _ := db.GetFile(file, false)
+
+			if fileRecord.ID > 1 && changed == true {
+				bookmarks, _ := db.BookmarksForFile(file)
+				if len(bookmarks) != 0 {
+					log.Println("Imported:", fileRecord.FileName)
+				}
+			}
+		}
+	}
+}
+
+// ImportFiles: import file or all files in folder
+func ImportFiles(file string) {
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabase(dbFile)
+
+	fi, err := os.Stat(file)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	switch mode := fi.Mode(); {
+	case mode.IsDir():
+		// do directory stuff
+		_ = filepath.Walk(file, func(path string, f os.FileInfo, err error) error {
+			//ImportFile(db, path)
+			aFile, _ := filepath.Abs(path)
+			ImportFile(db, aFile)
+			return nil
+		})
+	case mode.IsRegular():
+		aFile, _ := filepath.Abs(file)
+		ImportFile(db, aFile)
+	}
 }
 
 // receive bookmark title as query from script filter and open calibre
@@ -343,7 +393,7 @@ func TestStuff(file string) {
 	fmt.Println("Bookmarks", len(bookmarks2))
 }
 
-// UpdateFile: check one path for metadata updates, not including bookmarks
+// UpdateFile: check one file for metadata updates, not including bookmarks
 func UpdateFile(db Database, fileRecord *DatabaseFile) {
 	updated, _ := db.UpdateMetadata(fileRecord)
 	if updated == true {
@@ -351,7 +401,7 @@ func UpdateFile(db Database, fileRecord *DatabaseFile) {
 	}
 }
 
-// UpdateFiles: check passed path or all files for metadata changes, not including bookmarks
+// UpdateFiles: check passed file or all files for metadata changes, not including bookmarks
 func UpdateFiles(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
@@ -390,6 +440,9 @@ func runCommand() {
 	}
 	if options.Epub == true {
 		bookmarksForFileEpub(query)
+	}
+	if options.Import == true {
+		ImportFiles(options.File)
 	}
 	if options.Getepub == true {
 		getCurrentEpub()
