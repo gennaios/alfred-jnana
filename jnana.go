@@ -91,7 +91,7 @@ var options struct {
 
 func init() {
 	// Create a new Workflow using default settings.
-	wf = aw.New(update.GitHub(repo), aw.HelpURL(fmt.Sprintf("%s%s", repo, "/issues")))
+	wf = aw.New(update.GitHub(repo), aw.HelpURL(repo+"/issues"))
 
 	coversCacheDir = filepath.Join(wf.DataDir(), "covers")
 }
@@ -297,13 +297,16 @@ func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 		var destination string
 		var subtitle string
 		icon = &aw.Icon{Value: "com.adobe.pdf", Type: aw.IconTypeFileType}
+
 		for i := range bookmarks {
 			destination = bookmarks[i].Destination
+
 			if bookmarks[i].Section.String != "" {
 				subtitle = "Page " + bookmarks[i].Destination + ". " + bookmarks[i].Section.String
 			} else {
 				subtitle = "Page " + bookmarks[i].Destination
 			}
+
 			wf.NewItem(bookmarks[i].Title).
 				Subtitle(subtitle).
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
@@ -313,6 +316,7 @@ func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 		}
 	} else {
 		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
+
 		for i := range bookmarks {
 			wf.NewItem(bookmarks[i].Title).
 				Subtitle(bookmarks[i].Section.String).
@@ -339,6 +343,7 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 			} else {
 				subtitle = "Page " + bookmarks[i].Destination
 			}
+
 			wf.NewItem(bookmarks[i].Title).
 				Subtitle(subtitle).
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
@@ -374,6 +379,7 @@ func returnSearchAllResults(bookmarks []*SearchAllResult) {
 		} else {
 			title = bookmarks[i].Title
 		}
+
 		if strings.HasSuffix(bookmarks[i].FileName, ".pdf") {
 			subtitle = "Page " + bookmarks[i].Destination + ". " + bookmarks[i].FileName
 			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Destination
@@ -381,6 +387,7 @@ func returnSearchAllResults(bookmarks []*SearchAllResult) {
 			subtitle = bookmarks[i].FileName
 			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Title
 		}
+
 		wf.NewItem(title).
 			Subtitle(subtitle).
 			UID(strconv.FormatInt(bookmarks[i].ID, 10)).

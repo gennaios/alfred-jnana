@@ -244,10 +244,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 
 	// only ID needed, no additional fields or checks
 	var fileRecord *DatabaseFile
-	err := db.sess.SelectBySql("SELECT id FROM files WHERE path = ?", file).LoadOne(&fileRecord)
-	if err != nil {
-		return results, err
-	}
+	_ = db.sess.SelectBySql("SELECT id FROM files WHERE path = ?", file).LoadOne(&fileRecord)
 
 	sql := fmt.Sprintf(
 		`SELECT bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
@@ -257,7 +254,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 			AND bookmarksindex MATCH '{title section}: %s'
 			ORDER BY 'rank(bookmarksindex)'`,
 		strconv.FormatInt(fileRecord.ID, 10), *queryString)
-	_, err = db.sess.SelectBySql(sql).Load(&results)
+	_, err := db.sess.SelectBySql(sql).Load(&results)
 
 	err = db.conn.Close()
 	return results, err
@@ -350,19 +347,19 @@ func stringForSQLite(query string) *string {
 		term := slc[i]
 		if strings.HasPrefix(term, "-") {
 			// exclude terms beginning with '-', change to 'NOT [term]'
-			queryArray = append(queryArray, fmt.Sprintf("NOT %s*", term[1:]))
+			queryArray = append(queryArray, "NOT "+term[1:]+"*")
 		} else if stringInSlice(term, queryOperators) {
 			// auto capitalize operators 'and', 'or', 'not'
 			queryArray = append(queryArray, strings.ToUpper(term))
 		} else if strings.Contains(term, ".") || strings.Contains(term, "-") {
 			// quote terms containing dot
-			queryArray = append(queryArray, fmt.Sprintf("\"%s*\"", term))
+			queryArray = append(queryArray, "\""+term+"*\"")
 		} else {
 			// make all terms wildcard
-			queryArray = append(queryArray, fmt.Sprintf("%s*", term))
+			queryArray = append(queryArray, term+"*")
 		}
 	}
-	s := strings.TrimSpace(strings.Join(queryArray, " "))
+	s := strings.Join(queryArray, " ")
 	return &s
 }
 
