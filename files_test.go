@@ -20,7 +20,9 @@ func TestDatabase_GetFileFromHash(t *testing.T) {
 	file, _ := filepath.Abs("./tests/pdf.pdf")
 	db := initDatabase("memory")
 
-	fileRecord, _ := db.GetFileFromHash("ebb031c3945e884e695dbc63c52a5efcd075375046c49729980073585ee13c52")
+	// create new, then find by hash
+	fileRecord, _, _ := db.GetFile(file, false)
+	fileRecord, _ = db.GetFileFromHash("ebb031c3945e884e695dbc63c52a5efcd075375046c49729980073585ee13c52")
 
 	assert.Equal(t, fileRecord.Path, file, "File not found by hash")
 }
