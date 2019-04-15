@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/deckarep/gosx-notifier"
@@ -232,18 +233,22 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, int64, error) {
 }
 
 // BookmarksForFileFiltered: filtered bookmarks for file, uses fileId from elsewhere so there's only one query
-func (db *Database) BookmarksForFileFiltered(fileId int64, query string) ([]*SearchAllResult, error) {
+func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
 	var results []*SearchAllResult
+
+	// only ID needed, no additional fields or checks
+	var fileRecord *DatabaseFile
+	_ = db.sess.SelectBySql("SELECT id FROM files WHERE path = ?", file).LoadOne(&fileRecord)
 
 	sql := fmt.Sprintf(
 		`SELECT bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
 			FROM bookmarks
 			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
-			WHERE bookmarks.file_id = %d
+			WHERE bookmarks.file_id = %s
 			AND bookmarksindex MATCH '{title section}: %s'
 			ORDER BY 'rank(bookmarksindex)'`,
-		fileId, *queryString)
+		strconv.FormatInt(fileRecord.ID, 10), *queryString)
 	_, err := db.sess.SelectBySql(sql).Load(&results)
 
 	// run analyze etc upon database close, unsure if faster

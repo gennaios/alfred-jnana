@@ -26,8 +26,8 @@ var (
 usage:
     jnana all [<query>]
     jnana bm <file>
-    jnana bmf <file> [<fileid>] <query>
-    jnana epub [<fileid>] [<query>]
+    jnana bmf <file> <query>
+    jnana epub [<query>]
     jnana import <file>
     jnana getepub
     jnana openepub <query> [<file>]
@@ -116,28 +116,28 @@ func bookmarksForFile(file string) {
 	}
 }
 
-func bookmarksForFileEpub(fileId int64, query string) {
+func bookmarksForFileEpub(query string) {
 	epub := calibreEpubFile()
 	if query != "" {
 		// TODO: should already know file if filtered
-		bookmarksForFileFiltered(epub, fileId, query)
+		bookmarksForFileFiltered(epub, query)
 	} else {
 		bookmarksForFile(epub)
 	}
 }
 
 // Bookmarks filtered for file, from database or imported, return results
-func bookmarksForFileFiltered(file string, fileId int64, query string) {
+func bookmarksForFileFiltered(file string, query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabaseForReading(dbFile)
 
 	// get file if not from command-line
-	if fileId == 0 {
-		fileRecord, _, _ := db.GetFile(file, false)
-		fileId = fileRecord.ID
-	}
+	//if fileId == 0 {
+	//	fileRecord, _, _ := db.GetFile(file, false)
+	//	fileId = fileRecord.ID
+	//}
 
-	bookmarks, err := db.BookmarksForFileFiltered(fileId, query)
+	bookmarks, err := db.BookmarksForFileFiltered(file, query)
 
 	if err == nil {
 		returnBookmarksForFileFiltered(file, bookmarks)
@@ -305,7 +305,7 @@ func returnBookmarksForFile(file string, id int64, bookmarks []*Bookmark) {
 	var icon *aw.Icon
 
 	// return file.ID as variable for later filtered bookmarks
-	wf.Var("FILE_ID", strconv.FormatInt(id, 10))
+	//wf.Var("FILE_ID", strconv.FormatInt(id, 10))
 
 	if strings.HasSuffix(file, "pdf") {
 		var destination string
@@ -469,9 +469,9 @@ func runCommand() {
 	case options.Bm:
 		bookmarksForFile(options.File)
 	case options.Bmf:
-		bookmarksForFileFiltered(options.File, options.Fileid, query)
+		bookmarksForFileFiltered(options.File, query)
 	case options.Epub:
-		bookmarksForFileEpub(options.Fileid, query)
+		bookmarksForFileEpub(query)
 	case options.Import:
 		ImportFiles(options.File)
 	case options.Getepub:
