@@ -233,13 +233,13 @@ end run</string>
 				<string>on run argv
 	set theQuery to item 1 of argv
 	set theFile to (system attribute "JNANA_FILE")
-	set fileId to (system attribute "FILE_ID")
+	-- set fileId to (system attribute "FILE_ID")
 			
 	if theFile is not "epub" then
 		-- PDF
 		if length of theQuery is not 0 then
 			-- filtered bookmarks
-			set cmd to "./jnana bmf " &amp; theFile &amp; " " &amp; fileId as string &amp; " " &amp; (quoted form of theQuery)
+			set cmd to "./jnana bmf " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
 		else
 			-- all bookmarks
 			set cmd to "./jnana bm " &amp; theFile
@@ -248,7 +248,7 @@ end run</string>
 		if length of theQuery is 0 then
 			set cmd to "./jnana epub"
 		else
-			set cmd to "./jnana epub " &amp; theFile &amp; " " &amp; fileId as string &amp; " " &amp; (quoted form of theQuery)
+			set cmd to "./jnana epub " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
 		end if
 	end if
 
