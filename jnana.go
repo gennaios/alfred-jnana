@@ -26,8 +26,8 @@ var (
 usage:
     jnana all [<query>]
     jnana bm <file>
-    jnana bmf <file> <query>
-    jnana epub [<query>]
+    jnana bmf <file> [<fileid>] <query>
+    jnana epub [<fileid>] [<query>]
     jnana import <file>
     jnana getepub
     jnana openepub <query> [<file>]
@@ -78,7 +78,7 @@ var options struct {
 
 	// parameters
 	File   string
-	Fileid string
+	Fileid int64
 	Query  string
 }
 
@@ -108,29 +108,36 @@ func bookmarksForFile(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
 
-	bookmarks, err := db.BookmarksForFile(file)
+	bookmarks, id, err := db.BookmarksForFile(file)
 	if err == nil {
-		returnBookmarksForFile(file, bookmarks)
+		returnBookmarksForFile(file, id, bookmarks)
 	} else {
 		wf.FatalError(err)
 	}
 }
 
-func bookmarksForFileEpub(query string) {
+func bookmarksForFileEpub(fileId int64, query string) {
 	epub := calibreEpubFile()
 	if query != "" {
-		bookmarksForFileFiltered(epub, query)
+		// TODO: should already know file if filtered
+		bookmarksForFileFiltered(epub, fileId, query)
 	} else {
 		bookmarksForFile(epub)
 	}
 }
 
 // Bookmarks filtered for file, from database or imported, return results
-func bookmarksForFileFiltered(file string, query string) {
+func bookmarksForFileFiltered(file string, fileId int64, query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabaseForReading(dbFile)
 
-	bookmarks, err := db.BookmarksForFileFiltered(file, query)
+	// get file if not from command-line
+	if fileId == 0 {
+		fileRecord, _, _ := db.GetFile(file, false)
+		fileId = fileRecord.ID
+	}
+
+	bookmarks, err := db.BookmarksForFileFiltered(fileId, query)
 
 	if err == nil {
 		returnBookmarksForFileFiltered(file, bookmarks)
@@ -205,7 +212,7 @@ func ImportFile(db Database, file string) error {
 			}
 
 			if fileRecord.ID > 1 && changed == true {
-				bookmarks, err := db.BookmarksForFile(file)
+				bookmarks, _, err := db.BookmarksForFile(file)
 				if err != nil {
 					return err
 				}
@@ -295,8 +302,11 @@ func searchAllBookmarks(query string) {
 	returnSearchAllResults(results)
 }
 
-func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
+func returnBookmarksForFile(file string, id int64, bookmarks []*Bookmark) {
 	var icon *aw.Icon
+
+	// return file.ID as variable for later filtered bookmarks
+	wf.Var("FILE_ID", strconv.FormatInt(id, 10))
 
 	if strings.HasSuffix(file, "pdf") {
 		var destination string
@@ -460,9 +470,9 @@ func runCommand() {
 	case options.Bm:
 		bookmarksForFile(options.File)
 	case options.Bmf:
-		bookmarksForFileFiltered(options.File, query)
+		bookmarksForFileFiltered(options.File, options.Fileid, query)
 	case options.Epub:
-		bookmarksForFileEpub(query)
+		bookmarksForFileEpub(options.Fileid, query)
 	case options.Import:
 		ImportFiles(options.File)
 	case options.Getepub:

@@ -69,7 +69,7 @@ func TestDatabase_BookmarksForFile(t *testing.T) {
 	}
 	db := initDatabase("memory")
 
-	bookmarks, _ := db.BookmarksForFile(file)
+	bookmarks, _, _ := db.BookmarksForFile(file)
 	assert.Equal(t, 4, len(bookmarks), "Bookmarks count should be 4")
 }
 
@@ -81,7 +81,7 @@ func TestDatabase_BookmarksForFileFiltered(t *testing.T) {
 	db := initDatabase("memory")
 
 	// BookmarksForFile to import, then filter
-	_, _ = db.BookmarksForFile(file)
+	_, _, _ = db.BookmarksForFile(file)
 	// TODO: invalid memory address, GetFile not creating?
 	//bookmarks, _ := db.BookmarksForFileFiltered(file, "links")
 	//assert.Equal(t, 2, len(bookmarks), "Bookmarks count should be 2")

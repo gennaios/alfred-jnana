@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/deckarep/gosx-notifier"
@@ -39,29 +38,28 @@ func (db *Database) Init(dbFilePath string) {
 	// open with PRAGMAs:
 	// journal_mode=WAL, locking_mode=EXCLUSIVE, synchronous=0
 	if dbFilePath != "memory" {
-		file = fmt.Sprintf("file:%s%s", dbFilePath, "?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0&_foreign_keys=1")
+		file = dbFilePath + "?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0&_foreign_keys=1"
 	} else {
-		file = "file::memory:?mode=memory&cache=shared&_locking_mode=EXCLUSIVE&_synchronous=0&_foreign_keys=1"
+		file = "file::memory:?mode=memory&cache=shared&_foreign_keys=1"
 	}
-	conn, err := dbr.Open("sqlite3", file, nil)
+
+	var err error
+	db.conn, err = dbr.Open("sqlite3", file, nil)
 
 	// TODO: return error
 	if err != nil {
 		panic(err)
 	}
-	if conn == nil {
+	if db.conn == nil {
 		panic("db nil")
 	}
-	db.conn = conn
 
-	_, err = conn.Exec("PRAGMA auto_vacuum=2;") // unsure if set
-	_, _ = conn.Exec("PRAGMA temp_store = 2;")  // MEMORY
-	_, _ = conn.Exec("PRAGMA cache_size = -31250;")
-	//_, _ = conn.Exec("PRAGMA page_size = 8192") // default 4096, match APFS 4096 block size?
+	_, err = db.conn.Exec("PRAGMA auto_vacuum=2") // unsure if set
+	//_, _ = db.conn.Exec("PRAGMA temp_store = 2")  // MEMORY
+	//_, _ = db.conn.Exec("PRAGMA cache_size = -31250")
 
-	sess := conn.NewSession(nil)
-	db.sess = sess
-	_, err = sess.Begin()
+	db.sess = db.conn.NewSession(nil)
+	_, err = db.sess.Begin()
 
 	// create tables and triggers if 'files' does not exist
 	tables := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='files'")
@@ -79,18 +77,9 @@ func (db *Database) Init(dbFilePath string) {
 
 // Init: open SQLite database connection using dbr, for reading, doesn't create tables etc
 func (db *Database) InitForReading(dbFilePath string) {
-	conn, _ := dbr.Open("sqlite3",
-		"file:"+dbFilePath+
-			"?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0&_foreign_keys=1",
-		nil)
-	db.conn = conn
-
-	_, _ = conn.Exec("PRAGMA temp_store = 2;") // MEMORY
-	_, _ = conn.Exec("PRAGMA cache_size = -31250;")
-
-	sess := conn.NewSession(nil)
-	db.sess = sess
-	_, _ = sess.Begin()
+	db.conn, _ = dbr.Open("sqlite3", dbFilePath, nil)
+	db.sess = db.conn.NewSession(nil)
+	_, _ = db.sess.Begin()
 }
 
 // createTables: create tables files, bookmarks, view bookmarks_view for FTS updates, and FTS5 bookmarksindex
@@ -201,13 +190,13 @@ func (db *Database) createTriggers() {
 }
 
 // BookmarksForFile: retrieve existing bookmarks, add new to database if needed and check if updated
-func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
+func (db *Database) BookmarksForFile(file string) ([]*Bookmark, int64, error) {
 	var bookmarks []*Bookmark
 	var err error
 
 	fileRecord, changed, err := db.GetFile(file, true)
 	if err != nil {
-		return bookmarks, err
+		return bookmarks, 0, err
 	}
 
 	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmarks
@@ -220,7 +209,7 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 
 		f := File{}
 		if err = f.Init(file); err != nil {
-			return bookmarks, err
+			return bookmarks, 0, err
 		}
 		newBookmarks, _ = f.Bookmarks()
 
@@ -235,29 +224,30 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 			_ = notification("Bookmarks updated.")
 		}
 	}
+
+	// run analyze etc upon database close, unsure if faster
+	_, _ = db.conn.Exec("PRAGMA optimize;")
 	err = db.conn.Close()
-	return bookmarks, err
+	return bookmarks, fileRecord.ID, err
 }
 
-// BookmarksForFileFiltered: filtered bookmarks for file
-func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*SearchAllResult, error) {
+// BookmarksForFileFiltered: filtered bookmarks for file, uses fileId from elsewhere so there's only one query
+func (db *Database) BookmarksForFileFiltered(fileId int64, query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
 	var results []*SearchAllResult
-
-	// only ID needed, no additional fields or checks
-	var fileRecord *DatabaseFile
-	_ = db.sess.SelectBySql("SELECT id FROM files WHERE path = ?", file).LoadOne(&fileRecord)
 
 	sql := fmt.Sprintf(
 		`SELECT bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
 			FROM bookmarks
 			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
-			WHERE bookmarks.file_id = %s
+			WHERE bookmarks.file_id = %d
 			AND bookmarksindex MATCH '{title section}: %s'
 			ORDER BY 'rank(bookmarksindex)'`,
-		strconv.FormatInt(fileRecord.ID, 10), *queryString)
+		fileId, *queryString)
 	_, err := db.sess.SelectBySql(sql).Load(&results)
 
+	// run analyze etc upon database close, unsure if faster
+	_, _ = db.conn.Exec("PRAGMA optimize;")
 	err = db.conn.Close()
 	return results, err
 }
