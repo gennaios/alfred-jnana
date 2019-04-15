@@ -262,8 +262,7 @@ func openCalibreBookmark(query string, file string) {
 		file = calibreEpubFile()
 	}
 	file = "\"" + file + "\"" // for shell script
-	// TODO: "--continue" needed?
-	cmdArgs := []string{"--open-at=toc:\"" + query + "\"", file}
+	cmdArgs := []string{"--continue --open-at=toc:\"" + query + "\"", file}
 	openCalibreBookmarkCommand(command, cmdArgs)
 	//_ = exec.Command(command, cmdArgs...).Start()
 }
