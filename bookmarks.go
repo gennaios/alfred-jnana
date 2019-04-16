@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -227,7 +226,7 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, int64, error) {
 	}
 
 	// run analyze etc upon database close, unsure if faster
-	_, _ = db.conn.Exec("PRAGMA optimize;")
+	//_, _ = db.conn.Exec("PRAGMA optimize;")
 	err = db.conn.Close()
 	return bookmarks, fileRecord.ID, err
 }
@@ -241,18 +240,16 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	var fileRecord *DatabaseFile
 	_ = db.sess.SelectBySql("SELECT id FROM files WHERE path = ?", file).LoadOne(&fileRecord)
 
-	sql := fmt.Sprintf(
-		`SELECT bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
+	_, err := db.sess.SelectBySql(`SELECT
+			bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
 			FROM bookmarks
 			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
-			WHERE bookmarks.file_id = %s
-			AND bookmarksindex MATCH '{title section}: %s'
-			ORDER BY 'rank(bookmarksindex)'`,
-		strconv.FormatInt(fileRecord.ID, 10), *queryString)
-	_, err := db.sess.SelectBySql(sql).Load(&results)
+			WHERE bookmarks.file_id = ` + strconv.FormatInt(fileRecord.ID, 10) +
+		` AND bookmarksindex MATCH '{title section}: ` + *queryString +
+		`' ORDER BY 'rank(bookmarksindex)'`).Load(&results)
 
 	// run analyze etc upon database close, unsure if faster
-	_, _ = db.conn.Exec("PRAGMA optimize;")
+	//_, _ = db.conn.Exec("PRAGMA optimize;")
 	err = db.conn.Close()
 	return results, err
 }
@@ -272,7 +269,7 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
 			WHERE bookmarksindex MATCH ?
 			AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0)'
-			ORDER BY rank LIMIT 200`,
+			ORDER BY 'rank(bookmarksindex)' LIMIT 200`,
 		queryString).Load(&results)
 
 	err = db.conn.Close()
