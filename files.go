@@ -235,10 +235,6 @@ func (db *Database) UpdateMetadata(file *DatabaseFile) (bool, error) {
 		update = true
 	}
 	if strings.HasSuffix(file.Path, "epub") {
-		if file.Subjects.String != f.subjects && f.subjects != "" {
-			file.Subjects.String = f.subjects
-			update = true
-		}
 		if file.Publisher.String != f.publisher && f.publisher != "" {
 			file.Publisher.String = f.publisher
 			update = true
