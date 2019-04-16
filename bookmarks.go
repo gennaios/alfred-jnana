@@ -334,10 +334,10 @@ func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
 }
 
 // stringForSQLite: prepare string for SQLite FTS query
-// replace '–*' with 'NOT *'
+// make all terms wildcard
 func stringForSQLite(query string) *string {
 	var querySlice []string
-	queryOperators := []string{"AND", "OR", "NOT", "and", "or", "not"}
+	queryOperators := []string{"and", "or", "not", "AND", "OR", "NOT"}
 
 	slc := strings.Split(query, " ")
 	for i := range slc {
@@ -352,7 +352,6 @@ func stringForSQLite(query string) *string {
 			// quote terms containing dot
 			querySlice = append(querySlice, "\""+term+"*\"")
 		} else {
-			// make all terms wildcard
 			querySlice = append(querySlice, term+"*")
 		}
 	}
