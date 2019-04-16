@@ -336,7 +336,7 @@ func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
 // stringForSQLite: prepare string for SQLite FTS query
 // replace '–*' with 'NOT *'
 func stringForSQLite(query string) *string {
-	var queryArray []string
+	var querySlice []string
 	queryOperators := []string{"AND", "OR", "NOT", "and", "or", "not"}
 
 	slc := strings.Split(query, " ")
@@ -344,19 +344,19 @@ func stringForSQLite(query string) *string {
 		term := slc[i]
 		if strings.HasPrefix(term, "-") {
 			// exclude terms beginning with '-', change to 'NOT [term]'
-			queryArray = append(queryArray, "NOT "+term[1:]+"*")
+			querySlice = append(querySlice, "NOT "+term[1:]+"*")
 		} else if stringInSlice(term, queryOperators) {
 			// auto capitalize operators 'and', 'or', 'not'
-			queryArray = append(queryArray, strings.ToUpper(term))
+			querySlice = append(querySlice, strings.ToUpper(term))
 		} else if strings.Contains(term, ".") || strings.Contains(term, "-") {
 			// quote terms containing dot
-			queryArray = append(queryArray, "\""+term+"*\"")
+			querySlice = append(querySlice, "\""+term+"*\"")
 		} else {
 			// make all terms wildcard
-			queryArray = append(queryArray, term+"*")
+			querySlice = append(querySlice, term+"*")
 		}
 	}
-	s := strings.Join(queryArray, " ")
+	s := strings.Join(querySlice, " ")
 	return &s
 }
 
@@ -374,8 +374,8 @@ func notification(message string) error {
 
 // stringInSlice: Test if string is included in slice
 func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
+	for i := range list {
+		if list[i] == a {
 			return true
 		}
 	}
