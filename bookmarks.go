@@ -40,7 +40,7 @@ func (db *Database) Init(dbFilePath string) {
 	if dbFilePath != "memory" {
 		file = dbFilePath + "?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0&_foreign_keys=1"
 	} else {
-		file = "file::memory:?mode=memory&cache=shared&_foreign_keys=1"
+		file = "file::memory:?mode=memory&cache=shared&_foreign_keys=1&_synchronous=0"
 	}
 
 	var err error
