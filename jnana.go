@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/deanishe/awgo"
-	"github.com/deanishe/awgo/update"
 	"github.com/docopt/docopt-go"
 )
 
@@ -27,6 +26,7 @@ usage:
     jnana all [<query>]
     jnana bm <file>
     jnana bmf <file> <query>
+    jnana clean
     jnana epub [<query>]
     jnana import <file>
     jnana getepub
@@ -46,6 +46,7 @@ commands:
     all		Search all bookmarks.
     bm		Bookmarks for file
     bmf		Bookmarks for file filtered by query
+    clean	Clean database, remove bookmarks for deleted files 
     epub	Bookmarks for EPUB in calibre
     getepub     Return opened EPUB
     import      Import file or files from folder	
@@ -67,6 +68,7 @@ var options struct {
 	All       bool
 	Bm        bool
 	Bmf       bool
+	Clean     bool
 	Epub      bool
 	Getepub   bool
 	Import    bool
@@ -84,7 +86,7 @@ var options struct {
 
 func init() {
 	// Create a new Workflow using default settings.
-	wf = aw.New(update.GitHub(repo), aw.HelpURL(repo+"/issues"))
+	wf = aw.New(aw.HelpURL(repo + "/issues"))
 
 	coversCacheDir = filepath.Join(wf.DataDir(), "covers")
 }
@@ -131,12 +133,6 @@ func bookmarksForFileFiltered(file string, query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabaseForReading(dbFile)
 
-	// get file if not from command-line
-	//if fileId == 0 {
-	//	fileRecord, _, _ := db.GetFile(file, false)
-	//	fileId = fileRecord.ID
-	//}
-
 	bookmarks, err := db.BookmarksForFileFiltered(file, query)
 
 	if err == nil {
@@ -160,6 +156,26 @@ func calibreEpubFile() string {
 	// JSON unmarshal returns some BOOL error
 	_ = json.Unmarshal(fileBytes, &jsonData)
 	return jsonData["viewer_open_history"][0]
+}
+
+func cleanDatabase() {
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabase(dbFile)
+
+	all, err := db.AllFiles()
+	if err != nil {
+		log.Println(err)
+	}
+
+	log.Println("Looking for deleted files out of %d" + strconv.Itoa(len(all)))
+
+	var file string
+	for i := range all {
+		file = all[i].Path
+		if _, err := os.Stat(file); err != nil {
+			log.Println("File:", file)
+		}
+	}
 }
 
 // iconForFileID: retrieve cover image from covers folder, or return generic icon
@@ -470,6 +486,8 @@ func runCommand() {
 		bookmarksForFile(options.File)
 	case options.Bmf:
 		bookmarksForFileFiltered(options.File, query)
+	case options.Clean:
+		cleanDatabase()
 	case options.Epub:
 		bookmarksForFileEpub(query)
 	case options.Import:
