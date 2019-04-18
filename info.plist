@@ -397,6 +397,13 @@ end Skim</string>
 	else
 		display notification "Some other app!"
 	end if
+
+	--
+	-- save query string
+	--
+
+	set theQuery to (system attribute "JNANA_QUERY")
+	do shell script "./jnana savequery " &amp; (quoted form of theQuery)
 end run
 
 on open_acrobat(theFile, thePage)
@@ -670,6 +677,10 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<integer>180</integer>
 		</dict>
 	</dict>
+	<key>variables</key>
+	<dict/>
+	<key>variablesdontexport</key>
+	<array/>
 	<key>version</key>
 	<string>0.1.1</string>
 	<key>webaddress</key>

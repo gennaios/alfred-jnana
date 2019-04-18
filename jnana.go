@@ -34,6 +34,7 @@ usage:
     jnana pdf <file> [<query>]
     jnana test <file>
     jnana lastquery
+    jnana savequery <query>
     jnana test <file>
     jnana update [<file>]
     jnana -h
@@ -53,6 +54,7 @@ commands:
     openepub	open calibre to bookmark
     pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
     lastquery	Retrieve cached last query string for script filter
+    savequery	Save last query string for script filter
     test        Testing stuff
     update      Update path metadata
 `
@@ -75,6 +77,7 @@ var options struct {
 	Openepub  bool
 	Pdf       bool
 	Lastquery bool
+	Savequery bool
 	Test      bool
 	Update    bool
 
@@ -309,12 +312,11 @@ func searchAllBookmarks(query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabaseForReading(dbFile)
 
-	cacheLastQuery(query)
 	results, err := db.searchAll(query)
 	if err != nil {
 		wf.FatalError(err)
 	}
-	returnSearchAllResults(results)
+	returnSearchAllResults(results, query)
 }
 
 func returnBookmarksForFile(file string, id int64, bookmarks []*Bookmark) {
@@ -397,10 +399,13 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 }
 
 // Parse database search results and return items to Alfred
-func returnSearchAllResults(bookmarks []*SearchAllResult) {
+func returnSearchAllResults(bookmarks []*SearchAllResult, query string) {
 	var title string
 	var subtitle string
 	var arg string
+
+	wf.Var("JNANA_QUERY", query)
+
 	for i := range bookmarks {
 		icon := iconForFileID(bookmarks[i].FileID, bookmarks[i].Path)
 
@@ -498,6 +503,8 @@ func runCommand() {
 		openCalibreBookmark(query, options.File)
 	case options.Lastquery:
 		printLastQuery()
+	case options.Savequery:
+		cacheLastQuery(query)
 	case options.Test:
 		TestStuff(options.File)
 	case options.Update:
