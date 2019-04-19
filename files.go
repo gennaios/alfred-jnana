@@ -40,10 +40,10 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 	var hash string
 	changed := false // return value, to later recheck bookmarks
 
-	// first lookup by path path
+	// first lookup by file path
 	file, err = db.GetFileFromPath(book)
 
-	// not found, possible path moved, look up by path hash
+	// not found, possible file moved, look up by file hash
 	if err == dbr.ErrNotFound {
 		hash, err = fileHash(book)
 		file, err = db.GetFileFromHash(hash)
@@ -67,7 +67,7 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 				return file, false, err
 			}
 		} else {
-			// check path exists, or notification will be triggered if not
+			// check file exists, or notification will be triggered if not
 			if _, err = os.Stat(book); err != nil {
 				if !os.IsNotExist(err) {
 					_ = notification("Dupe of: " + file.Path)
@@ -78,7 +78,7 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 	}
 
 	// not created, check if different
-	// NOTE: run each time with path and path filtered bookmarks, try to speed up
+	// NOTE: run each time with file and file filtered bookmarks, try to speed up
 	if check == true {
 		// check book changed against date in database
 		stat, err := os.Stat(book)
@@ -102,7 +102,7 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 	return file, changed, err
 }
 
-// GetFileFromPath: Look for existing record by path path
+// GetFileFromPath: Look for existing record by file path
 // return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromPath(book string) (*DatabaseFile, error) {
 	var file *DatabaseFile
@@ -110,7 +110,7 @@ func (db *Database) GetFileFromPath(book string) (*DatabaseFile, error) {
 	return file, err
 }
 
-// GetFromHash: look for existing by path hash (sha256)
+// GetFromHash: look for existing by file hash (sha256)
 // return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromHash(hash string) (*DatabaseFile, error) {
 	var file *DatabaseFile
@@ -178,7 +178,7 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 	return file, err
 }
 
-// UpdateFile: update file on change of path, path name, or date modified
+// UpdateFile: update file on change of path, file name, or date modified
 func (db *Database) UpdateFile(file DatabaseFile) error {
 	f := File{}
 	if err := f.Init(file.Path); err != nil {
@@ -258,7 +258,7 @@ func fileExists(file string) bool {
 	return false
 }
 
-// fileHash: create sha256 path hash for later comparison
+// fileHash: create sha256 file hash for later comparison
 func fileHash(file string) (string, error) {
 	if _, err := os.Stat(file); err != nil {
 		return "", err

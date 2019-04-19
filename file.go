@@ -128,6 +128,11 @@ func (f *File) parseBookmarks(file string, outline []fitz.Outline) []*FileBookma
 			destination = fmt.Sprintf("%d", page)
 		} else {
 			destination = strings.TrimSpace(bookmark.URI)
+			// MuPDF: workaround for destination being full path instead of HREF
+			destination = strings.Replace(destination, "OEBPS/", "", 1)
+			destination = strings.Replace(destination, "Oebps/", "", 1)
+			destination = strings.Replace(destination, "OPS/", "", 1)
+			destination = strings.Replace(destination, "Ops/", "", 1)
 		}
 
 		title = strings.TrimSpace(bookmark.Title)

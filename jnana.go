@@ -113,9 +113,9 @@ func bookmarksForFile(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
 
-	bookmarks, id, err := db.BookmarksForFile(file)
+	bookmarks, err := db.BookmarksForFile(file)
 	if err == nil {
-		returnBookmarksForFile(file, id, bookmarks)
+		returnBookmarksForFile(file, bookmarks)
 	} else {
 		wf.FatalError(err)
 	}
@@ -231,7 +231,7 @@ func ImportFile(db Database, file string) error {
 			}
 
 			if fileRecord.ID > 1 && changed == true {
-				bookmarks, _, err := db.BookmarksForFile(file)
+				bookmarks, err := db.BookmarksForFile(file)
 				if err != nil {
 					return err
 				}
@@ -275,13 +275,13 @@ func ImportFiles(file string) {
 }
 
 // receive bookmark title as query from script filter and open calibre
-func openCalibreBookmark(query string, file string) {
+func openCalibreBookmark(destination string, file string) {
 	command := "/Applications/calibre.app/Contents/MacOS/ebook-viewer"
 	if file == "" {
 		file = calibreEpubFile()
 	}
 	file = "\"" + file + "\"" // for shell script
-	cmdArgs := []string{"--continue --open-at=toc:\"" + query + "\"", file}
+	cmdArgs := []string{"--continue --open-at=toc-href:\"" + destination + "\"", file}
 	openCalibreBookmarkCommand(command, cmdArgs)
 	//_ = exec.Command(command, cmdArgs...).Start()
 }
@@ -319,11 +319,8 @@ func searchAllBookmarks(query string) {
 	returnSearchAllResults(results, query)
 }
 
-func returnBookmarksForFile(file string, id int64, bookmarks []*Bookmark) {
+func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 	var icon *aw.Icon
-
-	// return file.ID as variable for later filtered bookmarks
-	//wf.Var("FILE_ID", strconv.FormatInt(id, 10))
 
 	if strings.HasSuffix(file, "pdf") {
 		var destination string
@@ -355,7 +352,7 @@ func returnBookmarksForFile(file string, id int64, bookmarks []*Bookmark) {
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
-				Arg(bookmarks[i].Title.String)
+				Arg(bookmarks[i].Destination)
 		}
 
 	}
@@ -392,7 +389,7 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
-				Arg(bookmarks[i].Title.String)
+				Arg(bookmarks[i].Destination)
 		}
 	}
 	wf.SendFeedback()
