@@ -190,26 +190,26 @@ func (db *Database) createTriggers() {
 }
 
 // BookmarksForFile: retrieve existing bookmarks, add new to database if needed and check if updated
-func (db *Database) BookmarksForFile(file string) ([]*Bookmark, int64, error) {
+func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 	var bookmarks []*Bookmark
 	var err error
 
 	fileRecord, changed, err := db.GetFile(file, true)
 	if err != nil {
-		return bookmarks, 0, err
+		return bookmarks, err
 	}
 
 	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmarks
 					WHERE file_id = ?`, fileRecord.ID).
 		LoadOne(&bookmarks)
 
-	// path created or changed / or no bookmarks found
+	// file created or changed / or no bookmarks found
 	if changed == true || len(bookmarks) == 0 {
 		var newBookmarks []*FileBookmark
 
 		f := File{}
 		if err = f.Init(file); err != nil {
-			return bookmarks, 0, err
+			return bookmarks, err
 		}
 		newBookmarks, _ = f.Bookmarks()
 
@@ -218,9 +218,9 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, int64, error) {
 			// insert new
 			bookmarks, err = db.NewBookmarks(fileRecord, newBookmarks)
 		} else if bookmarksEqual(bookmarks, newBookmarks) == false {
-			// path updated, compare bookmarks
+			// file updated, compare bookmarks
 			// update database
-			bookmarks, err = db.UpdateBookmarks(fileRecord, newBookmarks)
+			bookmarks, err = db.UpdateBookmarks(fileRecord, bookmarks, newBookmarks)
 			_ = notification("Bookmarks updated.")
 		}
 	}
@@ -228,7 +228,7 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, int64, error) {
 	// run analyze etc upon database close, unsure if faster
 	//_, _ = db.conn.Exec("PRAGMA optimize;")
 	err = db.conn.Close()
-	return bookmarks, fileRecord.ID, err
+	return bookmarks, err
 }
 
 // BookmarksForFileFiltered: filtered bookmarks for file, uses fileId from elsewhere so there's only one query
@@ -254,7 +254,7 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	return results, err
 }
 
-// searchAll: Search all bookmarks from FTS5 table, order by rank title, section, & path name
+// searchAll: Search all bookmarks from FTS5 table, order by rank title, section, & file name
 // Return results as slice of struct SearchAllResult, later prepped for Alfred script filter
 func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
@@ -300,14 +300,32 @@ func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) 
 }
 
 // UpdateBookmarks: update bookmarks, delete old first, then call NewBookmarks
-func (db *Database) UpdateBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) ([]*Bookmark, error) {
-	tx, err := db.sess.Begin()
+func (db *Database) UpdateBookmarks(file *DatabaseFile, oldBookmarks []*Bookmark, newBookmarks []*FileBookmark) ([]*Bookmark, error) {
+	var err error
+	var results []*Bookmark
 
-	_, err = db.sess.DeleteBySql(`DELETE from bookmarks WHERE file_id = ?`, file.ID).Exec()
-
+	tx, _ := db.sess.Begin()
+	if len(oldBookmarks) == len(newBookmarks) {
+		// count same, update records
+		for i := range oldBookmarks {
+			_, err = db.sess.UpdateBySql(`UPDATE bookmarks SET
+				title = ?, section = ?, destination = ?
+				WHERE id = ?`,
+				NewNullString(newBookmarks[i].Title),
+				NewNullString(newBookmarks[i].Section),
+				newBookmarks[i].Destination, oldBookmarks[i].ID).
+				Exec()
+		}
+		err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmarks
+			WHERE file_id = ?`, file.ID).LoadOne(&results)
+	} else {
+		// count different, delete and insert new
+		_, err = db.sess.DeleteBySql(`DELETE from bookmarks WHERE file_id = ?`, file.ID).Exec()
+		results, err = db.NewBookmarks(file, newBookmarks)
+	}
 	err = tx.Commit()
-	newBookmarks, err := db.NewBookmarks(file, bookmarks)
-	return newBookmarks, err
+
+	return results, err
 }
 
 // bookmarksEqual: compare bookmarks from database with path, used for update check
