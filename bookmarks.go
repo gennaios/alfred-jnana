@@ -17,14 +17,14 @@ type Database struct {
 type Bookmark struct {
 	ID          int64
 	FileId      int64          `db:"file_id"`
-	Title       string         `db:"title"`
+	Title       dbr.NullString `db:"title"`
 	Section     dbr.NullString `db:"section"`
 	Destination string         `db:"destination"`
 }
 
 type SearchAllResult struct {
 	ID          int64
-	Title       string         `db:"title"`
+	Title       dbr.NullString `db:"title"`
 	Section     dbr.NullString `db:"section"`
 	Destination string         `db:"destination"`
 	FileID      string         `db:"file_id"`
@@ -316,7 +316,7 @@ func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
 		return false
 	} else {
 		for i := range newBookmarks {
-			if newBookmarks[i].Title != bookmarks[i].Title {
+			if newBookmarks[i].Title != bookmarks[i].Title.String {
 				return false
 			}
 			if newBookmarks[i].Section != bookmarks[i].Section.String {

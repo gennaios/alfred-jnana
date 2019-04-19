@@ -339,7 +339,7 @@ func returnBookmarksForFile(file string, id int64, bookmarks []*Bookmark) {
 				subtitle = "Page " + bookmarks[i].Destination
 			}
 
-			wf.NewItem(bookmarks[i].Title).
+			wf.NewItem(bookmarks[i].Title.String).
 				Subtitle(subtitle).
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
@@ -350,12 +350,12 @@ func returnBookmarksForFile(file string, id int64, bookmarks []*Bookmark) {
 		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 
 		for i := range bookmarks {
-			wf.NewItem(bookmarks[i].Title).
+			wf.NewItem(bookmarks[i].Title.String).
 				Subtitle(bookmarks[i].Section.String).
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
-				Arg(bookmarks[i].Title)
+				Arg(bookmarks[i].Title.String)
 		}
 
 	}
@@ -376,7 +376,7 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 				subtitle = "Page " + bookmarks[i].Destination
 			}
 
-			wf.NewItem(bookmarks[i].Title).
+			wf.NewItem(bookmarks[i].Title.String).
 				Subtitle(subtitle).
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
@@ -387,12 +387,12 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 
 		for i := range bookmarks {
-			wf.NewItem(bookmarks[i].Title).
+			wf.NewItem(bookmarks[i].Title.String).
 				Subtitle(bookmarks[i].Section.String).
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
-				Arg(bookmarks[i].Title)
+				Arg(bookmarks[i].Title.String)
 		}
 	}
 	wf.SendFeedback()
@@ -410,9 +410,9 @@ func returnSearchAllResults(bookmarks []*SearchAllResult, query string) {
 		icon := iconForFileID(bookmarks[i].FileID, bookmarks[i].Path)
 
 		if bookmarks[i].Section.String != "" {
-			title = bookmarks[i].Title + " | " + bookmarks[i].Section.String
+			title = bookmarks[i].Title.String + " | " + bookmarks[i].Section.String
 		} else {
-			title = bookmarks[i].Title
+			title = bookmarks[i].Title.String
 		}
 
 		if strings.HasSuffix(bookmarks[i].FileName, ".pdf") {
@@ -420,7 +420,7 @@ func returnSearchAllResults(bookmarks []*SearchAllResult, query string) {
 			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Destination
 		} else {
 			subtitle = bookmarks[i].FileName
-			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Title
+			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Title.String
 		}
 
 		wf.NewItem(title).
