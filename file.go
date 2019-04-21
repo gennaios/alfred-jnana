@@ -87,7 +87,7 @@ func (f *File) MetadataForEPUB() {
 
 	subjects, _ = f.epub.Metadata("subject")
 	subjects = trimMetadata(subjects)
-	f.subjects = strings.TrimSpace(strings.Join(subjects[:], "; "))
+	f.subjects = strings.ToLower(strings.TrimSpace(strings.Join(subjects[:], ", ")))
 
 	publisher, _ = f.epub.Metadata("publisher")
 	publisher = trimMetadata(publisher)
