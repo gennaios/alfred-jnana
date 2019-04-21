@@ -145,7 +145,7 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 	_, err = tx.InsertInto("files").
 		Pair("path", book).
 		Pair("file_name", filepath.Base(book)).
-		Pair("file_extension", filepath.Ext(book)[1:]).
+		Pair("file_extension", strings.ToLower(filepath.Ext(book)[1:])).
 		Pair("file_title", NewNullString(f.title)).
 		Pair("file_authors", NewNullString(f.authors)).
 		Pair("file_subjects", NewNullString(f.subjects)).
