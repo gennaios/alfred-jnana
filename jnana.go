@@ -35,6 +35,7 @@ usage:
     jnana test <file>
     jnana lastquery
     jnana savequery <query>
+    jnana subjects <file> [<query>]
     jnana test <file>
     jnana update [<file>]
     jnana -h
@@ -78,6 +79,7 @@ var options struct {
 	Pdf       bool
 	Lastquery bool
 	Savequery bool
+	Subjects  bool
 	Test      bool
 	Update    bool
 
@@ -201,6 +203,28 @@ func iconForFileID(fileId string, filePath string) *aw.Icon {
 func cacheLastQuery(queryString string) {
 	if err := wf.Cache.StoreJSON("LastQuery", queryString); err != nil {
 		wf.FatalError(err)
+	}
+}
+
+func fileSubjects(file string, subjects string) {
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabase(dbFile)
+
+	if subjects == "" {
+		fileRecord, _, err := db.GetFile(file, false)
+		if err != nil {
+			wf.FatalError(err)
+		}
+
+		fmt.Println(fileRecord.Subjects.String)
+	} else {
+		fileRecord, _, err := db.GetFile(file, false)
+
+		err = db.UpdateSubjects(fileRecord, subjects)
+		if err != nil {
+			wf.FatalError(err)
+		}
+		_ = db.conn.Close()
 	}
 }
 
@@ -502,6 +526,8 @@ func runCommand() {
 		printLastQuery()
 	case options.Savequery:
 		cacheLastQuery(query)
+	case options.Subjects:
+		fileSubjects(options.File, query)
 	case options.Test:
 		TestStuff(options.File)
 	case options.Update:

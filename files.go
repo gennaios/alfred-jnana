@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/campoy/unique"
 	"github.com/gocraft/dbr"
 	_ "github.com/mattn/go-sqlite3"
 	"io"
@@ -180,11 +181,6 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 
 // UpdateFile: update file on change of path, file name, or date modified
 func (db *Database) UpdateFile(file DatabaseFile) error {
-	f := File{}
-	if err := f.Init(file.Path); err != nil {
-		return err
-	}
-
 	tx, err := db.sess.Begin()
 
 	_, err = db.sess.UpdateBySql(`UPDATE files SET
@@ -193,7 +189,7 @@ func (db *Database) UpdateFile(file DatabaseFile) error {
 			date_modified = ?, hash = ?
 			WHERE id = ?`,
 		file.Path, filepath.Base(file.Path),
-		NewNullString(f.title), NewNullString(f.authors), NewNullString(f.subjects), NewNullString(f.publisher),
+		NewNullString(file.Title.String), NewNullString(file.Authors.String), NewNullString(file.Subjects.String), NewNullString(file.Publisher.String),
 		file.DateModified, file.FileHash,
 		file.ID).Exec()
 
@@ -249,6 +245,35 @@ func (db *Database) UpdateMetadata(file *DatabaseFile) (bool, error) {
 	}
 
 	return false, err
+}
+
+// UpdateSubjects: set subjects/keywords for file
+func (db *Database) UpdateSubjects(file *DatabaseFile, subjects string) error {
+	var err error
+
+	if subjects == "" {
+		return err
+	}
+
+	terms := strings.Split(strings.ToLower(subjects), ",")
+	s := trimMetadata(terms)
+
+	less := lessString(&s)
+	unique.Slice(&s, less)
+
+	newSubjects := strings.Join(s, ", ")
+
+	if newSubjects != file.Subjects.String {
+		file.Subjects.String = newSubjects
+		err = db.UpdateFile(*file)
+	}
+
+	return err
+}
+
+func lessString(v interface{}) func(i, j int) bool {
+	s := *v.(*[]string)
+	return func(i, j int) bool { return s[i] < s[j] }
 }
 
 func fileExists(file string) bool {
