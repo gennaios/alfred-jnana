@@ -268,8 +268,8 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 			JOIN files ON bookmarks.file_id = files.id
 			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
 			WHERE bookmarksindex MATCH ?
-			AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0)'
-			ORDER BY 'rank(bookmarksindex)' LIMIT 200`,
+			AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0, 1.0)'
+			ORDER BY rank LIMIT 200`,
 		queryString).Load(&results)
 
 	err = db.conn.Close()

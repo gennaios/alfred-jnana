@@ -8,11 +8,50 @@
 	<string>Productivity</string>
 	<key>connections</key>
 	<dict>
+		<key>02F55D27-DE1F-48B6-BE78-73B6B6A8887E</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>BAF848D8-C13D-4A24-9776-6FBA5DF3DCE6</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>237DDB28-42BE-45FC-9017-CCE481F1BDB7</key>
 		<array>
 			<dict>
 				<key>destinationuid</key>
 				<string>4A2C10C6-084C-4101-A584-6C440EA5FC98</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>51F5CE86-675F-46A5-85B6-50E0BA817FC2</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>5CDF905F-9A9B-4401-AAE3-D714F9FEA4CB</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>5CDF905F-9A9B-4401-AAE3-D714F9FEA4CB</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>02F55D27-DE1F-48B6-BE78-73B6B6A8887E</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -73,6 +112,19 @@
 				<false/>
 			</dict>
 		</array>
+		<key>BAF848D8-C13D-4A24-9776-6FBA5DF3DCE6</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>D5EF7CBD-EB06-4516-AA43-8B83D0939530</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>E9185D30-76E3-4BF8-BDF6-15309AA72290</key>
 		<array>
 			<dict>
@@ -118,7 +170,7 @@
 				<key>argument</key>
 				<integer>0</integer>
 				<key>focusedappvariable</key>
-				<false/>
+				<true/>
 				<key>focusedappvariablename</key>
 				<string></string>
 				<key>hotkey</key>
@@ -145,6 +197,78 @@
 			<string>alfred.workflow.trigger.hotkey</string>
 			<key>uid</key>
 			<string>9BC020A0-E6C1-43EA-97D2-53583BC37A97</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>1</integer>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>keyword</key>
+				<string>.jna</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<false/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>2</integer>
+				<key>runningsubtext</key>
+				<string>Getting bookmarks</string>
+				<key>script</key>
+				<string>on run argv
+	set theQuery to item 1 of argv
+	set theFile to (system attribute "JNANA_FILE")
+			
+	if theFile is not "epub" then
+		-- PDF
+		if length of theQuery is not 0 then
+			-- filtered bookmarks
+			set cmd to "./jnana bmf " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
+		else
+			-- all bookmarks
+			set cmd to "./jnana bm " &amp; theFile
+		end if
+	else
+		-- EPUB
+		if length of theQuery is not 0 then
+			-- filtered bookmarks
+			set cmd to "./jnana bmf " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
+		else
+			-- all bookmarks
+			set cmd to "./jnana epub"
+		end if
+	end if
+
+	return do shell script cmd
+end run</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string></string>
+				<key>title</key>
+				<string>Go to bookmark</string>
+				<key>type</key>
+				<integer>6</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>237DDB28-42BE-45FC-9017-CCE481F1BDB7</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
@@ -186,7 +310,10 @@
 		end if
 	end tell
 
+	--
 	-- remove variable for currently opened file
+	--
+
 	set bundleID to (system attribute "alfred_workflow_bundleid")
 	tell application "Alfred 3" to remove configuration "JNANA_FILE" in workflow bundleID
 end run</string>
@@ -201,76 +328,6 @@ end run</string>
 			<string>alfred.workflow.action.script</string>
 			<key>uid</key>
 			<string>4A2C10C6-084C-4101-A584-6C440EA5FC98</string>
-			<key>version</key>
-			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>alfredfiltersresults</key>
-				<false/>
-				<key>alfredfiltersresultsmatchmode</key>
-				<integer>0</integer>
-				<key>argumenttrimmode</key>
-				<integer>0</integer>
-				<key>argumenttype</key>
-				<integer>1</integer>
-				<key>escaping</key>
-				<integer>68</integer>
-				<key>keyword</key>
-				<string>.jna</string>
-				<key>queuedelaycustom</key>
-				<integer>3</integer>
-				<key>queuedelayimmediatelyinitially</key>
-				<false/>
-				<key>queuedelaymode</key>
-				<integer>0</integer>
-				<key>queuemode</key>
-				<integer>2</integer>
-				<key>runningsubtext</key>
-				<string>Getting bookmarks</string>
-				<key>script</key>
-				<string>on run argv
-	set theQuery to item 1 of argv
-	set theFile to (system attribute "JNANA_FILE")
-	-- set fileId to (system attribute "FILE_ID")
-			
-	if theFile is not "epub" then
-		-- PDF
-		if length of theQuery is not 0 then
-			-- filtered bookmarks
-			set cmd to "./jnana bmf " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
-		else
-			-- all bookmarks
-			set cmd to "./jnana bm " &amp; theFile
-		end if
-	else
-		if length of theQuery is 0 then
-			set cmd to "./jnana epub"
-		else
-			set cmd to "./jnana epub " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
-		end if
-	end if
-
-	return do shell script cmd
-end run</string>
-				<key>scriptargtype</key>
-				<integer>1</integer>
-				<key>scriptfile</key>
-				<string></string>
-				<key>subtext</key>
-				<string></string>
-				<key>title</key>
-				<string>Go to bookmark</string>
-				<key>type</key>
-				<integer>6</integer>
-				<key>withspace</key>
-				<true/>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.input.scriptfilter</string>
-			<key>uid</key>
-			<string>237DDB28-42BE-45FC-9017-CCE481F1BDB7</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
@@ -344,11 +401,85 @@ end Skim</string>
 				<key>concurrently</key>
 				<false/>
 				<key>escaping</key>
+				<integer>102</integer>
+				<key>script</key>
+				<string>on run argv
+	set last_query to do shell script "./jnana lastquery"
+		
+	if last_query is not equal to "None"
+		set query to last_query
+	end if
+end run</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<true/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>2</integer>
+				<key>hotmod</key>
+				<integer>262144</integer>
+				<key>hotstring</key>
+				<string>D</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>com.adobe.Acrobat.Pro</string>
+					<string>com.calibre-ebook.ebook-viewer</string>
+					<string>com.apple.Preview</string>
+					<string>net.sourceforge.skim-app.skim</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>F1593634-29B2-49EE-A175-6702794F2F0B</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
 				<integer>68</integer>
 				<key>script</key>
 				<string>on run argv
 	set theQuery to item 1 of argv
 		
+	--
+	-- save query string
+	--
+
+	set queryString to (system attribute "JNANA_QUERY")
+	do shell script "./jnana savequery " &amp; (quoted form of queryString)
+
 	--
 	-- Split file and page/title destination
 	--
@@ -366,8 +497,8 @@ end Skim</string>
 	if fileAlias ends with ".pdf" then
 		tell application "Finder" to open file fileAlias
 	else if fileAlias ends with ".epub" then
-		set tocTitle to quoted form of thePage
-		do shell script "./jnana openepub " &amp; tocTitle &amp; " " &amp; quoted form of theFile
+		set tocDestination to quoted form of thePage
+		do shell script "./jnana openepub " &amp; tocDestination &amp; " " &amp; quoted form of theFile
 		return
 	end if
 
@@ -397,13 +528,6 @@ end Skim</string>
 	else
 		display notification "Some other app!"
 	end if
-
-	--
-	-- save query string
-	--
-
-	set theQuery to (system attribute "JNANA_QUERY")
-	do shell script "./jnana savequery " &amp; (quoted form of theQuery)
 end run
 
 on open_acrobat(theFile, thePage)
@@ -513,18 +637,68 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>type</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.transform</string>
+			<key>uid</key>
+			<string>B54D2E3B-BB66-40F0-8E97-C3B4008254B2</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>concurrently</key>
 				<false/>
 				<key>escaping</key>
-				<integer>102</integer>
+				<integer>68</integer>
 				<key>script</key>
 				<string>on run argv
-	set last_query to do shell script "./jnana lastquery"
-		
-	if last_query is not equal to "None"
-		set query to last_query
+	set focusedApp to (system attribute "focusedapp")
+
+	if focusedApp = "com.apple.Preview" then
+		set theFile to my Preview()
+	else if focusedApp = "com.calibre-ebook.ebook-viewer" then
+		set theFile to do shell script "./jnana getepub"
+	else if focusedApp = "com.adobe.Acrobat.Pro" then
+		set theFile to my AdobeAcrobat()
+	else if focusedApp = "net.sourceforge.skim-app.skim" then
+		set theFile to my Skim()
 	end if
-end run</string>
+
+	--
+	-- save currently opened file as variable
+	-- 
+
+	tell application "Alfred 3"
+		set configuration "JNANA_FILE" to value (quoted form of theFile) in workflow system attribute "alfred_workflow_bundleid"
+	end tell
+
+	--
+	-- get subjects/keywords
+	--
+
+	set query to do shell script "./jnana subjects " &amp; (quoted form of theFile)
+end run
+
+on Preview()
+	tell application "Preview"		return path of document 1	end tellend Preview
+
+on AdobeAcrobat()
+	tell application "Adobe Acrobat"
+		set currentFile to file alias of active doc
+	end tell
+	return POSIX path of currentFile
+end AdobeAcrobat
+
+on Skim()
+	tell application "Skim"
+		set currentFile to file of document 1
+	end tell
+	return POSIX path of currentFile
+end Skim</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -535,7 +709,7 @@ end run</string>
 			<key>type</key>
 			<string>alfred.workflow.action.script</string>
 			<key>uid</key>
-			<string>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</string>
+			<string>5CDF905F-9A9B-4401-AAE3-D714F9FEA4CB</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
@@ -547,25 +721,25 @@ end run</string>
 				<key>argument</key>
 				<integer>0</integer>
 				<key>focusedappvariable</key>
-				<false/>
+				<true/>
 				<key>focusedappvariablename</key>
 				<string></string>
 				<key>hotkey</key>
-				<integer>2</integer>
+				<integer>37</integer>
 				<key>hotmod</key>
-				<integer>262144</integer>
+				<integer>1048576</integer>
 				<key>hotstring</key>
-				<string>D</string>
+				<string>L</string>
 				<key>leftcursor</key>
 				<false/>
 				<key>modsmode</key>
 				<integer>0</integer>
 				<key>relatedApps</key>
 				<array>
-					<string>com.adobe.Acrobat.Pro</string>
-					<string>com.calibre-ebook.ebook-viewer</string>
-					<string>com.apple.Preview</string>
 					<string>net.sourceforge.skim-app.skim</string>
+					<string>com.adobe.Acrobat.Pro</string>
+					<string>com.apple.Preview</string>
+					<string>com.calibre-ebook.ebook-viewer</string>
 				</array>
 				<key>relatedAppsMode</key>
 				<integer>1</integer>
@@ -573,7 +747,58 @@ end run</string>
 			<key>type</key>
 			<string>alfred.workflow.trigger.hotkey</string>
 			<key>uid</key>
-			<string>F1593634-29B2-49EE-A175-6702794F2F0B</string>
+			<string>51F5CE86-675F-46A5-85B6-50E0BA817FC2</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>2</integer>
+				<key>subtext</key>
+				<string></string>
+				<key>text</key>
+				<string>Edit file subjects</string>
+				<key>withspace</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>BAF848D8-C13D-4A24-9776-6FBA5DF3DCE6</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv
+	set theQuery to item 1 of argv
+	set theFile to (system attribute "JNANA_FILE")
+
+	--
+	-- save subjects
+	--
+
+	do shell script "./jnana subjects " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
+end run</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>D5EF7CBD-EB06-4516-AA43-8B83D0939530</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
@@ -586,7 +811,7 @@ end run</string>
 			<key>type</key>
 			<string>alfred.workflow.utility.transform</string>
 			<key>uid</key>
-			<string>B54D2E3B-BB66-40F0-8E97-C3B4008254B2</string>
+			<string>02F55D27-DE1F-48B6-BE78-73B6B6A8887E</string>
 			<key>version</key>
 			<integer>1</integer>
 		</dict>
@@ -613,6 +838,13 @@ Alfred 3.
 Repo :  https://github.com/gennaios/alfred-jnana</string>
 	<key>uidata</key>
 	<dict>
+		<key>02F55D27-DE1F-48B6-BE78-73B6B6A8887E</key>
+		<dict>
+			<key>xpos</key>
+			<integer>350</integer>
+			<key>ypos</key>
+			<integer>360</integer>
+		</dict>
 		<key>237DDB28-42BE-45FC-9017-CCE481F1BDB7</key>
 		<dict>
 			<key>xpos</key>
@@ -633,6 +865,20 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<integer>600</integer>
 			<key>ypos</key>
 			<integer>30</integer>
+		</dict>
+		<key>51F5CE86-675F-46A5-85B6-50E0BA817FC2</key>
+		<dict>
+			<key>xpos</key>
+			<integer>30</integer>
+			<key>ypos</key>
+			<integer>330</integer>
+		</dict>
+		<key>5CDF905F-9A9B-4401-AAE3-D714F9FEA4CB</key>
+		<dict>
+			<key>xpos</key>
+			<integer>190</integer>
+			<key>ypos</key>
+			<integer>330</integer>
 		</dict>
 		<key>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</key>
 		<dict>
@@ -662,6 +908,20 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>210</integer>
 		</dict>
+		<key>BAF848D8-C13D-4A24-9776-6FBA5DF3DCE6</key>
+		<dict>
+			<key>xpos</key>
+			<integer>430</integer>
+			<key>ypos</key>
+			<integer>330</integer>
+		</dict>
+		<key>D5EF7CBD-EB06-4516-AA43-8B83D0939530</key>
+		<dict>
+			<key>xpos</key>
+			<integer>600</integer>
+			<key>ypos</key>
+			<integer>330</integer>
+		</dict>
 		<key>E9185D30-76E3-4BF8-BDF6-15309AA72290</key>
 		<dict>
 			<key>xpos</key>
@@ -677,10 +937,6 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<integer>180</integer>
 		</dict>
 	</dict>
-	<key>variables</key>
-	<dict/>
-	<key>variablesdontexport</key>
-	<array/>
 	<key>version</key>
 	<string>0.1.1</string>
 	<key>webaddress</key>
