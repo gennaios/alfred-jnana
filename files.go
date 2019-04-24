@@ -5,9 +5,11 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/campoy/unique"
+	"github.com/djherbis/times"
 	"github.com/gocraft/dbr"
 	_ "github.com/mattn/go-sqlite3"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,12 +21,15 @@ type DatabaseFile struct {
 	Path          string         `db:"path"`
 	FileName      string         `db:"file_name"`
 	FileExtension string         `db:"file_extension"`
+	FileSize      int64          `db:"file_size"`
 	Title         dbr.NullString `db:"file_title"`
 	Authors       dbr.NullString `db:"file_authors"`
 	Subjects      dbr.NullString `db:"file_subjects"`
 	Publisher     dbr.NullString `db:"file_publisher"`
 	DateCreated   string         `db:"date_created"`
 	DateModified  string         `db:"date_modified"`
+	DateAccessed  dbr.NullString `db:"date_accessed"`
+	Rating        dbr.NullInt64  `db:"rating"`
 	FileHash      string         `db:"hash"`
 }
 
@@ -136,6 +141,15 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 		return &DatabaseFile{}, err
 	}
 
+	t, err := times.Stat(book)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	dateCreated := ""
+	if t.HasBirthTime() {
+		dateCreated = t.BirthTime().UTC().Format("2006-01-02 15:04:05")
+	}
+
 	tx, err := db.sess.Begin()
 	if err != nil {
 		return &DatabaseFile{}, err
@@ -147,12 +161,14 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 		Pair("path", book).
 		Pair("file_name", filepath.Base(book)).
 		Pair("file_extension", strings.ToLower(filepath.Ext(book)[1:])).
+		Pair("file_size", stat.Size()).
 		Pair("file_title", NewNullString(f.title)).
 		Pair("file_authors", NewNullString(f.authors)).
 		Pair("file_subjects", NewNullString(f.subjects)).
 		Pair("file_publisher", NewNullString(f.publisher)).
-		Pair("date_created", time.Now().UTC().Format("2006-01-02 15:04:05")).
+		Pair("date_created", dateCreated).
 		Pair("date_modified", dateModified).
+		Pair("date_accessed", t.AccessTime().UTC().Format("2006-01-02 15:04:05")).
 		Pair("hash", hash).
 		Exec()
 
@@ -162,8 +178,9 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 			Pair("path", book).
 			Pair("file_name", filepath.Base(book)).
 			Pair("file_extension", filepath.Ext(book)[1:]).
-			Pair("date_created", time.Now().UTC().Format("2006-01-02 15:04:05")).
+			Pair("date_created", dateCreated).
 			Pair("date_modified", dateModified).
+			Pair("date_accessed", t.AccessTime().UTC().Format("2006-01-02 15:04:05")).
 			Pair("hash", hash).
 			Exec()
 	}
@@ -181,25 +198,31 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 
 // UpdateFile: update file on change of path, file name, or date modified
 func (db *Database) UpdateFile(file DatabaseFile) error {
+	t, err := times.Stat(file.Path)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	file.DateAccessed.String = t.AccessTime().UTC().Format("2006-01-02 15:04:05")
+
 	tx, err := db.sess.Begin()
 
 	_, err = db.sess.UpdateBySql(`UPDATE files SET
 			path = ?, file_name = ?,
 			file_title = ?, file_authors = ?, file_subjects = ?, file_publisher = ?,
-			date_modified = ?, hash = ?
+			date_modified = ?, date_accessed = ?, hash = ?
 			WHERE id = ?`,
 		file.Path, filepath.Base(file.Path),
 		NewNullString(file.Title.String), NewNullString(file.Authors.String), NewNullString(file.Subjects.String), NewNullString(file.Publisher.String),
-		file.DateModified, file.FileHash,
+		file.DateModified, file.DateAccessed, file.FileHash,
 		file.ID).Exec()
 
 	if err != nil {
 		// TODO: PDF metadata "unrecognized token", workaround don't update metadata
 		_, err = db.sess.UpdateBySql(`UPDATE files SET
-			path = ?, file_name = ?, date_modified = ?, hash = ?
+			path = ?, file_name = ?, date_modified = ?, date_accessed = ?, hash = ?
 			WHERE id = ?`,
-			file.Path, filepath.Base(file.Path), file.DateModified, file.FileHash,
-			file.ID).Exec()
+			file.Path, filepath.Base(file.Path), file.DateModified, file.DateAccessed,
+			file.FileHash, file.ID).Exec()
 	}
 
 	err = tx.Commit()

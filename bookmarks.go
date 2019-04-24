@@ -90,12 +90,15 @@ func (db *Database) createTables() {
 		path TEXT NOT NULL,
 	    	file_name TEXT,
 	    	file_extension VARCHAR(255) NOT NULL,
+	    	file_size INTEGER NOT NULL,
 	    	file_title TEXT,
 	    	file_authors TEXT,
 	    	file_subjects TEXT,
 	    	file_publisher TEXT,
 	    	date_created DATETIME NOT NULL,
 	    	date_modified DATETIME,
+	    	date_accessed DATETIME,
+	    	rating INTEGER,
 	    	hash VARCHAR(64) NOT NULL
 	)`
 	var schemaBookmarks = `
@@ -121,7 +124,20 @@ func (db *Database) createTables() {
 		INNER JOIN files ON files.id = bookmarks.file_id
 	`
 	// prefix: tokenize by length
-	var schemaFTS = `
+	var filesFTS = `
+	CREATE VIRTUAL TABLE filesindex USING fts5(
+		file_name,
+		file_extension,
+		file_title,
+		file_authors,
+		file_subjects,
+		file_publisher,
+		content='files',
+		content_rowid='id',
+		prefix='2 3',
+		tokenize='porter unicode61 remove_diacritics 2'
+	)`
+	var bookmarksFTS = `
 	CREATE VIRTUAL TABLE bookmarksindex USING fts5(
 		title,
 		section,
@@ -138,7 +154,8 @@ func (db *Database) createTables() {
 	_, _ = db.conn.Exec(schemaFiles)
 	_, _ = db.conn.Exec(schemaBookmarks)
 	_, _ = db.conn.Exec(schemaView)
-	_, _ = db.conn.Exec(schemaFTS)
+	_, _ = db.conn.Exec(filesFTS)
+	_, _ = db.conn.Exec(bookmarksFTS)
 	db.createTriggers()
 }
 
