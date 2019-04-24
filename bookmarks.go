@@ -85,7 +85,7 @@ func (db *Database) InitForReading(dbFilePath string) {
 // createTables: create tables files, bookmarks, view bookmarks_view for FTS updates, and FTS5 bookmarksindex
 func (db *Database) createTables() {
 	var schemaFiles = `
-	CREATE TABLE files (
+	CREATE TABLE IF NOT EXISTS files (
 		id INTEGER NOT NULL PRIMARY KEY,
 		path TEXT NOT NULL,
 	    	file_name TEXT,
@@ -102,7 +102,7 @@ func (db *Database) createTables() {
 	    	hash VARCHAR(64) NOT NULL
 	)`
 	var schemaBookmarks = `
-	CREATE TABLE bookmarks (
+	CREATE TABLE IF NOT EXISTS bookmarks (
 		id INTEGER NOT NULL PRIMARY KEY,
 		file_id INTEGER NOT NULL,
 		title TEXT,
@@ -111,7 +111,7 @@ func (db *Database) createTables() {
 		FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE ON UPDATE CASCADE
 	)`
 	var schemaView = `
-	CREATE VIEW bookmarks_view AS SELECT
+	CREATE VIEW IF NOT EXISTS bookmarks_view AS SELECT
 		bookmarks.id,
 		bookmarks.title,
 		bookmarks.section,
@@ -125,9 +125,8 @@ func (db *Database) createTables() {
 	`
 	// prefix: tokenize by length
 	var filesFTS = `
-	CREATE VIRTUAL TABLE filesindex USING fts5(
+	CREATE VIRTUAL TABLE IF NOT EXISTS filesindex USING fts5(
 		file_name,
-		file_extension,
 		file_title,
 		file_authors,
 		file_subjects,
@@ -138,7 +137,7 @@ func (db *Database) createTables() {
 		tokenize='porter unicode61 remove_diacritics 2'
 	)`
 	var bookmarksFTS = `
-	CREATE VIRTUAL TABLE bookmarksindex USING fts5(
+	CREATE VIRTUAL TABLE IF NOT EXISTS bookmarksindex USING fts5(
 		title,
 		section,
 		file_name,
@@ -201,6 +200,46 @@ func (db *Database) createTriggers() {
 		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
 		VALUES (
 		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_files_name
+		AFTER UPDATE OF file_name ON files
+		BEGIN DELETE FROM filesindex where rowid=old.id;
+		INSERT INTO filesindex(
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_files_title
+		AFTER UPDATE OF file_title ON files
+		BEGIN DELETE FROM filesindex where rowid=old.id;
+		INSERT INTO filesindex(
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_files_authors
+		AFTER UPDATE OF file_authors ON files
+		BEGIN DELETE FROM filesindex where rowid=old.id;
+		INSERT INTO filesindex(
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_files_subjects
+		AFTER UPDATE OF file_subjects ON files
+		BEGIN DELETE FROM filesindex where rowid=old.id;
+		INSERT INTO filesindex(
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_files_publisher
+		AFTER UPDATE OF file_publisher ON files
+		BEGIN DELETE FROM filesindex where rowid=old.id;
+		INSERT INTO filesindex(
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
 		); END;
 	`
 	_, _ = db.conn.Exec(triggers)
