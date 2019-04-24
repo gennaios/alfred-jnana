@@ -168,7 +168,7 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 		Pair("file_publisher", NewNullString(f.publisher)).
 		Pair("date_created", dateCreated).
 		Pair("date_modified", dateModified).
-		Pair("date_accessed", t.AccessTime().UTC().Format("2006-01-02 15:04:05")).
+		Pair("date_accessed", NewNullString(t.AccessTime().UTC().Format("2006-01-02 15:04:05"))).
 		Pair("hash", hash).
 		Exec()
 
@@ -177,10 +177,11 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 		_, err = tx.InsertInto("files").
 			Pair("path", book).
 			Pair("file_name", filepath.Base(book)).
+			Pair("file_size", stat.Size()).
 			Pair("file_extension", filepath.Ext(book)[1:]).
 			Pair("date_created", dateCreated).
 			Pair("date_modified", dateModified).
-			Pair("date_accessed", t.AccessTime().UTC().Format("2006-01-02 15:04:05")).
+			Pair("date_accessed", NewNullString(t.AccessTime().UTC().Format("2006-01-02 15:04:05"))).
 			Pair("hash", hash).
 			Exec()
 	}
@@ -198,6 +199,10 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 
 // UpdateFile: update file on change of path, file name, or date modified
 func (db *Database) UpdateFile(file DatabaseFile) error {
+	stat, err := os.Stat(file.Path)
+	if err != nil {
+		return err
+	}
 	t, err := times.Stat(file.Path)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -207,21 +212,21 @@ func (db *Database) UpdateFile(file DatabaseFile) error {
 	tx, err := db.sess.Begin()
 
 	_, err = db.sess.UpdateBySql(`UPDATE files SET
-			path = ?, file_name = ?,
+			path = ?, file_name = ?, file_size = ?,
 			file_title = ?, file_authors = ?, file_subjects = ?, file_publisher = ?,
 			date_modified = ?, date_accessed = ?, hash = ?
 			WHERE id = ?`,
-		file.Path, filepath.Base(file.Path),
+		file.Path, filepath.Base(file.Path), stat.Size(),
 		NewNullString(file.Title.String), NewNullString(file.Authors.String), NewNullString(file.Subjects.String), NewNullString(file.Publisher.String),
-		file.DateModified, file.DateAccessed, file.FileHash,
+		file.DateModified, NewNullString(file.DateAccessed.String), file.FileHash,
 		file.ID).Exec()
 
 	if err != nil {
 		// TODO: PDF metadata "unrecognized token", workaround don't update metadata
 		_, err = db.sess.UpdateBySql(`UPDATE files SET
-			path = ?, file_name = ?, date_modified = ?, date_accessed = ?, hash = ?
+			path = ?, file_name = ?, file_size = ?, date_modified = ?, date_accessed = ?, hash = ?
 			WHERE id = ?`,
-			file.Path, filepath.Base(file.Path), file.DateModified, file.DateAccessed,
+			file.Path, filepath.Base(file.Path), stat.Size(), file.DateModified, NewNullString(file.DateAccessed.String),
 			file.FileHash, file.ID).Exec()
 	}
 
