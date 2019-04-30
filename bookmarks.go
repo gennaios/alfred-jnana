@@ -134,7 +134,7 @@ func (db *Database) createTables() {
 		content='files',
 		content_rowid='id',
 		prefix='2 3',
-		tokenize='porter unicode61 remove_diacritics 2'
+		tokenize='porter unicode61 remove_diacritics 1'
 	)`
 	var bookmarksFTS = `
 	CREATE VIRTUAL TABLE IF NOT EXISTS bookmarksindex USING fts5(
@@ -148,7 +148,7 @@ func (db *Database) createTables() {
 		content='bookmarks_view',
 		content_rowid='id',
 		prefix='2 3',
-		tokenize='porter unicode61 remove_diacritics 2'
+		tokenize='porter unicode61 remove_diacritics 1'
 	)`
 	_, _ = db.conn.Exec(schemaFiles)
 	_, _ = db.conn.Exec(schemaBookmarks)
