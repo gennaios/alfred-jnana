@@ -77,7 +77,7 @@ func (db *Database) Init(dbFilePath string) {
 
 // Init: open SQLite database connection using dbr, for reading, doesn't create tables etc
 func (db *Database) InitForReading(dbFilePath string) {
-	db.conn, _ = dbr.Open("sqlite3", dbFilePath, nil)
+	db.conn, _ = dbr.Open("sqlite3", dbFilePath+"?&mode=ro&_journal_mode=WAL&cache=shared", nil)
 	db.sess = db.conn.NewSession(nil)
 	_, _ = db.sess.Begin()
 }
