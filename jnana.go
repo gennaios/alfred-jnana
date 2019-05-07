@@ -248,13 +248,12 @@ func ImportFile(db Database, file string) error {
 		_, err = db.GetFileFromPath(file)
 
 		if err == dbr.ErrNotFound {
-			fmt.Println("trying:", file)
 			fileRecord, changed, err := db.GetFile(file, false)
 			if err != nil {
 				return err
 			}
 
-			if fileRecord.ID > 1 && changed == true {
+			if changed == true {
 				bookmarks, err := db.BookmarksForFile(file)
 				if err != nil {
 					return err
