@@ -26,6 +26,8 @@ type DatabaseFile struct {
 	Authors       dbr.NullString `db:"file_authors"`
 	Subjects      dbr.NullString `db:"file_subjects"`
 	Publisher     dbr.NullString `db:"file_publisher"`
+	Language      dbr.NullString `db:"language"`
+	Description   dbr.NullString `db:"description"`
 	DateCreated   string         `db:"date_created"`
 	DateModified  string         `db:"date_modified"`
 	DateAccessed  dbr.NullString `db:"date_accessed"`
