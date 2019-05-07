@@ -95,6 +95,8 @@ func (db *Database) createTables() {
 	    	file_authors TEXT,
 	    	file_subjects TEXT,
 	    	file_publisher TEXT,
+	    	language TEXT,
+	    	description TEXT,
 	    	date_created DATETIME NOT NULL,
 	    	date_modified DATETIME,
 	    	date_accessed DATETIME,
@@ -131,6 +133,7 @@ func (db *Database) createTables() {
 		file_authors,
 		file_subjects,
 		file_publisher,
+		description,
 		content='files',
 		content_rowid='id',
 		prefix='2 3',
@@ -161,6 +164,24 @@ func (db *Database) createTables() {
 // createTriggers: triggers to update FTS index upon insert, delete, and update
 func (db *Database) createTriggers() {
 	var triggers = `
+	CREATE TRIGGER files_delete
+		AFTER DELETE ON files
+		BEGIN DELETE FROM filesindex where rowid=old.id;
+		END;
+	CREATE TRIGGER files_insert
+		AFTER INSERT ON files
+		BEGIN INSERT INTO filesindex(rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
+		VALUES (new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description);
+		END;
+	CREATE TRIGGER bookmarks_delete
+		AFTER DELETE ON bookmarks
+		BEGIN DELETE FROM bookmarksindex where rowid=old.id;
+		END;
+	CREATE TRIGGER bookmarks_insert
+		AFTER INSERT ON bookmarks
+		BEGIN INSERT INTO bookmarksindex(rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (new.id, new.title, new.section, (SELECT file_name FROM files WHERE id = new.file_id), (SELECT file_title FROM files WHERE id = new.file_id), (SELECT file_authors FROM files WHERE id = new.file_id), (SELECT file_subjects FROM files WHERE id = new.file_id), (SELECT file_publisher FROM files WHERE id = new.file_id));
+		END;
 	CREATE TRIGGER IF NOT EXISTS update_file_name
 		INSTEAD OF UPDATE OF file_name ON bookmarks_view
 		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
@@ -205,41 +226,49 @@ func (db *Database) createTriggers() {
 		AFTER UPDATE OF file_name ON files
 		BEGIN DELETE FROM filesindex where rowid=old.id;
 		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
 		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
 		); END;
 	CREATE TRIGGER IF NOT EXISTS update_files_title
 		AFTER UPDATE OF file_title ON files
 		BEGIN DELETE FROM filesindex where rowid=old.id;
 		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
 		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
 		); END;
 	CREATE TRIGGER IF NOT EXISTS update_files_authors
 		AFTER UPDATE OF file_authors ON files
 		BEGIN DELETE FROM filesindex where rowid=old.id;
 		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
 		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
 		); END;
 	CREATE TRIGGER IF NOT EXISTS update_files_subjects
 		AFTER UPDATE OF file_subjects ON files
 		BEGIN DELETE FROM filesindex where rowid=old.id;
 		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
 		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
 		); END;
 	CREATE TRIGGER IF NOT EXISTS update_files_publisher
 		AFTER UPDATE OF file_publisher ON files
 		BEGIN DELETE FROM filesindex where rowid=old.id;
 		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher)
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
 		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_files_description
+		AFTER UPDATE OF description ON files
+		BEGIN DELETE FROM filesindex where rowid=old.id;
+		INSERT INTO filesindex(
+		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
+		VALUES (
+		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
 		); END;
 	`
 	_, _ = db.conn.Exec(triggers)
