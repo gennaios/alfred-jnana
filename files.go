@@ -199,6 +199,27 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 	return file, err
 }
 
+// SearchFiles: Search all files from FTS5 table,
+// order by rank: file_name, file_title, file_authors, file_subjects, file_publisher, description
+// Return results as slice of struct DatabaseFile, later prepped for Alfred script filter
+func (db *Database) SearchFiles(query string) ([]*DatabaseFile, error) {
+	queryString := stringForSQLite(query)
+	var results []*DatabaseFile
+
+	// NOTE: AND rank MATCH 'bm25(…)' ORDER BY rank faster than ORDER BY bm25(fts, …)
+	_, err := db.sess.SelectBySql(`SELECT
+			files.id, files.path, files.file_name, files.file_extension, files.file_title, files.file_subjects
+			FROM files
+			JOIN filesindex on files.id = filesindex.rowid
+			WHERE filesindex MATCH ?
+			AND rank MATCH 'bm25(10.0, 2.0, 2.0, 2.0, 2.0, 2.0)'
+			ORDER BY rank LIMIT 200`,
+		queryString).Load(&results)
+
+	err = db.conn.Close()
+	return results, err
+}
+
 // UpdateFile: update file on change of path, file name, or date modified
 func (db *Database) UpdateFile(file DatabaseFile) error {
 	stat, err := os.Stat(file.Path)
