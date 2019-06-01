@@ -28,13 +28,16 @@ usage:
     jnana bmf <file> <query>
     jnana clean
     jnana epub [<query>]
+    jnana files [<query>]
     jnana import <file>
     jnana getepub
     jnana openepub <query> [<file>]
     jnana pdf <file> [<query>]
     jnana test <file>
     jnana lastquery
+    jnana lastfilequery
     jnana savequery <query>
+    jnana savefilequery <query>
     jnana subjects <file> [<query>]
     jnana test <file>
     jnana update [<file>]
@@ -45,19 +48,22 @@ options:
     --version          Show workflow version and exit.
 
 commands:
-    all		Search all bookmarks.
-    bm		Bookmarks for file
-    bmf		Bookmarks for file filtered by query
-    clean	Clean database, remove bookmarks for deleted files 
-    epub	Bookmarks for EPUB in calibre
-    getepub     Return opened EPUB
-    import      Import file or files from folder	
-    openepub	open calibre to bookmark
-    pdf		Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
-    lastquery	Retrieve cached last query string for script filter
-    savequery	Save last query string for script filter
-    test        Testing stuff
-    update      Update path metadata
+    all			Search all bookmarks.
+    bm			Bookmarks for file
+    bmf			Bookmarks for file filtered by query
+    clean		Clean database, remove bookmarks for deleted files 
+    epub		Bookmarks for EPUB in calibre
+    files		Search all files by name and metadata
+    getepub     	Return opened EPUB
+    import      	Import file or files from folder	
+    openepub		open calibre to bookmark
+    pdf			Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
+    lastquery		Retrieve cached last query string for script filter
+    lastfilequery	Retrieve cached last file query string for script filter
+    savefilequery	Save last file query string for script filter
+    savequery		Save last query string for script filter
+    test        	Testing stuff
+    update      	Update path metadata
 `
 
 	wf *aw.Workflow
@@ -68,20 +74,23 @@ commands:
 
 var options struct {
 	// commands
-	All       bool
-	Bm        bool
-	Bmf       bool
-	Clean     bool
-	Epub      bool
-	Getepub   bool
-	Import    bool
-	Openepub  bool
-	Pdf       bool
-	Lastquery bool
-	Savequery bool
-	Subjects  bool
-	Test      bool
-	Update    bool
+	All           bool
+	Bm            bool
+	Bmf           bool
+	Clean         bool
+	Epub          bool
+	Files         bool
+	Getepub       bool
+	Import        bool
+	Openepub      bool
+	Pdf           bool
+	Lastquery     bool
+	Lastfilequery bool
+	Savefilequery bool
+	Savequery     bool
+	Subjects      bool
+	Test          bool
+	Update        bool
 
 	// parameters
 	File   string
@@ -200,6 +209,12 @@ func iconForFileID(fileId string, filePath string) *aw.Icon {
 	}
 }
 
+func cacheLastFileQuery(queryString string) {
+	if err := wf.Cache.StoreJSON("LastFileQuery", queryString); err != nil {
+		wf.FatalError(err)
+	}
+}
+
 func cacheLastQuery(queryString string) {
 	if err := wf.Cache.StoreJSON("LastQuery", queryString); err != nil {
 		wf.FatalError(err)
@@ -230,6 +245,14 @@ func fileSubjects(file string, subjects string) {
 
 func getCurrentEpub() {
 	fmt.Println(calibreEpubFile())
+}
+
+func getLastFileQuery() string {
+	var lastQuery string
+	if err := wf.Cache.LoadJSON("LastFileQuery", &lastQuery); err != nil {
+		wf.FatalError(err)
+	}
+	return lastQuery
 }
 
 func getLastQuery() string {
@@ -330,6 +353,10 @@ func printLastQuery() {
 	fmt.Println(getLastQuery())
 }
 
+func printLastFileQuery() {
+	fmt.Println(getLastFileQuery())
+}
+
 // Query database for all bookmarks
 func searchAllBookmarks(query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
@@ -340,6 +367,18 @@ func searchAllBookmarks(query string) {
 		wf.FatalError(err)
 	}
 	returnSearchAllResults(results, query)
+}
+
+// Query database for all files
+func searchAllFiles(query string) {
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabaseForReading(dbFile)
+
+	results, err := db.SearchFiles(query)
+	if err != nil {
+		wf.FatalError(err)
+	}
+	returnSearchFilesResults(results, query)
 }
 
 func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
@@ -453,6 +492,36 @@ func returnSearchAllResults(bookmarks []*SearchAllResult, query string) {
 	wf.SendFeedback()
 }
 
+// Parse database search results and return items to Alfred
+func returnSearchFilesResults(files []*DatabaseFile, query string) {
+	var title string
+
+	// return query variable for next search
+	wf.Var("JNANA_FILE_QUERY", query)
+
+	for i := range files {
+		icon := iconForFileID(strconv.FormatInt(files[i].ID, 10), files[i].Path)
+
+		if files[i].FileExtension == "pdf" {
+			title = files[i].FileName
+		} else {
+			if files[i].Authors.String != "" {
+				title = files[i].Title.String + " - " + files[i].Authors.String
+			} else {
+				title = files[i].Title.String
+			}
+		}
+
+		wf.NewItem(title).
+			Subtitle(files[i].Subjects.String).
+			UID(strconv.FormatInt(files[i].ID, 10)).
+			Valid(true).
+			Icon(icon).
+			Arg(files[i].Path)
+	}
+	wf.SendFeedback()
+}
+
 func TestStuff(file string) {
 	//bookmarks, _ := bookmarksForPDF(path)
 	//fmt.Println("bookmarks", len(bookmarks))
@@ -515,6 +584,8 @@ func runCommand() {
 		cleanDatabase()
 	case options.Epub:
 		bookmarksForFileEpub(query)
+	case options.Files:
+		searchAllFiles(query)
 	case options.Import:
 		ImportFiles(options.File)
 	case options.Getepub:
@@ -525,6 +596,10 @@ func runCommand() {
 		printLastQuery()
 	case options.Savequery:
 		cacheLastQuery(query)
+	case options.Lastfilequery:
+		printLastFileQuery()
+	case options.Savefilequery:
+		cacheLastFileQuery(query)
 	case options.Subjects:
 		fileSubjects(options.File, query)
 	case options.Test:
