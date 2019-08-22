@@ -199,6 +199,13 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 	return file, err
 }
 
+// RecentFiles: list of recently opened files
+func (db *Database) RecentFiles() ([]*DatabaseFile, error) {
+	var files []*DatabaseFile
+	_, err := db.sess.Select("*").From("files").OrderDesc("date_accessed").Limit(50).Load(&files)
+	return files, err
+}
+
 // SearchFiles: Search all files from FTS5 table,
 // order by rank: file_name, file_title, file_authors, file_subjects, file_publisher, description
 // Return results as slice of struct DatabaseFile, later prepped for Alfred script filter
