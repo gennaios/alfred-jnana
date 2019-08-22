@@ -182,6 +182,11 @@ func (db *Database) createTriggers() {
 		BEGIN INSERT INTO bookmarksindex(rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
 		VALUES (new.id, new.title, new.section, (SELECT file_name FROM files WHERE id = new.file_id), (SELECT file_title FROM files WHERE id = new.file_id), (SELECT file_authors FROM files WHERE id = new.file_id), (SELECT file_subjects FROM files WHERE id = new.file_id), (SELECT file_publisher FROM files WHERE id = new.file_id));
 		END;
+	CREATE TRIGGER bookmarks_update
+		AFTER UPDATE ON bookmarks
+		BEGIN INSERT INTO bookmarksindex(rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		VALUES (new.id, new.title, new.section, (SELECT file_name FROM files WHERE id = new.file_id), (SELECT file_title FROM files WHERE id = new.file_id), (SELECT file_authors FROM files WHERE id = new.file_id), (SELECT file_subjects FROM files WHERE id = new.file_id), (SELECT file_publisher FROM files WHERE id = new.file_id));
+		END;
 	CREATE TRIGGER IF NOT EXISTS update_file_name
 		INSTEAD OF UPDATE OF file_name ON bookmarks_view
 		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
