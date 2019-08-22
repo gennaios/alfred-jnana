@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gocraft/dbr"
 	"io/ioutil"
 	"log"
 	"os"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/deanishe/awgo"
 	"github.com/docopt/docopt-go"
+	"github.com/gocraft/dbr"
 )
 
 var (
@@ -33,6 +33,7 @@ usage:
     jnana getepub
     jnana openepub <query> [<file>]
     jnana pdf <file> [<query>]
+	jnana recent
     jnana test <file>
     jnana lastquery
     jnana lastfilequery
@@ -48,16 +49,17 @@ options:
     --version          Show workflow version and exit.
 
 commands:
-    all			Search all bookmarks.
-    bm			Bookmarks for file
-    bmf			Bookmarks for file filtered by query
-    clean		Clean database, remove bookmarks for deleted files 
-    epub		Bookmarks for EPUB in calibre
-    files		Search all files by name and metadata
+    all				Search all bookmarks.
+    bm				Bookmarks for file
+    bmf				Bookmarks for file filtered by query
+    clean			Clean database, remove bookmarks for deleted files 
+    epub			Bookmarks for EPUB in calibre
+    files			Search all files by name and metadata
     getepub     	Return opened EPUB
     import      	Import file or files from folder	
     openepub		open calibre to bookmark
-    pdf			Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim.
+    pdf				Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim
+	recent			Show recently opened files
     lastquery		Retrieve cached last query string for script filter
     lastfilequery	Retrieve cached last file query string for script filter
     savefilequery	Save last file query string for script filter
@@ -86,6 +88,7 @@ var options struct {
 	Pdf           bool
 	Lastquery     bool
 	Lastfilequery bool
+	Recent        bool
 	Savefilequery bool
 	Savequery     bool
 	Subjects      bool
@@ -357,6 +360,18 @@ func printLastFileQuery() {
 	fmt.Println(getLastFileQuery())
 }
 
+// List recently opened files
+func RecentFiles() {
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabaseForReading(dbFile)
+
+	results, err := db.RecentFiles()
+	if err != nil {
+		wf.FatalError(err)
+	}
+	returnSearchFilesResults(results, "")
+}
+
 // Query database for all bookmarks
 func searchAllBookmarks(query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
@@ -497,7 +512,9 @@ func returnSearchFilesResults(files []*DatabaseFile, query string) {
 	var title string
 
 	// return query variable for next search
-	wf.Var("JNANA_FILE_QUERY", query)
+	if query != "" {
+		wf.Var("JNANA_FILE_QUERY", query)
+	}
 
 	for i := range files {
 		icon := iconForFileID(strconv.FormatInt(files[i].ID, 10), files[i].Path)
@@ -600,6 +617,8 @@ func runCommand() {
 		printLastFileQuery()
 	case options.Savefilequery:
 		cacheLastFileQuery(query)
+	case options.Recent:
+		RecentFiles()
 	case options.Subjects:
 		fileSubjects(options.File, query)
 	case options.Test:
