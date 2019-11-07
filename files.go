@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/campoy/unique"
 	"github.com/djherbis/times"
-	"github.com/gocraft/dbr"
+	"github.com/gocraft/dbr/v2"
 	_ "github.com/mattn/go-sqlite3"
 	"io"
 	"log"

@@ -14,7 +14,7 @@ import (
 
 	"github.com/deanishe/awgo"
 	"github.com/docopt/docopt-go"
-	"github.com/gocraft/dbr"
+	"github.com/gocraft/dbr/v2"
 )
 
 var (

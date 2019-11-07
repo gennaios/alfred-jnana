@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/deckarep/gosx-notifier"
-	"github.com/gocraft/dbr"
+	"github.com/gocraft/dbr/v2"
 	_ "github.com/mattn/go-sqlite3"
 )
 
