@@ -162,17 +162,34 @@ func bookmarksForFileFiltered(file string, query string) {
 func calibreEpubFile() string {
 	usr, _ := user.Current()
 	var path string
-	calibreJsonFile := "~/Library/Preferences/calibre/viewer.json"
+
+	// pre 4.x
+	//calibreJsonFile := "~/Library/Preferences/calibre/viewer.json"
+
+	// 4.x
+	calibreJsonFile := "~/Library/Preferences/calibre/viewer-webengine.json"
 	path = filepath.Join(usr.HomeDir, calibreJsonFile[2:])
 
-	fileBytes, err := ioutil.ReadFile(path)
+	jsonFile, err := ioutil.ReadFile(path)
 	if err != nil {
 		wf.FatalError(err)
 	}
-	var jsonData map[string][]string
+	// var jsonData map[string][]string
 	// JSON unmarshal returns some BOOL error
-	_ = json.Unmarshal(fileBytes, &jsonData)
-	return jsonData["viewer_open_history"][0]
+	// _ = json.Unmarshal(jsonFile, &jsonData)
+
+	// pre 4.x
+	//return jsonData["viewer_open_history"][0]
+
+	// 4.x
+	var result map[string]interface{}
+	if err := json.Unmarshal(jsonFile, &result); err != nil {
+		log.Fatal(err)
+	}
+
+	fileName := result["session_data"].(map[string]interface{})["standalone_recently_opened"].([]interface{})[0].(map[string]interface{})["pathtoebook"]
+
+	return fileName.(string)
 }
 
 func cleanDatabase() {
@@ -330,7 +347,7 @@ func openCalibreBookmark(destination string, file string) {
 		file = calibreEpubFile()
 	}
 	file = "\"" + file + "\"" // for shell script
-	cmdArgs := []string{"--continue --open-at=toc-href:\"" + destination + "\"", file}
+	cmdArgs := []string{"--open-at=toc:\"" + destination + "\"", file}
 	openCalibreBookmarkCommand(command, cmdArgs)
 	//_ = exec.Command(command, cmdArgs...).Start()
 }
@@ -396,6 +413,9 @@ func searchAllFiles(query string) {
 	returnSearchFilesResults(results, query)
 }
 
+// Bookmarks for single EPUB or PDF
+// - input: bookmarks
+// - output to Alfred
 func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 	var icon *aw.Icon
 
@@ -429,7 +449,7 @@ func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
-				Arg(bookmarks[i].Destination)
+				Arg(bookmarks[i].Title.String) // TODO: Destination
 		}
 
 	}
@@ -466,7 +486,7 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
-				Arg(bookmarks[i].Destination)
+				Arg(bookmarks[i].Title.String) // TODO: Destination for file with ID
 		}
 	}
 	wf.SendFeedback()
