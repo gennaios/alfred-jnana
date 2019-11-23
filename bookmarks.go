@@ -280,7 +280,7 @@ func (db *Database) createTriggers() {
 }
 
 // BookmarksForFile: retrieve existing bookmarks, add new to database if needed and check if updated
-func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
+func (db *Database) BookmarksForFile(file string, coversCacheDir string) ([]*Bookmark, error) {
 	var bookmarks []*Bookmark
 	var err error
 
@@ -292,6 +292,9 @@ func (db *Database) BookmarksForFile(file string) ([]*Bookmark, error) {
 	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmarks
 					WHERE file_id = ?`, fileRecord.ID).
 		LoadOne(&bookmarks)
+
+	// check cover / TODO: move somewhere else?
+	_ = db.CoverForFile(fileRecord, coversCacheDir)
 
 	// file created or changed / or no bookmarks found
 	if changed == true || len(bookmarks) == 0 {

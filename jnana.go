@@ -127,7 +127,8 @@ func bookmarksForFile(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
 
-	bookmarks, err := db.BookmarksForFile(file)
+	bookmarks, err := db.BookmarksForFile(file, coversCacheDir)
+
 	if err == nil {
 		returnBookmarksForFile(file, bookmarks)
 	} else {
@@ -297,7 +298,7 @@ func ImportFile(db Database, file string) error {
 			}
 
 			if changed == true {
-				bookmarks, err := db.BookmarksForFile(file)
+				bookmarks, err := db.BookmarksForFile(file, coversCacheDir)
 				if err != nil {
 					return err
 				}
