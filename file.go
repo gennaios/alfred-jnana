@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gen2brain/go-fitz"
 	"github.com/meskio/epubgo"
+	"io/ioutil"
 	"strings"
 )
 
@@ -55,6 +56,23 @@ func (f *File) Bookmarks() ([]*FileBookmark, error) {
 		fmt.Println("error:", err)
 	}
 	return f.parseBookmarks(f.path, outlines), err
+}
+
+func (f *File) CoverForEPUB() ([]byte, error) {
+	metaCoverId, err := f.epub.Metadata("cover")
+	if err != nil {
+		cover, _ := f.epub.OpenFileId(metaCoverId[0])
+		defer cover.Close()
+
+		buff1, err := ioutil.ReadAll(cover)
+		if err != nil {
+			_ = notification("Error EPUB cover:" + err.Error())
+			return nil, err
+		} else {
+			return buff1, err
+		}
+	}
+	return nil, nil
 }
 
 func (f *File) Metadata() {
