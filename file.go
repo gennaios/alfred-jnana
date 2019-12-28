@@ -136,49 +136,53 @@ func (f *File) parseBookmarks(file string, outline []fitz.Outline) []*FileBookma
 		pdf = false
 	}
 
-	for _, bookmark := range outline {
-		if pdf == true {
-			if bookmark.Page != -1 {
-				page = bookmark.Page + 1
-			} else {
-				page = -1
-			}
-			destination = fmt.Sprintf("%d", page)
-		} else {
-			destination = strings.TrimSpace(bookmark.URI)
-			// MuPDF: workaround for destination being full path instead of HREF
-			destination = strings.Replace(destination, "OEBPS/", "", 1)
-			destination = strings.Replace(destination, "Oebps/", "", 1)
-			destination = strings.Replace(destination, "OPS/", "", 1)
-			destination = strings.Replace(destination, "Ops/", "", 1)
-		}
-
-		title = strings.TrimSpace(bookmark.Title)
-
-		section = ""
-		sections[bookmark.Level] = title
-
-		if bookmark.Level == 1 {
-			section = ""
-		} else {
-			currentLevel = bookmark.Level
-			for currentLevel > 1 {
-				if section == "" {
-					section = sections[currentLevel-1]
+	for i, bookmark := range outline {
+		// skip cover
+		if i != 0 && (!strings.Contains(bookmark.Title, "Cover") || !strings.Contains(bookmark.Title, "cover") || !strings.Contains(bookmark.Title, "COVER") || !strings.Contains(bookmark.Title, "Couverture")) {
+			if pdf == true {
+				if bookmark.Page != -1 {
+					page = bookmark.Page + 1
 				} else {
-					section = fmt.Sprintf("%s > %s", sections[currentLevel-1], section)
+					page = -1
 				}
-				currentLevel -= 1
+				destination = fmt.Sprintf("%d", page)
+			} else {
+				destination = strings.TrimSpace(bookmark.URI)
+				// MuPDF: workaround for destination being full path instead of HREF
+				destination = strings.Replace(destination, "OEBPS/", "", 1)
+				destination = strings.Replace(destination, "Oebps/", "", 1)
+				destination = strings.Replace(destination, "OPS/", "", 1)
+				destination = strings.Replace(destination, "Ops/", "", 1)
 			}
-		}
 
-		newBookmark := FileBookmark{
-			Title:       title,
-			Section:     section,
-			Destination: destination,
+			title = strings.TrimSpace(bookmark.Title)
+
+			section = ""
+			sections[bookmark.Level] = title
+
+			if bookmark.Level == 1 {
+				section = ""
+			} else {
+				currentLevel = bookmark.Level
+				for currentLevel > 1 {
+					if section == "" {
+						section = sections[currentLevel-1]
+					} else {
+						section = fmt.Sprintf("%s > %s", sections[currentLevel-1], section)
+					}
+					currentLevel -= 1
+				}
+			}
+
+			newBookmark := FileBookmark{
+				Title:       title,
+				Section:     section,
+				Destination: destination,
+			}
+			parsedBookmarks = append(parsedBookmarks, &newBookmark)
 		}
-		parsedBookmarks = append(parsedBookmarks, &newBookmark)
 	}
+
 	return parsedBookmarks
 }
 
