@@ -36,9 +36,9 @@ type SearchAllResult struct {
 func (db *Database) Init(dbFilePath string) {
 	var file string
 	// open with PRAGMAs:
-	// journal_mode=WAL, locking_mode=EXCLUSIVE, synchronous=0
+	// journal_mode=WAL, synchronous=0
 	if dbFilePath != "memory" {
-		file = dbFilePath + "?&_journal_mode=WAL&_locking_mode=EXCLUSIVE&_synchronous=0&_foreign_keys=1"
+		file = dbFilePath + "?&_journal_mode=WAL&_synchronous=0&_foreign_keys=1"
 	} else {
 		file = "file::memory:?mode=memory&cache=shared&_foreign_keys=1&_synchronous=0"
 	}
@@ -294,7 +294,7 @@ func (db *Database) BookmarksForFile(file string, coversCacheDir string) ([]*Boo
 		LoadOne(&bookmarks)
 
 	// check cover / TODO: move somewhere else?
-	_ = db.CoverForFile(fileRecord, coversCacheDir)
+	//_ = db.CoverForFile(fileRecord, coversCacheDir)
 
 	// file created or changed / or no bookmarks found
 	if changed == true || len(bookmarks) == 0 {
