@@ -89,23 +89,25 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 		if err != nil {
 			return file, true, err
 		}
-	} else if file.ID != 0 && book != file.Path {
-		// found by hash, verify not dupe
-		if _, err = os.Stat(file.Path); err != nil {
-			if os.IsNotExist(err) {
-				// old path doesn't exist, moved, same hash
-				_ = notification("File moved: " + file.Path)
-				file.Path = book
-				err = db.UpdateFile(*file)
-				// hash match, no changes needed
-				return file, false, err
-			}
-		} else {
-			// check file exists, or notification will be triggered if not
-			if _, err = os.Stat(book); err != nil {
-				if !os.IsNotExist(err) {
-					_ = notification("Dupe of: " + file.Path)
-					check = false
+	} else if file != nil {
+		if file.ID != 0 && book != file.Path {
+			// found by hash, verify not dupe
+			if _, err = os.Stat(file.Path); err != nil {
+				if os.IsNotExist(err) {
+					// old path doesn't exist, moved, same hash
+					_ = notification("File moved: " + file.Path)
+					file.Path = book
+					err = db.UpdateFile(*file)
+					// hash match, no changes needed
+					return file, false, err
+				}
+			} else {
+				// check file exists, or notification will be triggered if not
+				if _, err = os.Stat(book); err != nil {
+					if !os.IsNotExist(err) {
+						_ = notification("Dupe of: " + file.Path)
+						check = false
+					}
 				}
 			}
 		}
@@ -113,7 +115,7 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 
 	// not created, check if different
 	// NOTE: run each time with file and file filtered bookmarks, try to speed up
-	if check == true {
+	if check == true && file != nil {
 		// check book changed against date in database
 		stat, err := os.Stat(book)
 		if err != nil {
