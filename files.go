@@ -8,7 +8,6 @@ import (
 	"github.com/djherbis/times"
 	"github.com/gocraft/dbr/v2"
 	_ "github.com/mattn/go-sqlite3"
-	"gopkg.in/gographics/imagick.v3/imagick"
 	"io"
 	"log"
 	"os"
@@ -58,46 +57,7 @@ func (db *Database) CoverForFile(fileRecord *DatabaseFile, coversCacheDir string
 		_ = notification("File ID: " + strconv.FormatInt(fileRecord.ID, 10) + ".png")
 	}
 
-	imagick.Initialize()
-	defer imagick.Terminate()
-	mw := imagick.NewMagickWand()
-	defer mw.Destroy()
-
-	// set before ReadImage
-	_ = mw.SetDepth(8)
-	_ = mw.SetImageColorspace(imagick.COLORSPACE_SRGB)
-	_ = mw.SetExtract("160160") // MagickSetExtract
-	//width := (160 - mw.GetImageWidth()) / 2
-	//_ = notification("Width:" + string(mw.GetImageWidth()))
-
-	if strings.HasSuffix(fileRecord.Path, ".pdf") {
-		err = db.CoverForFilePDF(fileRecord.Path, mw)
-	} else {
-		err = db.CoverForFileEPUB(fileRecord.Path, mw)
-	}
-
-	pixel := imagick.NewPixelWand()
-	pixel.SetColor("transparent")
-	//_ = mw.SetBackgroundColor(pixel)      // MagickSetBackgroundColor
-	_ = mw.SetImageBackgroundColor(pixel) // MagickSetImageBackgroundColor
-
-	//_ = mw.SetGravity(imagick.GRAVITY_CENTER)      // MagickSetGravity, set before extent
-	_ = mw.SetImageGravity(imagick.GRAVITY_CENTER) // MagickSetImageGravity
-	_ = mw.SetImageExtent(160, 160)                // MagickSetImageExtent
-	//_ = mw.ExtentImage(160, 160, 0, 0) // MagickExtentImage
-	_ = mw.StripImage()
-
-	//_ = mw.SetExtract("80x80")
-	//_ = mw.ThumbnailImage(80, 80)
-	//_ = mw.ScaleImage(80, 80)
-	//_ = mw.SampleImage(80, 80)
-	//_ = mw.ResizeImage(80, 80, imagick.FILTER_LANCZOS)
-
-	err = mw.SetImageFormat("png")
-	err = mw.WriteImage(coverPath)
-	if err != nil {
-		_ = notification("Error writing:" + err.Error())
-	}
+	// create thumbnail
 
 	// check for new file
 	_, errFile := os.Stat(coverPath)
@@ -106,29 +66,6 @@ func (db *Database) CoverForFile(fileRecord *DatabaseFile, coversCacheDir string
 	} else {
 		return false
 	}
-}
-
-func (db *Database) CoverForFileEPUB(filePath string, mw *imagick.MagickWand) error {
-	f := File{}
-
-	var err error
-	if err = f.Init(filePath); err != nil {
-		cover, err := f.CoverForEPUB()
-		if err != nil {
-			_ = notification("Error reading:" + err.Error())
-		} else {
-			err = mw.ReadImageBlob(cover)
-		}
-	}
-	return err
-}
-
-func (db *Database) CoverForFilePDF(filePath string, mw *imagick.MagickWand) error {
-	err := mw.ReadImage(filePath + "[0]")
-	if err != nil {
-		_ = notification("Error reading:" + err.Error())
-	}
-	return err
 }
 
 func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error) {
