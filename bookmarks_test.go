@@ -49,15 +49,15 @@ func TestDatabase_Init(t *testing.T) {
 
 	// test table creation
 	var result string
-	filesTable := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='files'")
-	_ = filesTable.Scan(&result)
-	assert.Equal(t, "files", result, "`files` table not created")
-	bookmarksTable := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmarks'")
-	_ = bookmarksTable.Scan(&result)
-	assert.Equal(t, "bookmarks", result, "`bookmarks` table not created")
-	bookmarksindexTable := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmarksindex'")
-	_ = bookmarksindexTable.Scan(&result)
-	assert.Equal(t, "bookmarksindex", result, "`bookmarksindex` table not created")
+	fileTable := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='file'")
+	_ = fileTable.Scan(&result)
+	assert.Equal(t, "file", result, "`file` table not created")
+	bookmarkTable := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark'")
+	_ = bookmarkTable.Scan(&result)
+	assert.Equal(t, "bookmark", result, "`bookmarks` table not created")
+	bookmark_searchTable := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark_search'")
+	_ = bookmark_searchTable.Scan(&result)
+	assert.Equal(t, "bookmark_search", result, "`bookmark_search` table not created")
 
 	_ = db.conn.Close()
 }

@@ -16,8 +16,8 @@ type File struct {
 	nav  *epubgo.NavigationIterator
 
 	title     string
-	authors   string
-	subjects  string
+	creator   string
+	subject   string
 	publisher string
 }
 
@@ -77,8 +77,8 @@ func (f *File) CoverForEPUB() ([]byte, error) {
 
 func (f *File) Metadata() {
 	f.title = ""
-	f.authors = ""
-	f.subjects = ""
+	f.creator = ""
+	f.subject = ""
 	f.publisher = ""
 
 	if strings.HasSuffix(f.path, ".pdf") {
@@ -91,21 +91,21 @@ func (f *File) Metadata() {
 // MetadataForEPUB: for PDF path, using go-fitz
 func (f *File) MetadataForEPUB() {
 	var title []string
-	var authors []string
-	var subjects []string
+	var creator []string
+	var subject []string
 	var publisher []string
 
 	title, _ = f.epub.Metadata("title")
 	title = trimMetadata(title)
 	f.title = strings.TrimSpace(strings.Join(title[:], "; "))
 
-	authors, _ = f.epub.Metadata("creator")
-	authors = trimMetadata(authors)
-	f.authors = strings.TrimSpace(strings.Join(authors[:], "; "))
+	creator, _ = f.epub.Metadata("creator")
+	creator = trimMetadata(creator)
+	f.creator = strings.TrimSpace(strings.Join(creator[:], "; "))
 
-	subjects, _ = f.epub.Metadata("subject")
-	subjects = trimMetadata(subjects)
-	f.subjects = strings.ToLower(strings.TrimSpace(strings.Join(subjects[:], ", ")))
+	subject, _ = f.epub.Metadata("subject")
+	subject = trimMetadata(subject)
+	f.subject = strings.ToLower(strings.TrimSpace(strings.Join(subject[:], ", ")))
 
 	publisher, _ = f.epub.Metadata("publisher")
 	publisher = trimMetadata(publisher)
@@ -117,7 +117,7 @@ func (f *File) MetadataForPDF() {
 	fileMetadata := f.file.Metadata()
 
 	f.title = strings.Trim(fileMetadata["title"], `'"; `)
-	f.authors = strings.Trim(fileMetadata["author"], `'"; `)
+	f.creator = strings.Trim(fileMetadata["author"], `'"; `)
 }
 
 // Parse bookmarks from go-fitz

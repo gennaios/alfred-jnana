@@ -29,7 +29,7 @@ type SearchAllResult struct {
 	Destination string         `db:"destination"`
 	FileID      string         `db:"file_id"`
 	Path        string         `db:"path"`
-	FileName    string         `db:"file_name"`
+	Name        string         `db:"name"`
 }
 
 // Init: open SQLite database connection using dbr, create new session
@@ -61,11 +61,11 @@ func (db *Database) Init(dbFilePath string) {
 	db.sess = db.conn.NewSession(nil)
 	_, err = db.sess.Begin()
 
-	// create tables and triggers if 'files' does not exist
-	tables := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='files'")
+	// create tables and triggers if 'file' does not exist
+	tables := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='file'")
 	var result string
 	_ = tables.Scan(&result)
-	if result != "files" {
+	if result != "file" {
 		db.createTables()
 		db.createTriggers()
 	}
@@ -82,19 +82,19 @@ func (db *Database) InitForReading(dbFilePath string) {
 	_, _ = db.sess.Begin()
 }
 
-// createTables: create tables files, bookmarks, view bookmarks_view for FTS updates, and FTS5 bookmarksindex
+// createTables: create tables file, bookmark, view bookmark_view for FTS updates, and FTS5 bookmark_search
 func (db *Database) createTables() {
 	var schemaFiles = `
-	CREATE TABLE IF NOT EXISTS files (
+	CREATE TABLE IF NOT EXISTS file (
 		id INTEGER NOT NULL PRIMARY KEY,
 		path TEXT NOT NULL,
-	    	file_name TEXT,
-	    	file_extension VARCHAR(255) NOT NULL,
-	    	file_size INTEGER NOT NULL,
-	    	file_title TEXT,
-	    	file_authors TEXT,
-	    	file_subjects TEXT,
-	    	file_publisher TEXT,
+	    	name TEXT,
+	    	extension VARCHAR(255) NOT NULL,
+	    	size INTEGER NOT NULL,
+	    	title TEXT,
+	    	creator TEXT,
+	    	subject TEXT,
+	    	publisher TEXT,
 	    	language TEXT,
 	    	description TEXT,
 	    	date_created DATETIME NOT NULL,
@@ -104,176 +104,176 @@ func (db *Database) createTables() {
 	    	hash VARCHAR(64) NOT NULL
 	)`
 	var schemaBookmarks = `
-	CREATE TABLE IF NOT EXISTS bookmarks (
+	CREATE TABLE IF NOT EXISTS bookmark (
 		id INTEGER NOT NULL PRIMARY KEY,
 		file_id INTEGER NOT NULL,
 		title TEXT,
 		section TEXT,
 		destination TEXT NOT NULL,
-		FOREIGN KEY (file_id) REFERENCES files (id) ON DELETE CASCADE ON UPDATE CASCADE
+		FOREIGN KEY (file_id) REFERENCES file (id) ON DELETE CASCADE ON UPDATE CASCADE
 	)`
 	var schemaView = `
-	CREATE VIEW IF NOT EXISTS bookmarks_view AS SELECT
-		bookmarks.id,
-		bookmarks.title,
-		bookmarks.section,
-		files.file_name,
-		files.file_title,
-		files.file_authors,
-		files.file_subjects,
-		files.file_publisher
-		FROM bookmarks
-		INNER JOIN files ON files.id = bookmarks.file_id
+	CREATE VIEW IF NOT EXISTS bookmark_view AS SELECT
+		bookmark.id,
+		bookmark.title,
+		bookmark.section,
+		file.name,
+		file.title as file_title,
+		file.creator,
+		file.subject,
+		file.publisher
+		FROM bookmark
+		INNER JOIN file ON file.id = bookmark.file_id
 	`
 	// prefix: tokenize by length
-	var filesFTS = `
-	CREATE VIRTUAL TABLE IF NOT EXISTS filesindex USING fts5(
-		file_name,
-		file_title,
-		file_authors,
-		file_subjects,
-		file_publisher,
+	var fileFTS = `
+	CREATE VIRTUAL TABLE file_search USING fts5(
+		name,
+		title,
+		creator,
+		subject,
+		publisher,
 		description,
-		content='files',
+		content='file',
 		content_rowid='id',
-		prefix='2 3',
-		tokenize='porter unicode61 remove_diacritics 1'
+		prefix='3',
+		tokenize='porter unicode61 remove_diacritics 2'
 	)`
-	var bookmarksFTS = `
-	CREATE VIRTUAL TABLE IF NOT EXISTS bookmarksindex USING fts5(
+	var bookmarkFTS = `
+	CREATE VIRTUAL TABLE bookmark_search USING fts5(
 		title,
 		section,
-		file_name,
+		name,
 		file_title,
-		file_authors,
-		file_subjects,
-		file_publisher,
-		content='bookmarks_view',
+		creator,
+		subject,
+		publisher,
+		content='bookmark_view',
 		content_rowid='id',
-		prefix='2 3',
-		tokenize='porter unicode61 remove_diacritics 1'
+		prefix='3',
+		tokenize='porter unicode61 remove_diacritics 2'
 	)`
 	_, _ = db.conn.Exec(schemaFiles)
 	_, _ = db.conn.Exec(schemaBookmarks)
 	_, _ = db.conn.Exec(schemaView)
-	_, _ = db.conn.Exec(filesFTS)
-	_, _ = db.conn.Exec(bookmarksFTS)
+	_, _ = db.conn.Exec(fileFTS)
+	_, _ = db.conn.Exec(bookmarkFTS)
 	db.createTriggers()
 }
 
 // createTriggers: triggers to update FTS index upon insert, delete, and update
 func (db *Database) createTriggers() {
 	var triggers = `
-	CREATE TRIGGER files_delete
-		AFTER DELETE ON files
-		BEGIN DELETE FROM filesindex where rowid=old.id;
+	CREATE TRIGGER IF NOT EXISTS file_delete
+		AFTER DELETE ON file
+		BEGIN DELETE FROM file_search where rowid=old.id;
 		END;
-	CREATE TRIGGER files_insert
-		AFTER INSERT ON files
-		BEGIN INSERT INTO filesindex(rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
-		VALUES (new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description);
+	CREATE TRIGGER IF NOT EXISTS file_insert
+		AFTER INSERT ON file
+		BEGIN INSERT INTO file_search(rowid, name, title, creator, subject, publisher, description)
+		VALUES (new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description);
 		END;
-	CREATE TRIGGER bookmarks_delete
-		AFTER DELETE ON bookmarks
-		BEGIN DELETE FROM bookmarksindex where rowid=old.id;
+	CREATE TRIGGER IF NOT EXISTS bookmark_delete
+		AFTER DELETE ON bookmark
+		BEGIN DELETE FROM bookmark_search where rowid=old.id;
 		END;
-	CREATE TRIGGER bookmarks_insert
-		AFTER INSERT ON bookmarks
-		BEGIN INSERT INTO bookmarksindex(rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
-		VALUES (new.id, new.title, new.section, (SELECT file_name FROM files WHERE id = new.file_id), (SELECT file_title FROM files WHERE id = new.file_id), (SELECT file_authors FROM files WHERE id = new.file_id), (SELECT file_subjects FROM files WHERE id = new.file_id), (SELECT file_publisher FROM files WHERE id = new.file_id));
+	CREATE TRIGGER IF NOT EXISTS bookmark_insert
+		AFTER INSERT ON bookmark
+		BEGIN INSERT INTO bookmark_search(rowid, title, section, name, file_title, creator, subject, publisher)
+		VALUES (new.id, new.title, new.section, (SELECT name FROM file WHERE id = new.file_id), (SELECT title FROM file WHERE id = new.file_id), (SELECT creator FROM file WHERE id = new.file_id), (SELECT subject FROM file WHERE id = new.file_id), (SELECT publisher FROM file WHERE id = new.file_id));
 		END;
-	CREATE TRIGGER bookmarks_update
-		AFTER UPDATE ON bookmarks
-		BEGIN INSERT INTO bookmarksindex(rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
-		VALUES (new.id, new.title, new.section, (SELECT file_name FROM files WHERE id = new.file_id), (SELECT file_title FROM files WHERE id = new.file_id), (SELECT file_authors FROM files WHERE id = new.file_id), (SELECT file_subjects FROM files WHERE id = new.file_id), (SELECT file_publisher FROM files WHERE id = new.file_id));
+	CREATE TRIGGER IF NOT EXISTS bookmark_update
+		AFTER UPDATE ON bookmark
+		BEGIN INSERT INTO bookmark_search(rowid, title, section, name, file_title, creator, subject, publisher)
+		VALUES (new.id, new.title, new.section, (SELECT name FROM file WHERE id = new.file_id), (SELECT title FROM file WHERE id = new.file_id), (SELECT creator FROM file WHERE id = new.file_id), (SELECT subject FROM file WHERE id = new.file_id), (SELECT publisher FROM file WHERE id = new.file_id));
 		END;
 	CREATE TRIGGER IF NOT EXISTS update_file_name
-		INSTEAD OF UPDATE OF file_name ON bookmarks_view
-		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
-		INSERT INTO bookmarksindex(
-		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		INSTEAD OF UPDATE OF name ON bookmark_view
+		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
+		INSERT INTO bookmark_search(
+		rowid, title, section, name, file_title, creator, subject, publisher)
 		VALUES (
-		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_title
+		INSTEAD OF UPDATE OF title ON bookmark_view
+		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
+		INSERT INTO bookmark_search(
+		rowid, title, section, name, file_title, creator, subject, publisher)
+		VALUES (
+		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_creator
+		INSTEAD OF UPDATE OF creator ON bookmark_view
+		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
+		INSERT INTO bookmark_search(
+		rowid, title, section, name, file_title, creator, subject, publisher)
+		VALUES (
+		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_subject
+		INSTEAD OF UPDATE OF subject ON bookmark_view
+		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
+		INSERT INTO bookmark_search(
+		rowid, title, section, name, file_title, creator, subject, publisher)
+		VALUES (
+		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_publisher
+		INSTEAD OF UPDATE OF publisher ON bookmark_view
+		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
+		INSERT INTO bookmark_search(
+		rowid, title, section, name, file_title, creator, subject, publisher)
+		VALUES (
+		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
+		); END;
+	CREATE TRIGGER IF NOT EXISTS update_file_name
+		AFTER UPDATE OF name ON file
+		BEGIN DELETE FROM file_search where rowid=old.id;
+		INSERT INTO file_search(
+		rowid, name, title, creator, subject, publisher, description)
+		VALUES (
+		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
 		); END;
 	CREATE TRIGGER IF NOT EXISTS update_file_title
-		INSTEAD OF UPDATE OF file_title ON bookmarks_view
-		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
-		INSERT INTO bookmarksindex(
-		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		AFTER UPDATE OF title ON file
+		BEGIN DELETE FROM file_search where rowid=old.id;
+		INSERT INTO file_search(
+		rowid, name, title, creator, subject, publisher, description)
 		VALUES (
-		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
 		); END;
-	CREATE TRIGGER IF NOT EXISTS update_file_authors
-		INSTEAD OF UPDATE OF file_authors ON bookmarks_view
-		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
-		INSERT INTO bookmarksindex(
-		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+	CREATE TRIGGER IF NOT EXISTS update_file_creator
+		AFTER UPDATE OF creator ON file
+		BEGIN DELETE FROM file_search where rowid=old.id;
+		INSERT INTO file_search(
+		rowid, name, title, creator, subject, publisher, description)
 		VALUES (
-		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
 		); END;
-	CREATE TRIGGER IF NOT EXISTS update_file_subjects
-		INSTEAD OF UPDATE OF file_subjects ON bookmarks_view
-		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
-		INSERT INTO bookmarksindex(
-		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+	CREATE TRIGGER IF NOT EXISTS update_file_subject
+		AFTER UPDATE OF subject ON file
+		BEGIN DELETE FROM file_search where rowid=old.id;
+		INSERT INTO file_search(
+		rowid, name, title, creator, subject, publisher, description)
 		VALUES (
-		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
 		); END;
 	CREATE TRIGGER IF NOT EXISTS update_file_publisher
-		INSTEAD OF UPDATE OF file_publisher ON bookmarks_view
-		BEGIN DELETE FROM bookmarksindex where rowid=old.rowid;
-		INSERT INTO bookmarksindex(
-		rowid, title, section, file_name, file_title, file_authors, file_subjects, file_publisher)
+		AFTER UPDATE OF publisher ON file
+		BEGIN DELETE FROM file_search where rowid=old.id;
+		INSERT INTO file_search(
+		rowid, name, title, creator, subject, publisher, description)
 		VALUES (
-		new.id, new.title, new.section, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher
+		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
 		); END;
-	CREATE TRIGGER IF NOT EXISTS update_files_name
-		AFTER UPDATE OF file_name ON files
-		BEGIN DELETE FROM filesindex where rowid=old.id;
-		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
+	CREATE TRIGGER IF NOT EXISTS update_file_description
+		AFTER UPDATE OF description ON file
+		BEGIN DELETE FROM file_search where rowid=old.id;
+		INSERT INTO file_search(
+		rowid, name, title, creator, subject, publisher, description)
 		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_files_title
-		AFTER UPDATE OF file_title ON files
-		BEGIN DELETE FROM filesindex where rowid=old.id;
-		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
-		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_files_authors
-		AFTER UPDATE OF file_authors ON files
-		BEGIN DELETE FROM filesindex where rowid=old.id;
-		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
-		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_files_subjects
-		AFTER UPDATE OF file_subjects ON files
-		BEGIN DELETE FROM filesindex where rowid=old.id;
-		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
-		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_files_publisher
-		AFTER UPDATE OF file_publisher ON files
-		BEGIN DELETE FROM filesindex where rowid=old.id;
-		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
-		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_files_description
-		AFTER UPDATE OF description ON files
-		BEGIN DELETE FROM filesindex where rowid=old.id;
-		INSERT INTO filesindex(
-		rowid, file_name, file_title, file_authors, file_subjects, file_publisher, description)
-		VALUES (
-		new.id, new.file_name, new.file_title, new.file_authors, new.file_subjects, new.file_publisher, new.description
+		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
 		); END;
 	`
 	_, _ = db.conn.Exec(triggers)
@@ -289,7 +289,7 @@ func (db *Database) BookmarksForFile(file string, coversCacheDir string) ([]*Boo
 		return bookmarks, err
 	}
 
-	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmarks
+	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmark
 					WHERE file_id = ?`, fileRecord.ID).
 		LoadOne(&bookmarks)
 
@@ -331,15 +331,15 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 
 	// only ID needed, no additional fields or checks
 	var fileRecord *DatabaseFile
-	_ = db.sess.SelectBySql("SELECT id FROM files WHERE path = ?", file).LoadOne(&fileRecord)
+	_ = db.sess.SelectBySql("SELECT id FROM file WHERE path = ?", file).LoadOne(&fileRecord)
 
 	_, err := db.sess.SelectBySql(`SELECT
-			bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination
-			FROM bookmarks
-			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
-			WHERE bookmarks.file_id = ` + strconv.FormatInt(fileRecord.ID, 10) +
-		` AND bookmarksindex MATCH '{title section}: ` + *queryString +
-		`' ORDER BY 'rank(bookmarksindex)'`).Load(&results)
+			bookmark.id, bookmark.title, bookmark.section, bookmark.destination
+			FROM bookmark
+			JOIN bookmark_search on bookmark.id = bookmark_search.rowid
+			WHERE bookmark.file_id = ` + strconv.FormatInt(fileRecord.ID, 10) +
+		` AND bookmark_search MATCH '{title section}: ` + *queryString +
+		`' ORDER BY 'rank(bookmark_search)'`).Load(&results)
 
 	// run analyze etc upon database close, unsure if faster
 	//_, _ = db.conn.Exec("PRAGMA optimize;")
@@ -355,12 +355,12 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 
 	// NOTE: AND rank MATCH 'bm25(10.0, 5.0)' ORDER BY rank faster than ORDER BY bm25(fts, …)
 	_, err := db.sess.SelectBySql(`SELECT
-			bookmarks.id, bookmarks.title, bookmarks.section, bookmarks.destination,
-			bookmarks.file_id, files.path, files.file_name
-			FROM bookmarks
-			JOIN files ON bookmarks.file_id = files.id
-			JOIN bookmarksindex on bookmarks.id = bookmarksindex.rowid
-			WHERE bookmarksindex MATCH ?
+			bookmark.id, bookmark.title, bookmark.section, bookmark.destination,
+			bookmark.file_id, file.path, file.name
+			FROM bookmark
+			JOIN file ON bookmark.file_id = file.id
+			JOIN bookmark_search on bookmark.id = bookmark_search.rowid
+			WHERE bookmark_search MATCH ?
 			AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0, 1.0)'
 			ORDER BY rank LIMIT 200`,
 		queryString).Load(&results)
@@ -376,7 +376,7 @@ func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) 
 	// insert new bookmarks
 	for i := range bookmarks {
 		_, err = db.sess.InsertBySql(`INSERT INTO
-			bookmarks
+			bookmark
 			(file_id, title, section, destination) VALUES (?, ?, ?, ?)
 			`,
 			file.ID, NewNullString(bookmarks[i].Title), NewNullString(bookmarks[i].Section), bookmarks[i].Destination).
@@ -387,7 +387,7 @@ func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) 
 
 	// get newly inserted bookmarks
 	var newBookmarks []*Bookmark
-	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmarks
+	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmark
 		WHERE file_id = ?`, file.ID).LoadOne(&newBookmarks)
 	return newBookmarks, err
 }
@@ -401,7 +401,7 @@ func (db *Database) UpdateBookmarks(file *DatabaseFile, oldBookmarks []*Bookmark
 	if len(oldBookmarks) == len(newBookmarks) {
 		// count same, update records
 		for i := range oldBookmarks {
-			_, err = db.sess.UpdateBySql(`UPDATE bookmarks SET
+			_, err = db.sess.UpdateBySql(`UPDATE bookmark SET
 				title = ?, section = ?, destination = ?
 				WHERE id = ?`,
 				NewNullString(newBookmarks[i].Title),
@@ -409,11 +409,11 @@ func (db *Database) UpdateBookmarks(file *DatabaseFile, oldBookmarks []*Bookmark
 				newBookmarks[i].Destination, oldBookmarks[i].ID).
 				Exec()
 		}
-		err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmarks
+		err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmark
 			WHERE file_id = ?`, file.ID).LoadOne(&results)
 	} else {
 		// count different, delete and insert new
-		_, err = db.sess.DeleteBySql(`DELETE from bookmarks WHERE file_id = ?`, file.ID).Exec()
+		_, err = db.sess.DeleteBySql(`DELETE from bookmark WHERE file_id = ?`, file.ID).Exec()
 		results, err = db.NewBookmarks(file, newBookmarks)
 	}
 	err = tx.Commit()

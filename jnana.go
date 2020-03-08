@@ -39,7 +39,7 @@ usage:
     jnana lastfilequery
     jnana savequery <query>
     jnana savefilequery <query>
-    jnana subjects <file> [<query>]
+    jnana subject <file> [<query>]
     jnana test <file>
     jnana update [<file>]
     jnana -h
@@ -53,7 +53,7 @@ commands:
     bm				Bookmarks for file
     bmf				Bookmarks for file filtered by query
     clean			Clean database, remove bookmarks for deleted files 
-    epub			Bookmarks for EPUB in calibre
+    epub		     	Bookmarks for EPUB in calibre
     files			Search all files by name and metadata
     getepub     	Return opened EPUB
     import      	Import file or files from folder	
@@ -91,7 +91,7 @@ var options struct {
 	Recent        bool
 	Savefilequery bool
 	Savequery     bool
-	Subjects      bool
+	Subject       bool
 	Test          bool
 	Update        bool
 
@@ -242,21 +242,21 @@ func cacheLastQuery(queryString string) {
 	}
 }
 
-func fileSubjects(file string, subjects string) {
+func fileSubject(file string, subject string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
 
-	if subjects == "" {
+	if subject == "" {
 		fileRecord, _, err := db.GetFile(file, false)
 		if err != nil {
 			wf.FatalError(err)
 		}
 
-		fmt.Println(fileRecord.Subjects.String)
+		fmt.Println(fileRecord.Subject.String)
 	} else {
 		fileRecord, _, err := db.GetFile(file, false)
 
-		err = db.UpdateSubjects(fileRecord, subjects)
+		err = db.UpdateSubject(fileRecord, subject)
 		if err != nil {
 			wf.FatalError(err)
 		}
@@ -303,7 +303,7 @@ func ImportFile(db Database, file string) error {
 					return err
 				}
 				if len(bookmarks) != 0 {
-					log.Println("Imported:", fileRecord.FileName)
+					log.Println("Imported:", fileRecord.Name)
 				}
 			}
 		}
@@ -510,11 +510,11 @@ func returnSearchAllResults(bookmarks []*SearchAllResult, query string) {
 			title = bookmarks[i].Title.String
 		}
 
-		if strings.HasSuffix(bookmarks[i].FileName, ".pdf") {
-			subtitle = "Page " + bookmarks[i].Destination + ". " + bookmarks[i].FileName
+		if strings.HasSuffix(bookmarks[i].Name, ".pdf") {
+			subtitle = "Page " + bookmarks[i].Destination + ". " + bookmarks[i].Name
 			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Destination
 		} else {
-			subtitle = bookmarks[i].FileName
+			subtitle = bookmarks[i].Name
 			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Title.String
 		}
 
@@ -540,18 +540,18 @@ func returnSearchFilesResults(files []*DatabaseFile, query string) {
 	for i := range files {
 		icon := iconForFileID(strconv.FormatInt(files[i].ID, 10), files[i].Path)
 
-		if files[i].FileExtension == "pdf" {
-			title = files[i].FileName
+		if files[i].Extension == "pdf" {
+			title = files[i].Name
 		} else {
-			if files[i].Authors.String != "" {
-				title = files[i].Title.String + " - " + files[i].Authors.String
+			if files[i].Creator.String != "" {
+				title = files[i].Title.String + " - " + files[i].Creator.String
 			} else {
 				title = files[i].Title.String
 			}
 		}
 
 		wf.NewItem(title).
-			Subtitle(files[i].Subjects.String).
+			Subtitle(files[i].Subject.String).
 			UID(strconv.FormatInt(files[i].ID, 10)).
 			Valid(true).
 			Icon(icon).
@@ -640,8 +640,8 @@ func runCommand() {
 		cacheLastFileQuery(query)
 	case options.Recent:
 		RecentFiles()
-	case options.Subjects:
-		fileSubjects(options.File, query)
+	case options.Subject:
+		fileSubject(options.File, query)
 	case options.Test:
 		TestStuff(options.File)
 	case options.Update:
