@@ -18,28 +18,28 @@ import (
 )
 
 type DatabaseFile struct {
-	ID            int64
-	Path          string         `db:"path"`
-	FileName      string         `db:"file_name"`
-	FileExtension string         `db:"file_extension"`
-	FileSize      int64          `db:"file_size"`
-	Title         dbr.NullString `db:"file_title"`
-	Authors       dbr.NullString `db:"file_authors"`
-	Subjects      dbr.NullString `db:"file_subjects"`
-	Publisher     dbr.NullString `db:"file_publisher"`
-	Language      dbr.NullString `db:"language"`
-	Description   dbr.NullString `db:"description"`
-	DateCreated   string         `db:"date_created"`
-	DateModified  string         `db:"date_modified"`
-	DateAccessed  dbr.NullString `db:"date_accessed"`
-	Rating        dbr.NullInt64  `db:"rating"`
-	FileHash      string         `db:"hash"`
+	ID           int64
+	Path         string         `db:"path"`
+	Name         string         `db:"name"`
+	Extension    string         `db:"extension"`
+	Size         int64          `db:"size"`
+	Title        dbr.NullString `db:"title"`
+	Creator      dbr.NullString `db:"creator"`
+	Subject      dbr.NullString `db:"subject"`
+	Publisher    dbr.NullString `db:"publisher"`
+	Language     dbr.NullString `db:"language"`
+	Description  dbr.NullString `db:"description"`
+	DateCreated  string         `db:"date_created"`
+	DateModified string         `db:"date_modified"`
+	DateAccessed dbr.NullString `db:"date_accessed"`
+	Rating       dbr.NullInt64  `db:"rating"`
+	FileHash     string         `db:"hash"`
 }
 
 // AllFiles: get all files, used for update
 func (db *Database) AllFiles() ([]*DatabaseFile, error) {
 	var files []*DatabaseFile
-	_, err := db.sess.Select("*").From("files").Load(&files)
+	_, err := db.sess.Select("*").From("file").Load(&files)
 	return files, err
 }
 
@@ -142,7 +142,7 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 // return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromPath(book string) (*DatabaseFile, error) {
 	var file *DatabaseFile
-	err := db.sess.SelectBySql("SELECT * FROM files WHERE path = ?", book).LoadOne(&file)
+	err := db.sess.SelectBySql("SELECT * FROM file WHERE path = ?", book).LoadOne(&file)
 	return file, err
 }
 
@@ -150,7 +150,7 @@ func (db *Database) GetFileFromPath(book string) (*DatabaseFile, error) {
 // return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromHash(hash string) (*DatabaseFile, error) {
 	var file *DatabaseFile
-	err := db.sess.SelectBySql("SELECT * FROM files WHERE hash = ?", hash).LoadOne(&file)
+	err := db.sess.SelectBySql("SELECT * FROM file WHERE hash = ?", hash).LoadOne(&file)
 	return file, err
 }
 
@@ -187,15 +187,15 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 	defer tx.RollbackUnlessCommitted()
 
 	// filepath.Ext returns with dot
-	_, err = tx.InsertInto("files").
+	_, err = tx.InsertInto("file").
 		Pair("path", book).
-		Pair("file_name", filepath.Base(book)).
-		Pair("file_extension", strings.ToLower(filepath.Ext(book)[1:])).
-		Pair("file_size", stat.Size()).
-		Pair("file_title", NewNullString(f.title)).
-		Pair("file_authors", NewNullString(f.authors)).
-		Pair("file_subjects", NewNullString(f.subjects)).
-		Pair("file_publisher", NewNullString(f.publisher)).
+		Pair("name", filepath.Base(book)).
+		Pair("extension", strings.ToLower(filepath.Ext(book)[1:])).
+		Pair("size", stat.Size()).
+		Pair("title", NewNullString(f.title)).
+		Pair("creator", NewNullString(f.creator)).
+		Pair("subject", NewNullString(f.subject)).
+		Pair("publisher", NewNullString(f.publisher)).
 		Pair("date_created", dateCreated).
 		Pair("date_modified", dateModified).
 		Pair("date_accessed", NewNullString(t.AccessTime().UTC().Format("2006-01-02 15:04:05"))).
@@ -204,11 +204,11 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 
 	if err != nil {
 		// TODO: workaround PDF metadata issue
-		_, err = tx.InsertInto("files").
+		_, err = tx.InsertInto("file").
 			Pair("path", book).
-			Pair("file_name", filepath.Base(book)).
-			Pair("file_size", stat.Size()).
-			Pair("file_extension", filepath.Ext(book)[1:]).
+			Pair("name", filepath.Base(book)).
+			Pair("size", stat.Size()).
+			Pair("extension", filepath.Ext(book)[1:]).
 			Pair("date_created", dateCreated).
 			Pair("date_modified", dateModified).
 			Pair("date_accessed", NewNullString(t.AccessTime().UTC().Format("2006-01-02 15:04:05"))).
@@ -230,12 +230,12 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 // RecentFiles: list of recently opened files
 func (db *Database) RecentFiles() ([]*DatabaseFile, error) {
 	var files []*DatabaseFile
-	_, err := db.sess.Select("*").From("files").OrderDesc("date_accessed").Limit(50).Load(&files)
+	_, err := db.sess.Select("*").From("file").OrderDesc("date_accessed").Limit(50).Load(&files)
 	return files, err
 }
 
 // SearchFiles: Search all files from FTS5 table,
-// order by rank: file_name, file_title, file_authors, file_subjects, file_publisher, description
+// order by rank: name, title, creator, subject, publisher, description
 // Return results as slice of struct DatabaseFile, later prepped for Alfred script filter
 func (db *Database) SearchFiles(query string) ([]*DatabaseFile, error) {
 	queryString := stringForSQLite(query)
@@ -243,10 +243,10 @@ func (db *Database) SearchFiles(query string) ([]*DatabaseFile, error) {
 
 	// NOTE: AND rank MATCH 'bm25(…)' ORDER BY rank faster than ORDER BY bm25(fts, …)
 	_, err := db.sess.SelectBySql(`SELECT
-			files.id, files.path, files.file_name, files.file_extension, files.file_title, files.file_subjects
-			FROM files
-			JOIN filesindex on files.id = filesindex.rowid
-			WHERE filesindex MATCH ?
+			file.id, file.path, file.name, file.extension, file.title, file.subject
+			FROM file
+			JOIN file_search on file.id = file_search.rowid
+			WHERE file_search MATCH ?
 			AND rank MATCH 'bm25(10.0, 2.0, 2.0, 2.0, 2.0, 2.0)'
 			ORDER BY rank LIMIT 200`,
 		queryString).Load(&results)
@@ -269,20 +269,20 @@ func (db *Database) UpdateFile(file DatabaseFile) error {
 
 	tx, err := db.sess.Begin()
 
-	_, err = db.sess.UpdateBySql(`UPDATE files SET
-			path = ?, file_name = ?, file_size = ?,
-			file_title = ?, file_authors = ?, file_subjects = ?, file_publisher = ?,
+	_, err = db.sess.UpdateBySql(`UPDATE file SET
+			path = ?, name = ?, size = ?,
+			title = ?, creator = ?, subject = ?, publisher = ?,
 			date_modified = ?, date_accessed = ?, hash = ?
 			WHERE id = ?`,
 		file.Path, filepath.Base(file.Path), stat.Size(),
-		NewNullString(file.Title.String), NewNullString(file.Authors.String), NewNullString(file.Subjects.String), NewNullString(file.Publisher.String),
+		NewNullString(file.Title.String), NewNullString(file.Creator.String), NewNullString(file.Subject.String), NewNullString(file.Publisher.String),
 		file.DateModified, NewNullString(file.DateAccessed.String), file.FileHash,
 		file.ID).Exec()
 
 	if err != nil {
 		// TODO: PDF metadata "unrecognized token", workaround don't update metadata
-		_, err = db.sess.UpdateBySql(`UPDATE files SET
-			path = ?, file_name = ?, file_size = ?, date_modified = ?, date_accessed = ?, hash = ?
+		_, err = db.sess.UpdateBySql(`UPDATE file SET
+			path = ?, name = ?, size = ?, date_modified = ?, date_accessed = ?, hash = ?
 			WHERE id = ?`,
 			file.Path, filepath.Base(file.Path), stat.Size(), file.DateModified, NewNullString(file.DateAccessed.String),
 			file.FileHash, file.ID).Exec()
@@ -312,8 +312,8 @@ func (db *Database) UpdateMetadata(file *DatabaseFile) (bool, error) {
 		file.Title.String = f.title
 		update = true
 	}
-	if file.Authors.String != f.authors && f.authors != "" {
-		file.Authors.String = f.authors
+	if file.Creator.String != f.creator && f.creator != "" {
+		file.Creator.String = f.creator
 		update = true
 	}
 	if strings.HasSuffix(file.Path, "epub") {
@@ -333,24 +333,24 @@ func (db *Database) UpdateMetadata(file *DatabaseFile) (bool, error) {
 	return false, err
 }
 
-// UpdateSubjects: set subjects/keywords for file
-func (db *Database) UpdateSubjects(file *DatabaseFile, subjects string) error {
+// UpdateSubject: set subject/keywords for file
+func (db *Database) UpdateSubject(file *DatabaseFile, subject string) error {
 	var err error
 
-	if subjects == "" {
+	if subject == "" {
 		return err
 	}
 
-	terms := strings.Split(strings.ToLower(subjects), ",")
+	terms := strings.Split(strings.ToLower(subject), ",")
 	s := trimMetadata(terms)
 
 	less := lessString(&s)
 	unique.Slice(&s, less)
 
-	newSubjects := strings.Join(s, ", ")
+	newSubject := strings.Join(s, ", ")
 
-	if newSubjects != file.Subjects.String {
-		file.Subjects.String = newSubjects
+	if newSubject != file.Subject.String {
+		file.Subject.String = newSubject
 		err = db.UpdateFile(*file)
 	}
 
