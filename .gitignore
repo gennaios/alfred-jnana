@@ -1,18 +1,19 @@
+jnana
+jnana2
+*.alfredworkflow
+.alfredversionchecked
+*/Alfred_Workflow-1.24.dist-info/
+profile*.pdf
+
 .DS_Store
 *.sublime-project
 *.sublime-workspace
-.alfredversionchecked
 # Compiled Python files
 *.py[cod]
 *.lprof
 
-jnana
-profile*.pdf
 *.prof
 *.test
-
-*.alfredworkflow
-*/Alfred_Workflow-1.24.dist-info/
 
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
 *.iml
