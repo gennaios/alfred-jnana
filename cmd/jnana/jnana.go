@@ -382,9 +382,12 @@ func openFile(file string) {
 		return
 	}
 
-	command := "open"
-	cmdArgs := []string{file}
-	_ = exec.Command(command, cmdArgs...).Start()
+	// open with reader if EPUB, else handle in Workflow per active PDF app
+	if strings.HasSuffix(file, ".epub") {
+		command := "open"
+		cmdArgs := []string{file}
+		_ = exec.Command(command, cmdArgs...).Start()
+	}
 
 	// update date read (last accessed)
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
