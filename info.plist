@@ -103,6 +103,19 @@
 				<false/>
 			</dict>
 		</array>
+		<key>78CD8F8C-F7DD-4C40-94B5-4FB94649DF4D</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>88EB7067-E802-4345-B4B5-F312C9C1B22F</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</key>
 		<array>
 			<dict>
@@ -131,6 +144,19 @@
 		</array>
 		<key>8985A2C9-9BC0-484F-B9CD-51119C8CC138</key>
 		<array/>
+		<key>8E6765C1-6380-4416-AD0F-517F76E8AFD9</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>1B3862E4-62B6-4E4F-995C-FDF92221C3AE</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>9BC020A0-E6C1-43EA-97D2-53583BC37A97</key>
 		<array>
 			<dict>
@@ -634,6 +660,41 @@
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<true/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>11</integer>
+				<key>hotmod</key>
+				<integer>1048576</integer>
+				<key>hotstring</key>
+				<string>B</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>com.calibre-ebook.ebook-viewer</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>8E6765C1-6380-4416-AD0F-517F76E8AFD9</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>concurrently</key>
 				<false/>
 				<key>escaping</key>
@@ -689,6 +750,50 @@
 			<string>alfred.workflow.trigger.hotkey</string>
 			<key>uid</key>
 			<string>F1593634-29B2-49EE-A175-6702794F2F0B</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv	tell application "System Events"		set theFile to do shell script "./jnana getepub"	end tell	
+
+	tell application "BBEdit"
+		activate
+
+		set alreadyOpened to false
+		repeat with appWindow in windows
+			set openedFile to root directory of appWindow
+
+			if POSIX path of openedFile is equal to POSIX path of theFile then
+				set index of appWindow to 1
+				set visible of appWindow to true
+				set collapsed of appWindow to false
+
+				set alreadyOpened to true
+			end if
+        end repeat
+
+		if alreadyOpened is false then
+			open POSIX file theFile
+		end if
+	end tellend run</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>1B3862E4-62B6-4E4F-995C-FDF92221C3AE</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
@@ -780,6 +885,69 @@
 			<string>B54D2E3B-BB66-40F0-8E97-C3B4008254B2</string>
 			<key>version</key>
 			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<true/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>1</integer>
+				<key>hotmod</key>
+				<integer>1179648</integer>
+				<key>hotstring</key>
+				<string>S</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>com.calibre-ebook.ebook-viewer</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>78CD8F8C-F7DD-4C40-94B5-4FB94649DF4D</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv	tell application "System Events"		set theFile to do shell script "./jnana getepub"	end tell	
+
+	tell application "Sigil"
+		activate
+		open POSIX file theFile
+	end tellend run</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>88EB7067-E802-4345-B4B5-F312C9C1B22F</string>
+			<key>version</key>
+			<integer>2</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -1431,6 +1599,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>1345</integer>
 		</dict>
+		<key>1B3862E4-62B6-4E4F-995C-FDF92221C3AE</key>
+		<dict>
+			<key>xpos</key>
+			<integer>950</integer>
+			<key>ypos</key>
+			<integer>180</integer>
+		</dict>
 		<key>1D1CB8B2-2241-419B-BFB4-26D816BEC93F</key>
 		<dict>
 			<key>xpos</key>
@@ -1529,6 +1704,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>570</integer>
 		</dict>
+		<key>78CD8F8C-F7DD-4C40-94B5-4FB94649DF4D</key>
+		<dict>
+			<key>xpos</key>
+			<integer>785</integer>
+			<key>ypos</key>
+			<integer>330</integer>
+		</dict>
 		<key>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</key>
 		<dict>
 			<key>xpos</key>
@@ -1543,12 +1725,26 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>30</integer>
 		</dict>
+		<key>88EB7067-E802-4345-B4B5-F312C9C1B22F</key>
+		<dict>
+			<key>xpos</key>
+			<integer>945</integer>
+			<key>ypos</key>
+			<integer>330</integer>
+		</dict>
 		<key>8985A2C9-9BC0-484F-B9CD-51119C8CC138</key>
 		<dict>
 			<key>xpos</key>
 			<integer>950</integer>
 			<key>ypos</key>
 			<integer>30</integer>
+		</dict>
+		<key>8E6765C1-6380-4416-AD0F-517F76E8AFD9</key>
+		<dict>
+			<key>xpos</key>
+			<integer>790</integer>
+			<key>ypos</key>
+			<integer>180</integer>
 		</dict>
 		<key>9BC020A0-E6C1-43EA-97D2-53583BC37A97</key>
 		<dict>
