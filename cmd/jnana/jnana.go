@@ -289,7 +289,7 @@ func getLastQuery() string {
 	return lastQuery
 }
 
-// ImportFiles: import file or all files in folder
+// ImportFile import file or all files in folder
 func ImportFile(db Database, file string) error {
 	var err error
 
@@ -316,7 +316,7 @@ func ImportFile(db Database, file string) error {
 	return err
 }
 
-// ImportFiles: import file or all files in folder
+// ImportFiles import file or all files in folder
 func ImportFiles(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
@@ -375,7 +375,7 @@ func openCalibreBookmarkCommand(command string, cmdArgs []string) {
 	_ = exec.Command("sh", "alfred-jnana.sh").Start()
 }
 
-// open calibre file
+// openFile opens EPUB or PDF from catalog
 func openFile(file string) {
 	if exists, _ := Exists(file); exists == false {
 		notification("Does not exist: " + file)
@@ -385,6 +385,12 @@ func openFile(file string) {
 	command := "open"
 	cmdArgs := []string{file}
 	_ = exec.Command(command, cmdArgs...).Start()
+
+	// update date read (last accessed)
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabase(dbFile)
+	fileRecord, _, _ := db.GetFile(file, false)
+	db.UpdateDateAccessed(fileRecord)
 }
 
 func printLastQuery() {
@@ -589,7 +595,7 @@ func TestStuff(file string) {
 	fmt.Println("Bookmarks", len(bookmarks2))
 }
 
-// UpdateFile: check one file for metadata updates, not including bookmarks
+// UpdateFile check one file for metadata updates, not including bookmarks
 func UpdateFile(db Database, fileRecord *DatabaseFile) {
 	updated, err := db.UpdateMetadata(fileRecord)
 	if err != nil {
@@ -600,7 +606,7 @@ func UpdateFile(db Database, fileRecord *DatabaseFile) {
 	}
 }
 
-// UpdateFiles: check passed file or all files for metadata changes, not including bookmarks
+// UpdateFiles check passed file or all files for metadata changes, not including bookmarks
 func UpdateFiles(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)

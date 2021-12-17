@@ -32,7 +32,7 @@ type SearchAllResult struct {
 	Name        string         `db:"name"`
 }
 
-// Init: open SQLite database connection using dbr, create new session
+// Init open SQLite database connection using dbr, create new session
 func (db *Database) Init(dbFilePath string) {
 	var file string
 	// open with PRAGMAs:
@@ -75,7 +75,7 @@ func (db *Database) Init(dbFilePath string) {
 	}
 }
 
-// Init: open SQLite database connection using dbr, for reading, doesn't create tables etc
+// InitForReading open SQLite database connection using dbr, for reading, doesn't create tables etc
 func (db *Database) InitForReading(dbFilePath string) {
 	db.conn, _ = dbr.Open("sqlite3", dbFilePath+"?&mode=ro&_journal_mode=WAL&cache=shared", nil)
 	db.sess = db.conn.NewSession(nil)
@@ -279,7 +279,7 @@ func (db *Database) createTriggers() {
 	_, _ = db.conn.Exec(triggers)
 }
 
-// BookmarksForFile: retrieve existing bookmarks, add new to database if needed and check if updated
+// BookmarksForFile retrieve existing bookmarks, add new to database if needed and check if updated
 func (db *Database) BookmarksForFile(file string, coversCacheDir string) ([]*Bookmark, error) {
 	var bookmarks []*Bookmark
 	var err error
@@ -324,7 +324,7 @@ func (db *Database) BookmarksForFile(file string, coversCacheDir string) ([]*Boo
 	return bookmarks, err
 }
 
-// BookmarksForFileFiltered: filtered bookmarks for file, uses fileId from elsewhere so there's only one query
+// BookmarksForFileFiltered filtered bookmarks for file, uses fileId from elsewhere so there's only one query
 func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*SearchAllResult, error) {
 	queryString := stringForSQLite(query)
 	var results []*SearchAllResult
@@ -369,7 +369,7 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 	return results, err
 }
 
-// NewBookmarks: insert new bookmarks into database
+// NewBookmarks insert new bookmarks into database
 func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) ([]*Bookmark, error) {
 	tx, err := db.sess.Begin()
 
@@ -392,7 +392,7 @@ func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) 
 	return newBookmarks, err
 }
 
-// UpdateBookmarks: update bookmarks, delete old first, then call NewBookmarks
+// UpdateBookmarks update bookmarks, delete old first, then call NewBookmarks
 func (db *Database) UpdateBookmarks(file *DatabaseFile, oldBookmarks []*Bookmark, newBookmarks []*FileBookmark) ([]*Bookmark, error) {
 	var err error
 	var results []*Bookmark
@@ -421,7 +421,7 @@ func (db *Database) UpdateBookmarks(file *DatabaseFile, oldBookmarks []*Bookmark
 	return results, err
 }
 
-// bookmarksEqual: compare bookmarks from database with path, used for update check
+// bookmarksEqual compare bookmarks from database with path, used for update check
 func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
 	if len(newBookmarks) != len(bookmarks) {
 		return false

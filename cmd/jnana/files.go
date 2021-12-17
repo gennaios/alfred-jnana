@@ -294,6 +294,13 @@ func (db *Database) UpdateFile(file DatabaseFile) error {
 	return err
 }
 
+// UpdateDateAccessed update last opened
+func (db *Database) UpdateDateAccessed(file *DatabaseFile) {
+	currentTime := time.Now().UTC().Format("2006-01-02 15:04:05.000")
+	_, _ = db.sess.UpdateBySql(`UPDATE file SET date_accessed = ? WHERE id = ?`,
+		NewNullString(currentTime), file.ID).Exec()
+}
+
 // UpdateMetadata check for updates to metadata
 func (db *Database) UpdateMetadata(file *DatabaseFile) (bool, error) {
 	var err error
