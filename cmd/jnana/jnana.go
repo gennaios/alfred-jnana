@@ -1,6 +1,8 @@
 package main
 
 import (
+	. "jnana/internal"
+
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -32,6 +34,7 @@ usage:
     jnana import <file>
     jnana getepub
     jnana openepub <query> [<file>]
+	jnana openfile <file>
     jnana pdf <file> [<query>]
 	jnana recent
     jnana test <file>
@@ -58,6 +61,7 @@ commands:
     getepub     	Return opened EPUB
     import      	Import file or files from folder	
     openepub		open calibre to bookmark
+	openfile		open file
     pdf				Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim
 	recent			Show recently opened files
     lastquery		Retrieve cached last query string for script filter
@@ -85,6 +89,7 @@ var options struct {
 	Getepub       bool
 	Import        bool
 	Openepub      bool
+	Openfile      bool
 	Pdf           bool
 	Lastquery     bool
 	Lastfilequery bool
@@ -370,6 +375,18 @@ func openCalibreBookmarkCommand(command string, cmdArgs []string) {
 	_ = exec.Command("sh", "alfred-jnana.sh").Start()
 }
 
+// open calibre file
+func openFile(file string) {
+	if exists, _ := Exists(file); exists == false {
+		notification("Does not exist: " + file)
+		return
+	}
+
+	command := "open"
+	cmdArgs := []string{file}
+	_ = exec.Command(command, cmdArgs...).Start()
+}
+
 func printLastQuery() {
 	fmt.Println(getLastQuery())
 }
@@ -378,7 +395,7 @@ func printLastFileQuery() {
 	fmt.Println(getLastFileQuery())
 }
 
-// List recently opened files
+// RecentFiles List recently opened files
 func RecentFiles() {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabaseForReading(dbFile)
@@ -597,7 +614,7 @@ func UpdateFiles(file string) {
 			log.Fatal(err)
 		}
 		for _, aFile := range files {
-			if fileExists(aFile.Path) {
+			if FileExists(aFile.Path) {
 				UpdateFile(db, aFile)
 			}
 		}
@@ -630,6 +647,8 @@ func runCommand() {
 		getCurrentEpub()
 	case options.Openepub:
 		openCalibreBookmark(query, options.File)
+	case options.Openfile:
+		openFile(options.File)
 	case options.Lastquery:
 		printLastQuery()
 	case options.Savequery:

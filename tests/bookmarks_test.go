@@ -55,8 +55,8 @@ func TestDatabase_Init(t *testing.T) {
 	bookmarkTable := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark'")
 	_ = bookmarkTable.Scan(&result)
 	assert.Equal(t, "bookmark", result, "`bookmarks` table not created")
-	bookmark_searchTable := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark_search'")
-	_ = bookmark_searchTable.Scan(&result)
+	bookmarkSearchtable := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='bookmark_search'")
+	_ = bookmarkSearchtable.Scan(&result)
 	assert.Equal(t, "bookmark_search", result, "`bookmark_search` table not created")
 
 	_ = db.conn.Close()
@@ -69,7 +69,7 @@ func TestDatabase_BookmarksForFile(t *testing.T) {
 	}
 	db := initDatabase("memory")
 
-	bookmarks, _, _ := db.BookmarksForFile(file)
+	bookmarks, _ := db.BookmarksForFile(file)
 	assert.Equal(t, 4, len(bookmarks), "Bookmarks count should be 4")
 }
 
