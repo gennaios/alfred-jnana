@@ -1,14 +1,13 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	. "jnana/internal"
+
 	"fmt"
 	"github.com/campoy/unique"
 	"github.com/djherbis/times"
 	"github.com/gocraft/dbr/v2"
 	_ "github.com/mattn/go-sqlite3"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -36,7 +35,7 @@ type DatabaseFile struct {
 	FileHash     string         `db:"hash"`
 }
 
-// AllFiles: get all files, used for update
+// AllFiles get all files, used for update
 func (db *Database) AllFiles() ([]*DatabaseFile, error) {
 	var files []*DatabaseFile
 	_, err := db.sess.Select("*").From("file").Load(&files)
@@ -79,7 +78,7 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 
 	// not found, possible file moved, look up by file hash
 	if err == dbr.ErrNotFound {
-		hash, err = fileHash(book)
+		hash, err = FileHash(book)
 		file, err = db.GetFileFromHash(hash)
 	}
 
@@ -130,7 +129,7 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 		if modDate.After(oldDate) {
 			//date different, check hash value
 			changed = true
-			file.FileHash, _ = fileHash(book)
+			file.FileHash, _ = FileHash(book)
 			file.DateModified = modDate.Format("2006-01-02 15:04:05")
 			err = db.UpdateFile(*file)
 		}
@@ -138,7 +137,7 @@ func (db *Database) GetFile(book string, check bool) (*DatabaseFile, bool, error
 	return file, changed, err
 }
 
-// GetFileFromPath: Look for existing record by file path
+// GetFileFromPath Look for existing record by file path
 // return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromPath(book string) (*DatabaseFile, error) {
 	var file *DatabaseFile
@@ -146,7 +145,7 @@ func (db *Database) GetFileFromPath(book string) (*DatabaseFile, error) {
 	return file, err
 }
 
-// GetFromHash: look for existing by file hash (sha256)
+// GetFileFromHash look for existing by file hash (sha256)
 // return columns needed by GetFile, all in case of update
 func (db *Database) GetFileFromHash(hash string) (*DatabaseFile, error) {
 	var file *DatabaseFile
@@ -164,7 +163,7 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 	}
 	// format string for insert, strange set then get by format doesn't work
 	dateModified := stat.ModTime().UTC().Format("2006-01-02 15:04:05")
-	hash, _ := fileHash(book)
+	hash, _ := FileHash(book)
 
 	f := File{}
 	if err = f.Init(book); err != nil {
@@ -227,14 +226,14 @@ func (db *Database) NewFile(book string) (*DatabaseFile, error) {
 	return file, err
 }
 
-// RecentFiles: list of recently opened files
+// RecentFiles list of recently opened files
 func (db *Database) RecentFiles() ([]*DatabaseFile, error) {
 	var files []*DatabaseFile
 	_, err := db.sess.Select("*").From("file").OrderDesc("date_accessed").Limit(50).Load(&files)
 	return files, err
 }
 
-// SearchFiles: Search all files from FTS5 table,
+// SearchFiles Search all files from FTS5 table,
 // order by rank: name, title, creator, subject, publisher, description
 // Return results as slice of struct DatabaseFile, later prepped for Alfred script filter
 func (db *Database) SearchFiles(query string) ([]*DatabaseFile, error) {
@@ -255,7 +254,7 @@ func (db *Database) SearchFiles(query string) ([]*DatabaseFile, error) {
 	return results, err
 }
 
-// UpdateFile: update file on change of path, file name, or date modified
+// UpdateFile update file on change of path, file name, or date modified
 func (db *Database) UpdateFile(file DatabaseFile) error {
 	stat, err := os.Stat(file.Path)
 	if err != nil {
@@ -295,7 +294,7 @@ func (db *Database) UpdateFile(file DatabaseFile) error {
 	return err
 }
 
-// UpdateMetadata: check for updates to metadata
+// UpdateMetadata check for updates to metadata
 func (db *Database) UpdateMetadata(file *DatabaseFile) (bool, error) {
 	var err error
 	if _, err = os.Stat(file.Path); err != nil {
@@ -333,7 +332,7 @@ func (db *Database) UpdateMetadata(file *DatabaseFile) (bool, error) {
 	return false, err
 }
 
-// UpdateSubject: set subject/keywords for file
+// UpdateSubject set subject/keywords for file
 func (db *Database) UpdateSubject(file *DatabaseFile, subject string) error {
 	var err error
 
@@ -360,31 +359,6 @@ func (db *Database) UpdateSubject(file *DatabaseFile, subject string) error {
 func lessString(v interface{}) func(i, j int) bool {
 	s := *v.(*[]string)
 	return func(i, j int) bool { return s[i] < s[j] }
-}
-
-func fileExists(file string) bool {
-	if _, err := os.Stat(file); err == nil {
-		return true
-	}
-	return false
-}
-
-// fileHash: create sha256 file hash for later comparison
-func fileHash(file string) (string, error) {
-	if _, err := os.Stat(file); err != nil {
-		return "", err
-	}
-	f, err := os.Open(file)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return "", err
-	}
-	hashString := hex.EncodeToString(h.Sum(nil))
-	return hashString, err
 }
 
 func NewNullString(s string) dbr.NullString {
