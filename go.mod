@@ -10,7 +10,7 @@ require (
 	github.com/deckarep/gosx-notifier v0.0.0-20180201035817-e127226297fb
 	github.com/djherbis/times v1.2.0
 	github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
-	github.com/gen2brain/go-fitz v0.0.0-20190716092309-62357ab3d4a9
+	github.com/gen2brain/go-fitz v1.18.0
 	github.com/gocraft/dbr/v2 v2.7.0
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.5.2 // indirect
