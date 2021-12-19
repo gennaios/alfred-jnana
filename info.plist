@@ -459,8 +459,8 @@
 	-- get bookmarks	if length of theQuery is not 0 then		-- filtered bookmarks
 		if (system attribute "USE_JNANA2") is false then			set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
 		else
-			set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
-			-- set cmd to "./jnana2 " &amp; (quoted form of theQuery) &amp; " -b " &amp; (quoted form of theFile)
+			-- set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
+			set cmd to "./jnana2 " &amp; (quoted form of theQuery) &amp; " -b " &amp; (quoted form of theFile)
 		end if
 	else
 		-- all bookmarks		if theFile is "epub" then			set cmd to "./jnana epub"
