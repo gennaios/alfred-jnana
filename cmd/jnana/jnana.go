@@ -356,7 +356,12 @@ func openCalibreBookmark(destination string, file string) {
 		file = calibreEpubFile()
 	}
 	file = "\"" + file + "\"" // for shell script
-	cmdArgs := []string{"--open-at=toc:\"" + destination + "\"", file}
+
+	// --open-at=toc: "first Table of Contents entry that contains"
+	// --open-at=toc-href: "href (internal link destination) of toc nodes"
+	// --open-at=toc-href-contains: href substring
+	cmdArgs := []string{"--open-at=toc-href-contains:\"" + destination + "\"", file}
+
 	openCalibreBookmarkCommand(command, cmdArgs)
 	//_ = exec.Command(command, cmdArgs...).Start()
 }
@@ -467,13 +472,15 @@ func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
 	} else {
 		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 
+		// Title.String = TOC entry name
+		// Destination = TOC entry destination
 		for i := range bookmarks {
 			wf.NewItem(bookmarks[i].Title.String).
 				Subtitle(bookmarks[i].Section.String).
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
-				Arg(bookmarks[i].Title.String) // TODO: Destination
+				Arg(bookmarks[i].Destination)
 		}
 
 	}
@@ -504,13 +511,15 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 	} else {
 		icon = &aw.Icon{Value: "org.idpf.epub-container", Type: aw.IconTypeFileType}
 
+		// Title.String = TOC entry name
+		// Destination = TOC entry destination
 		for i := range bookmarks {
 			wf.NewItem(bookmarks[i].Title.String).
 				Subtitle(bookmarks[i].Section.String).
 				UID(strconv.FormatInt(bookmarks[i].ID, 10)).
 				Valid(true).
 				Icon(icon).
-				Arg(bookmarks[i].Title.String) // TODO: Destination for file with ID
+				Arg(bookmarks[i].Destination)
 		}
 	}
 	wf.SendFeedback()
@@ -538,7 +547,7 @@ func returnSearchAllResults(bookmarks []*SearchAllResult, query string) {
 			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Destination
 		} else {
 			subtitle = bookmarks[i].Name
-			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Title.String
+			arg = bookmarks[i].Path + "/Page:" + bookmarks[i].Destination
 		}
 
 		wf.NewItem(title).
