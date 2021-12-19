@@ -45,6 +45,7 @@ usage:
     jnana subject <file> [<query>]
     jnana test <file>
     jnana update [<file>]
+	jnana updateread <file>
     jnana -h
 
 options:
@@ -70,6 +71,7 @@ commands:
     savequery		Save last query string for script filter
     test        	Testing stuff
     update      	Update path metadata
+	updateread		Update date read
 `
 
 	wf *aw.Workflow
@@ -99,6 +101,7 @@ var options struct {
 	Subject       bool
 	Test          bool
 	Update        bool
+	Updateread    bool
 
 	// parameters
 	File   string
@@ -388,12 +391,6 @@ func openFile(file string) {
 		cmdArgs := []string{file}
 		_ = exec.Command(command, cmdArgs...).Start()
 	}
-
-	// update date read (last accessed)
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabase(dbFile)
-	fileRecord, _, _ := db.GetFile(file, false)
-	db.UpdateDateAccessed(fileRecord)
 }
 
 func printLastQuery() {
@@ -630,6 +627,18 @@ func UpdateFiles(file string) {
 	}
 }
 
+// UpdateRead set date read (date_accessed)
+func UpdateRead(file string) {
+	if exists, _ := Exists(file); exists == false {
+		return
+	}
+
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
+	db := initDatabase(dbFile)
+	fileRecord, _, _ := db.GetFile(file, false)
+	db.UpdateDateAccessed(fileRecord)
+}
+
 func runCommand() {
 	// show options for debug
 	//fmt.Println(options)
@@ -674,6 +683,8 @@ func runCommand() {
 		TestStuff(options.File)
 	case options.Update:
 		UpdateFiles(options.File)
+	case options.Updateread:
+		UpdateRead(options.File)
 	}
 }
 
