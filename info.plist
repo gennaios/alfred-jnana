@@ -454,19 +454,18 @@
 				<key>runningsubtext</key>
 				<string>Getting bookmarks</string>
 				<key>script</key>
-				<string>on run argv	set theQuery to item 1 of argv	-- set theFile to (system attribute "file_path") as «class utf8»	-- set the clipboard to theFile
+				<string>on run argv	set theQuery to item 1 of argv
 	-- find active app	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		-- log "Active app : " &amp; activeApp		if activeApp = "Preview" then			set theFile to my Preview()		else if activeApp = "ebook-viewer" then			set theFile to do shell script "./jnana getepub"		else if activeApp = "AdobeAcrobat" then			set theFile to my AdobeAcrobat()		else if activeApp = "Skim" then			set theFile to my Skim()		else			display notification "Some other app!"			set theFile to "other"		end if	end tell	
 	-- get bookmarks	if length of theQuery is not 0 then		-- filtered bookmarks
-		if (system attribute "USE_JNANA2") is false then			set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
+		if (system attribute "USE_JNANA2") is true then			set cmd to "./jnana2 " &amp; (quoted form of theQuery) &amp; " -b " &amp; (quoted form of theFile)
 		else
-			-- set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
-			set cmd to "./jnana2 " &amp; (quoted form of theQuery) &amp; " -b " &amp; (quoted form of theFile)
+			set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
 		end if
 	else
 		-- all bookmarks		if theFile is "epub" then			set cmd to "./jnana epub"
 		else
 			set cmd to "./jnana bm " &amp; (quoted form of theFile)		end if	end if	
-	return do shell script cmdend runon Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat-- on Skim()-- 	tell application "Skim"-- 		set currentFile to file of document 1-- 	end tell-- 	return POSIX path of currentFile-- end Skimon replace_chars(this_text, search_string, replacement_string)	if this_text contains the search_string then		set AppleScript's text item delimiters to the search_string		set the item_list to every text item of this_text		set AppleScript's text item delimiters to the replacement_string		set this_text to the item_list as string		set AppleScript's text item delimiters to ""	end if	return this_textend replace_chars</string>
+	return do shell script cmdend runon Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat-- on Skim()-- 	tell application "Skim"-- 		set currentFile to file of document 1-- 	end tell-- 	return POSIX path of currentFile-- end Skim</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -664,7 +663,7 @@ end run</string>
 				<key>escaping</key>
 				<integer>68</integer>
 				<key>script</key>
-				<string>on run argv	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		-- log "Active app : " &amp; activeApp		set theFile to do shell script "./jnana recent"	end tell	end run</string>
+				<string>on run argv	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		set theFile to do shell script "./jnana recent"	end tell	end run</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -722,7 +721,7 @@ end run</string>
 				<key>escaping</key>
 				<integer>68</integer>
 				<key>script</key>
-				<string>on run argv	set theQuery to item 1 of argv		--	-- save query string	--		set queryString to (system attribute "JNANA_QUERY")	do shell script "./jnana savequery " &amp; (quoted form of queryString)		--	-- Split file and page/title destination	--		set AppleScript's text item delimiters to " "	set results to my explode("/Page:", theQuery)	set theFile to item 1 of results as string	set thePage to item 2 of results as string	set fileAlias to POSIX file theFile as Unicode text		--	-- vary actions by active app	--		if fileAlias ends with ".pdf" then		tell application "Finder" to open file fileAlias	else if fileAlias ends with ".epub" then		set tocDestination to quoted form of thePage		do shell script "./jnana openepub " &amp; tocDestination &amp; " " &amp; quoted form of theFile		return	end if		tell application "System Events"		set activeApp to name of first application process whose frontmost is true		log "Active app : " &amp; activeApp	end tell		if activeApp = "Preview" then		delay 0.25		tell application "Preview"			try				tell application "System Events"					keystroke "g" using {option down, command down} -- ⌥⌘G					keystroke thePage					keystroke return					keystroke return				end tell			end try		end tell	else if activeApp = "AdobeAcrobat" then		my open_acrobat(fileAlias, thePage)		--	else if activeApp = "Skim" then		--		tell application "Skim"		--			tell document 1 to go to page thePage		--		end tell	else		display notification "Some other app!"	end if
+				<string>on run argv	set theQuery to item 1 of argv		--	-- save query string	--		set queryString to (system attribute "JNANA_QUERY")	do shell script "./jnana savequery " &amp; (quoted form of queryString)		--	-- Split file and page/title destination	--		set AppleScript's text item delimiters to " "	set results to my explode("/Page:", theQuery)	set theFile to item 1 of results as string	set thePage to item 2 of results as string	set fileAlias to POSIX file theFile as Unicode text		--	-- vary actions by active app	--		if fileAlias ends with ".pdf" then		tell application "Finder" to open file fileAlias	else		set tocDestination to quoted form of thePage		do shell script "./jnana openepub " &amp; tocDestination &amp; " " &amp; quoted form of theFile		return	end if		tell application "System Events"		set activeApp to name of first application process whose frontmost is true		log "Active app : " &amp; activeApp	end tell		if activeApp = "Preview" then		delay 0.25		tell application "Preview"			try				tell application "System Events"					keystroke "g" using {option down, command down} -- ⌥⌘G					keystroke thePage					keystroke return					keystroke return				end tell			end try		end tell	else if activeApp = "AdobeAcrobat" then		my open_acrobat(fileAlias, thePage)		--	else if activeApp = "Skim" then		--		tell application "Skim"		--			tell document 1 to go to page thePage		--		end tell	else		display notification "Some other app!"	end if
 
 	-- update date read (date_accessed)
 	do shell script "./jnana updateread " &amp; (quoted form of theFile)end runon open_acrobat(theFile, thePage)	set documentOpened to false		tell application "Adobe Acrobat"		set documentName to ""				-- Switch to document and page if open		repeat with theDoc in documents			set filePath to file alias of theDoc			set posixPath to POSIX path of theFile						if (filePath as string) is equal to (theFile as string) then				set documentName to name of theDoc				try					bring to front document documentName				end try				tell PDF Window of document documentName to goto page (thePage as integer)				set documentOpened to true				exit repeat			end if		end repeat				if documentOpened is not true then			open file theFile options "page=" &amp; thePage		end if	end tellend open_acrobaton explode(delimiter, input)	local delimiter, input, ASTID	set ASTID to AppleScript's text item delimiters	try		set AppleScript's text item delimiters to delimiter		set input to text items of input		set AppleScript's text item delimiters to ASTID		return input --&gt; list	on error eMsg number eNum		set AppleScript's text item delimiters to ASTID		error "Can't explode: " &amp; eMsg number eNum	end tryend explode</string>
@@ -851,10 +850,10 @@ end run</string>
 				<string>Getting bookmarks...</string>
 				<key>script</key>
 				<string>on run argv
-	if (system attribute "USE_JNANA2") is false then
-		return do shell script "./jnana2 -a " &amp; quoted form of item 1 of argv	else 
+	if (system attribute "USE_JNANA2") is true then
 		return do shell script "./jnana all " &amp; quoted form of item 1 of argv
-	end ifend run</string>
+	else 
+		return do shell script "./jnana2 -a " &amp; quoted form of item 1 of argv	end ifend run</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -1888,11 +1887,14 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 	<dict>
 		<key>JNANA_APP</key>
 		<string>ebook-viewer</string>
+		<key>JNANA_FILE</key>
+		<string>/Users/gary/Nextcloud/Calibre Library/Sophie Benabi/Ayurveda, mon programme automne-hiver (24001)/Ayurveda, mon programme automne-hiver - Sophie Benabi.epub</string>
 		<key>USE_JNANA2</key>
 		<string>true</string>
 	</dict>
 	<key>variablesdontexport</key>
 	<array>
+		<string>JNANA_FILE</string>
 		<string>JNANA_APP</string>
 	</array>
 	<key>version</key>
