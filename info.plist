@@ -372,7 +372,7 @@
 				<string>on run argv	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		log "Active app : " &amp; activeApp		if activeApp = "Preview" then			set theFile to my Preview()		else if activeApp = "ebook-viewer" then			set theFile to do shell script "./jnana getepub"		else if activeApp = "AdobeAcrobat" then			set theFile to my AdobeAcrobat()		else if activeApp = "Skim" then			set theFile to my Skim()		else			display notification "Some other app!"
 			quit		end if	end tell
 	-- save currently opened file as variable
-	tell application id "com.runningwithcrayons.Alfred"		set configuration "JNANA_FILE" to value theFile in workflow (system attribute "alfred_workflow_bundleid") 	end tell
+	tell application id "com.runningwithcrayons.Alfred"		set configuration "JNANA_FILE" to value theFile in workflow (system attribute "alfred_workflow_bundleid")		set configuration "activeApp" to value activeApp in workflow (system attribute "alfred_workflow_bundleid") 	end tell
 	return theFileend runon Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat-- on Skim()--		tell application "Skim"--			set currentFile to file of document 1--		end tell--		return POSIX path of currentFile--	end Skim</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
@@ -454,8 +454,7 @@
 				<key>runningsubtext</key>
 				<string>Getting bookmarks</string>
 				<key>script</key>
-				<string>on run argv	set theQuery to item 1 of argv
-	-- find active app	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		-- log "Active app : " &amp; activeApp		if activeApp = "Preview" then			set theFile to my Preview()		else if activeApp = "ebook-viewer" then			set theFile to do shell script "./jnana getepub"		else if activeApp = "AdobeAcrobat" then			set theFile to my AdobeAcrobat()		else if activeApp = "Skim" then			set theFile to my Skim()		else			display notification "Some other app!"			set theFile to "other"		end if	end tell	
+				<string>on run argv	set theQuery to item 1 of argv	set theFile to (system attribute "JNANA_FILE")	set activeApp to (system attribute "activeApp")	
 	-- get bookmarks	if length of theQuery is not 0 then		-- filtered bookmarks
 		if (system attribute "USE_JNANA2") is true then			set cmd to "./jnana2 " &amp; (quoted form of theQuery) &amp; " -b " &amp; (quoted form of theFile)
 		else
@@ -548,6 +547,7 @@
 				<string>on run argv	set theQuery to item 1 of argv		tell application "System Events"		set activeApp to name of first application process whose frontmost is true				if activeApp = "Preview" then			keystroke "g" using {option down, command down} -- ⌥⌘G			keystroke theQuery			delay 0.25			keystroke return			keystroke return		else if activeApp = "ebook-viewer" then			do shell script "./jnana openepub " &amp; (quoted form of theQuery)			--		else if activeApp = "Skim" then			--			tell application "Skim"			--				set thePage to theQuery			--				tell document 1 to go to page (thePage as integer)			--			end tell		else if activeApp = "AdobeAcrobat" then			tell application "Adobe Acrobat"				set thePage to theQuery				-- tell PDF Window 1 to goto page (thePage as integer)				tell PDF Window of active doc to goto page (thePage as integer)			end tell		else			display notification "Some other app!"		end if	end tell	set theFile to (system attribute "JNANA_FILE")
 	-- update date read (date_accessed)
 	do shell script "./jnana updateread " &amp; (quoted form of theFile)		--	-- remove variable for currently opened file	--		set bundleID to (system attribute "alfred_workflow_bundleid")	tell application "Alfred 4" to remove configuration "JNANA_FILE" in workflow bundleID
+	tell application "Alfred 4" to remove configuration "activeApp" in workflow bundleID
 end run</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
@@ -1891,11 +1891,14 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 		<string>/Users/xxxxxxxx/Nextcloud/Calibre Library/Sophie Benabi/Ayurveda, mon programme automne-hiver (24001)/Ayurveda, mon programme automne-hiver - Sophie Benabi.epub</string>
 		<key>USE_JNANA2</key>
 		<string>true</string>
+		<key>activeApp</key>
+		<string>ebook-viewer</string>
 	</dict>
 	<key>variablesdontexport</key>
 	<array>
 		<string>JNANA_FILE</string>
 		<string>JNANA_APP</string>
+		<string>activeApp</string>
 	</array>
 	<key>version</key>
 	<string>1.0</string>
