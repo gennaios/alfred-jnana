@@ -2,6 +2,7 @@ package main
 
 import (
 	. "jnana/internal"
+	"jnana/models"
 
 	"encoding/json"
 	"fmt"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/deanishe/awgo"
 	"github.com/docopt/docopt-go"
-	"github.com/gocraft/dbr/v2"
 )
 
 var (
@@ -34,9 +34,9 @@ usage:
     jnana import <file>
     jnana getepub
     jnana openepub <query> [<file>]
-	jnana openfile <file>
+    jnana openfile <file>
     jnana pdf <file> [<query>]
-	jnana recent
+    jnana recent
     jnana test <file>
     jnana lastquery
     jnana lastfilequery
@@ -45,7 +45,7 @@ usage:
     jnana subject <file> [<query>]
     jnana test <file>
     jnana update [<file>]
-	jnana updateread <file>
+    jnana updateread <file>
     jnana -h
 
 options:
@@ -57,7 +57,7 @@ commands:
     bm				Bookmarks for file
     bmf				Bookmarks for file filtered by query
     clean			Clean database, remove bookmarks for deleted files 
-    epub		     	Bookmarks for EPUB in calibre
+    epub		   	Bookmarks for EPUB in calibre
     files			Search all files by name and metadata
     getepub     	Return opened EPUB
     import      	Import file or files from folder	
@@ -268,7 +268,7 @@ func fileSubject(file string, subject string) {
 		if err != nil {
 			wf.FatalError(err)
 		}
-		_ = db.conn.Close()
+		_ = db.db.Close()
 	}
 }
 
@@ -299,7 +299,7 @@ func ImportFile(db Database, file string) error {
 	if strings.HasSuffix(file, ".epub") || strings.HasSuffix(file, ".pdf") {
 		_, err = db.GetFileFromPath(file)
 
-		if err == dbr.ErrNotFound {
+		if err != nil {
 			fileRecord, changed, err := db.GetFile(file, false)
 			if err != nil {
 				return err
@@ -445,7 +445,7 @@ func searchAllFiles(query string) {
 // Bookmarks for single EPUB or PDF
 // - input: bookmarks
 // - output to Alfred
-func returnBookmarksForFile(file string, bookmarks []*Bookmark) {
+func returnBookmarksForFile(file string, bookmarks []*models.Bookmark) {
 	var icon *aw.Icon
 
 	if strings.HasSuffix(file, "pdf") {
@@ -561,7 +561,7 @@ func returnSearchAllResults(bookmarks []*SearchAllResult, query string) {
 }
 
 // Parse database search results and return items to Alfred
-func returnSearchFilesResults(files []*DatabaseFile, query string) {
+func returnSearchFilesResults(files []*models.File, query string) {
 	var title string
 
 	// return query variable for next search
@@ -605,7 +605,7 @@ func TestStuff(file string) {
 }
 
 // UpdateFile check one file for metadata updates, not including bookmarks
-func UpdateFile(db Database, fileRecord *DatabaseFile) {
+func UpdateFile(db Database, fileRecord *models.File) {
 	updated, err := db.UpdateMetadata(fileRecord)
 	if err != nil {
 		log.Println("Error:", fileRecord.Path)

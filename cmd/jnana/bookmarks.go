@@ -1,38 +1,37 @@
 package main
 
 import (
+	"jnana/models"
+
+	"context"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries"
+
+	"database/sql"
+	"fmt"
+	"github.com/deckarep/gosx-notifier"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/volatiletech/null/v8"
 	"strconv"
 	"strings"
-
-	"github.com/deckarep/gosx-notifier"
-	"github.com/gocraft/dbr/v2"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 type Database struct {
-	conn *dbr.Connection
-	sess *dbr.Session
-}
-
-type Bookmark struct {
-	ID          int64
-	FileId      int64          `db:"file_id"`
-	Title       dbr.NullString `db:"title"`
-	Section     dbr.NullString `db:"section"`
-	Destination string         `db:"destination"`
+	db  *sql.DB
+	ctx context.Context
 }
 
 type SearchAllResult struct {
-	ID          int64
-	Title       dbr.NullString `db:"title"`
-	Section     dbr.NullString `db:"section"`
-	Destination string         `db:"destination"`
-	FileID      string         `db:"file_id"`
-	Path        string         `db:"path"`
-	Name        string         `db:"name"`
+	ID          int64       `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Title       null.String `boil:"title" json:"title,omitempty" toml:"title" yaml:"title,omitempty"`
+	Section     null.String `boil:"section" json:"section,omitempty" toml:"section" yaml:"section,omitempty"`
+	Destination string      `boil:"destination" json:"destination" toml:"destination" yaml:"hash"`
+	FileID      string      `boil:"file_id" json:"file_id" toml:"file_id" yaml:"file_id"`
+	Path        string      `boil:"path" json:"path" toml:"path" yaml:"path"`
+	Name        string      `boil:"name" json:"name" toml:"name" yaml:"name"`
 }
 
-// Init open SQLite database connection using dbr, create new session
+// Init open SQLite database connection, create new session
 func (db *Database) Init(dbFilePath string) {
 	var file string
 	// open with PRAGMAs:
@@ -44,28 +43,27 @@ func (db *Database) Init(dbFilePath string) {
 	}
 
 	var err error
-	db.conn, err = dbr.Open("sqlite3", file, nil)
+	db.db, err = sql.Open("sqlite3", file)
+	boil.SetDB(db.db)
+	db.ctx = context.Background()
 
 	// TODO: return error
 	if err != nil {
 		panic(err)
 	}
-	if db.conn == nil {
-		panic("db nil")
+
+	_, _ = queries.Raw("PRAGMA auto_vacuum=2").Exec(db.db) // unsure if set
+	//_, _ = queries.Raw(db.db, "PRAGMA temp_store = 2")  // MEMORY
+	//_, _ = queries.Raw(db.db, "PRAGMA cache_size = -31250")
+
+	type TableName struct {
+		Name string `boil:"name"`
 	}
-
-	_, err = db.conn.Exec("PRAGMA auto_vacuum=2") // unsure if set
-	//_, _ = db.conn.Exec("PRAGMA temp_store = 2")  // MEMORY
-	//_, _ = db.conn.Exec("PRAGMA cache_size = -31250")
-
-	db.sess = db.conn.NewSession(nil)
-	_, err = db.sess.Begin()
+	var result TableName
 
 	// create tables and triggers if 'file' does not exist
-	tables := db.sess.QueryRow("SELECT name FROM sqlite_master WHERE type='table' AND name='file'")
-	var result string
-	_ = tables.Scan(&result)
-	if result != "file" {
+	_ = queries.Raw("SELECT name FROM sqlite_master WHERE type='table' AND name='file'").Bind(db.ctx, db.db, &result)
+	if result.Name != "file" {
 		db.createTables()
 		db.createTriggers()
 	}
@@ -75,11 +73,17 @@ func (db *Database) Init(dbFilePath string) {
 	}
 }
 
-// InitForReading open SQLite database connection using dbr, for reading, doesn't create tables etc
+// InitForReading open SQLite database connection, for reading, doesn't create tables etc
 func (db *Database) InitForReading(dbFilePath string) {
-	db.conn, _ = dbr.Open("sqlite3", dbFilePath+"?&mode=ro&_journal_mode=WAL&cache=shared", nil)
-	db.sess = db.conn.NewSession(nil)
-	_, _ = db.sess.Begin()
+	var err error
+	db.db, err = sql.Open("sqlite3", dbFilePath+"?&mode=ro&_journal_mode=WAL&cache=shared")
+
+	if err != nil {
+		panic(err)
+	}
+
+	boil.SetDB(db.db)
+	db.ctx = context.Background()
 }
 
 // createTables: create tables file, bookmark, view bookmark_view for FTS updates, and FTS5 bookmark_search
@@ -153,11 +157,11 @@ func (db *Database) createTables() {
 		prefix='3',
 		tokenize='porter unicode61 remove_diacritics 2'
 	)`
-	_, _ = db.conn.Exec(schemaFiles)
-	_, _ = db.conn.Exec(schemaBookmarks)
-	_, _ = db.conn.Exec(schemaView)
-	_, _ = db.conn.Exec(fileFTS)
-	_, _ = db.conn.Exec(bookmarkFTS)
+	_, _ = db.db.Exec(schemaFiles)
+	_, _ = db.db.Exec(schemaBookmarks)
+	_, _ = db.db.Exec(schemaView)
+	_, _ = db.db.Exec(fileFTS)
+	_, _ = db.db.Exec(bookmarkFTS)
 	db.createTriggers()
 }
 
@@ -276,12 +280,12 @@ func (db *Database) createTriggers() {
 		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
 		); END;
 	`
-	_, _ = db.conn.Exec(triggers)
+	_, _ = db.db.Exec(triggers)
 }
 
 // BookmarksForFile retrieve existing bookmarks, add new to database if needed and check if updated
-func (db *Database) BookmarksForFile(file string, coversCacheDir string) ([]*Bookmark, error) {
-	var bookmarks []*Bookmark
+func (db *Database) BookmarksForFile(file string, coversCacheDir string) ([]*models.Bookmark, error) {
+	var bookmarks []*models.Bookmark
 	var err error
 
 	fileRecord, changed, err := db.GetFile(file, true)
@@ -289,9 +293,8 @@ func (db *Database) BookmarksForFile(file string, coversCacheDir string) ([]*Boo
 		return bookmarks, err
 	}
 
-	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmark
-					WHERE file_id = ?`, fileRecord.ID).
-		LoadOne(&bookmarks)
+	err = queries.Raw(`SELECT id, title, section, destination FROM bookmark
+					WHERE file_id = $1`, fileRecord.ID).Bind(db.ctx, db.db, &bookmarks)
 
 	// check cover / TODO: move somewhere else?
 	//_ = db.CoverForFile(fileRecord, coversCacheDir)
@@ -320,7 +323,7 @@ func (db *Database) BookmarksForFile(file string, coversCacheDir string) ([]*Boo
 
 	// run analyze etc upon database close, unsure if faster
 	//_, _ = db.conn.Exec("PRAGMA optimize;")
-	err = db.conn.Close()
+	err = db.db.Close()
 	return bookmarks, err
 }
 
@@ -330,20 +333,22 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	var results []*SearchAllResult
 
 	// only ID needed, no additional fields or checks
-	var fileRecord *DatabaseFile
-	_ = db.sess.SelectBySql("SELECT id FROM file WHERE path = ?", file).LoadOne(&fileRecord)
+	var fileRecord *models.File
 
-	_, err := db.sess.SelectBySql(`SELECT
+	fileRecord, _ = models.Files(models.FileWhere.Path.EQ(file)).One(db.ctx, db.db)
+	fmt.Println("record: " + fileRecord.Path)
+
+	err := queries.Raw(`SELECT
 			bookmark.id, bookmark.title, bookmark.section, bookmark.destination
 			FROM bookmark
-			JOIN bookmark_search on bookmark.id = bookmark_search.rowid
-			WHERE bookmark.file_id = ` + strconv.FormatInt(fileRecord.ID, 10) +
-		` AND bookmark_search MATCH '{title section}: ` + *queryString +
-		`' ORDER BY 'rank(bookmark_search)'`).Load(&results)
+			JOIN bookmark_search on bookmark.id = bookmark_search.rowid `+
+		`WHERE bookmark.file_id = `+strconv.FormatInt(fileRecord.ID, 10)+
+		` AND bookmark_search MATCH '{title section}: `+*queryString+"' "+
+		`ORDER BY 'rank(bookmark_search)'`).Bind(db.ctx, db.db, &results)
 
 	// run analyze etc upon database close, unsure if faster
 	//_, _ = db.conn.Exec("PRAGMA optimize;")
-	err = db.conn.Close()
+	_ = db.db.Close()
 	return results, err
 }
 
@@ -354,66 +359,66 @@ func (db *Database) searchAll(query string) ([]*SearchAllResult, error) {
 	var results []*SearchAllResult
 
 	// NOTE: AND rank MATCH 'bm25(10.0, 5.0)' ORDER BY rank faster than ORDER BY bm25(fts, …)
-	_, err := db.sess.SelectBySql(`SELECT
+	err := queries.Raw(`SELECT
 			bookmark.id, bookmark.title, bookmark.section, bookmark.destination,
 			bookmark.file_id, file.path, file.name
 			FROM bookmark
 			JOIN file ON bookmark.file_id = file.id
 			JOIN bookmark_search on bookmark.id = bookmark_search.rowid
-			WHERE bookmark_search MATCH ?
+			WHERE bookmark_search MATCH $1
 			AND rank MATCH 'bm25(10.0, 5.0, 2.0, 1.0, 1.0, 1.0, 1.0)'
 			ORDER BY rank LIMIT 200`,
-		queryString).Load(&results)
+		queryString).Bind(db.ctx, db.db, &results)
 
-	err = db.conn.Close()
+	_ = db.db.Close()
 	return results, err
 }
 
 // NewBookmarks insert new bookmarks into database
-func (db *Database) NewBookmarks(file *DatabaseFile, bookmarks []*FileBookmark) ([]*Bookmark, error) {
-	tx, err := db.sess.Begin()
+func (db *Database) NewBookmarks(file *models.File, bookmarks []*FileBookmark) ([]*models.Bookmark, error) {
+	tx, err := db.db.BeginTx(db.ctx, nil)
 
 	// insert new bookmarks
 	for i := range bookmarks {
-		_, err = db.sess.InsertBySql(`INSERT INTO
+		_, err = queries.Raw(`INSERT INTO
 			bookmark
-			(file_id, title, section, destination) VALUES (?, ?, ?, ?)
+			(file_id, title, section, destination) VALUES ($1, $2, $3, $4)
 			`,
-			file.ID, NewNullString(bookmarks[i].Title), NewNullString(bookmarks[i].Section), bookmarks[i].Destination).
-			Exec()
+			file.ID, bookmarks[i].Title, bookmarks[i].Section, bookmarks[i].Destination).
+			Exec(db.db)
 	}
 
 	err = tx.Commit()
 
 	// get newly inserted bookmarks
-	var newBookmarks []*Bookmark
-	err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmark
-		WHERE file_id = ?`, file.ID).LoadOne(&newBookmarks)
+	var newBookmarks []*models.Bookmark
+	err = queries.Raw(`SELECT id, title, section, destination FROM bookmark
+		WHERE file_id = $1`, file.ID).BindG(db.ctx, &newBookmarks)
 	return newBookmarks, err
 }
 
 // UpdateBookmarks update bookmarks, delete old first, then call NewBookmarks
-func (db *Database) UpdateBookmarks(file *DatabaseFile, oldBookmarks []*Bookmark, newBookmarks []*FileBookmark) ([]*Bookmark, error) {
+func (db *Database) UpdateBookmarks(file *models.File, oldBookmarks []*models.Bookmark, newBookmarks []*FileBookmark) ([]*models.Bookmark, error) {
 	var err error
-	var results []*Bookmark
+	var results []*models.Bookmark
 
-	tx, _ := db.sess.Begin()
+	tx, _ := db.db.BeginTx(db.ctx, nil)
 	if len(oldBookmarks) == len(newBookmarks) {
 		// count same, update records
 		for i := range oldBookmarks {
-			_, err = db.sess.UpdateBySql(`UPDATE bookmark SET
-				title = ?, section = ?, destination = ?
-				WHERE id = ?`,
-				NewNullString(newBookmarks[i].Title),
-				NewNullString(newBookmarks[i].Section),
+			_, err = queries.Raw(`UPDATE bookmark SET
+				title = $1, section = $2, destination = $3
+				WHERE id = $4`,
+				newBookmarks[i].Title,
+				newBookmarks[i].Section,
 				newBookmarks[i].Destination, oldBookmarks[i].ID).
-				Exec()
+				Exec(db.db)
 		}
-		err = db.sess.SelectBySql(`SELECT id, title, section, destination FROM bookmark
-			WHERE file_id = ?`, file.ID).LoadOne(&results)
+		err = queries.Raw(`SELECT id, title, section, destination FROM bookmark
+			WHERE file_id = $1`, file.ID).BindG(db.ctx, &results)
 	} else {
 		// count different, delete and insert new
-		_, err = db.sess.DeleteBySql(`DELETE from bookmark WHERE file_id = ?`, file.ID).Exec()
+		_, err = queries.Raw(`DELETE from bookmark WHERE file_id = $1`, file.ID).Exec(db.db)
 		results, err = db.NewBookmarks(file, newBookmarks)
 	}
 	err = tx.Commit()
@@ -422,7 +427,7 @@ func (db *Database) UpdateBookmarks(file *DatabaseFile, oldBookmarks []*Bookmark
 }
 
 // bookmarksEqual compare bookmarks from database with path, used for update check
-func bookmarksEqual(bookmarks []*Bookmark, newBookmarks []*FileBookmark) bool {
+func bookmarksEqual(bookmarks []*models.Bookmark, newBookmarks []*FileBookmark) bool {
 	if len(newBookmarks) != len(bookmarks) {
 		return false
 	} else {
