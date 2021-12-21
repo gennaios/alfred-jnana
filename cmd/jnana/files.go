@@ -108,12 +108,12 @@ func (db *Database) GetFile(book string, check bool) (*models.File, bool, error)
 			return file, false, err
 		}
 		modDate := stat.ModTime().UTC().Truncate(time.Second)
-		oldDate, err := time.Parse(time.RFC3339, file.DateModified.String())
+
 		if err != nil {
 			fmt.Println("date error:", err)
 		}
 
-		if modDate.After(oldDate) {
+		if modDate.After(file.DateModified) {
 			//date different, check hash value
 			changed = true
 			file.Hash, _ = FileHash(book)
