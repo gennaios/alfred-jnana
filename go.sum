@@ -110,6 +110,8 @@ github.com/fsnotify/fsnotify v1.5.1 h1:mZcQUHVQUQWoPXXtuf9yuEXKudkV2sx1E06UadKWp
 github.com/fsnotify/fsnotify v1.5.1/go.mod h1:T3375wBYaZdLLcVNkcVbzGHY7f1l/uK5T5Ai1i3InKU=
 github.com/gen2brain/go-fitz v1.18.0 h1:vZQRGgQZqHzZRGRnvSUDwz26YD0ZnIyprAvR2C+Hh24=
 github.com/gen2brain/go-fitz v1.18.0/go.mod h1:UZAxMETTDK4UPpuh80HaRpPzgkSibUihXVzwj2ip5oQ=
+github.com/gen2brain/go-fitz v1.18.1-0.20211216221900-d171d0f57938 h1:0lkC41MGgEX5kSkn2pIEro/DqOvKaOipZnyJTgIDp/8=
+github.com/gen2brain/go-fitz v1.18.1-0.20211216221900-d171d0f57938/go.mod h1:UZAxMETTDK4UPpuh80HaRpPzgkSibUihXVzwj2ip5oQ=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=

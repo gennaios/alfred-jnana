@@ -10,7 +10,7 @@ require (
 	github.com/djherbis/times v1.2.0
 	github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
 	github.com/friendsofgo/errors v0.9.2
-	github.com/gen2brain/go-fitz v1.18.0
+	github.com/gen2brain/go-fitz v1.18.1-0.20211216221900-d171d0f57938
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 	github.com/meskio/epubgo v0.0.0-20160213181628-90dd5d78197f
