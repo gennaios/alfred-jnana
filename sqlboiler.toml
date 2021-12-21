@@ -1,0 +1,3 @@
+[sqlite3]
+dbname = "/Users/gary/Library/Application Support/Alfred/Workflow Data/io.github.gennaios.jnana/jnana.db"
+blacklist = ["file_search", "bookmark_search", "sqlite_stat1"]
