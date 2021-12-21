@@ -8,7 +8,6 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries"
 
 	"database/sql"
-	"fmt"
 	"github.com/deckarep/gosx-notifier"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/volatiletech/null/v8"
@@ -336,7 +335,6 @@ func (db *Database) BookmarksForFileFiltered(file string, query string) ([]*Sear
 	var fileRecord *models.File
 
 	fileRecord, _ = models.Files(models.FileWhere.Path.EQ(file)).One(db.ctx, db.db)
-	fmt.Println("record: " + fileRecord.Path)
 
 	err := queries.Raw(`SELECT
 			bookmark.id, bookmark.title, bookmark.section, bookmark.destination
