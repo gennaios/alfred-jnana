@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	. "jnana/internal"
 	"jnana/models"
 
@@ -297,9 +298,9 @@ func ImportFile(db Database, file string) error {
 	var err error
 
 	if strings.HasSuffix(file, ".epub") || strings.HasSuffix(file, ".pdf") {
-		_, err = db.GetFileFromPath(file)
+		_, err := db.GetFileFromPath(file)
 
-		if err != nil {
+		if err == sql.ErrNoRows {
 			fileRecord, changed, err := db.GetFile(file, false)
 			if err != nil {
 				return err

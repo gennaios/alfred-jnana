@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	. "jnana/internal"
 	"jnana/models"
 
@@ -64,13 +65,13 @@ func (db *Database) GetFile(book string, check bool) (*models.File, bool, error)
 	file, err = db.GetFileFromPath(book)
 
 	// not found, possible file moved, look up by file hash
-	if err != nil {
+	if err == sql.ErrNoRows {
 		hash, err = FileHash(book)
 		file, err = db.GetFileFromHash(hash)
 	}
 
 	// not found by path or hash, create new
-	if err != nil {
+	if err == sql.ErrNoRows {
 		file, err = db.NewFile(book)
 		if err != nil {
 			return file, true, err
@@ -147,7 +148,7 @@ func (db *Database) NewFile(book string) (*models.File, error) {
 		return &models.File{}, err
 	}
 	// format string for insert, strange set then get by format doesn't work
-	dateModified := stat.ModTime().UTC()
+	dateModified := stat.ModTime().UTC().Truncate(time.Millisecond)
 	hash, _ := FileHash(book)
 
 	f := File{}
@@ -161,7 +162,7 @@ func (db *Database) NewFile(book string) (*models.File, error) {
 	}
 	var dateCreated time.Time
 	if t.HasBirthTime() {
-		dateCreated = t.BirthTime().UTC()
+		dateCreated = t.BirthTime().UTC().Truncate(time.Millisecond)
 	}
 
 	tx, err := db.db.BeginTx(db.ctx, nil)
@@ -170,33 +171,19 @@ func (db *Database) NewFile(book string) (*models.File, error) {
 	}
 	defer tx.Rollback()
 
-	// filepath.Ext returns with dot
-	var newFile models.File
-
-	newFile.Path = book
-	newFile.Name = filepath.Base(book)
-	newFile.Size = stat.Size()
-	newFile.Extension = strings.ToLower(filepath.Ext(book)[1:])
-	newFile.Title = null.StringFrom(f.title)
-	newFile.Creator = null.StringFrom(f.creator)
-	newFile.Subject = null.StringFrom(f.subject)
-	newFile.Publisher = null.StringFrom(f.publisher)
-	newFile.DateCreated = dateCreated
-	newFile.DateModified = dateModified
-	newFile.DateAccessed = null.TimeFrom(t.AccessTime().UTC())
-	newFile.Hash = hash
-
-	if err != nil {
-		// TODO: workaround PDF metadata issue
-		newFile.Path = book
-		newFile.Name = filepath.Base(book)
-		newFile.Size = stat.Size()
-		newFile.Extension = strings.ToLower(filepath.Ext(book)[1:])
-		newFile.DateCreated = dateCreated
-		newFile.DateModified = dateModified
-		newFile.DateAccessed = null.TimeFrom(t.AccessTime().UTC())
-		newFile.Hash = hash
-	}
+	_, _ = queries.Raw("INSERT INTO file (path, name, extension, size, title, publisher, creator, subject, date_created, date_modified, date_accessed, hash) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		book,
+		filepath.Base(book),
+		strings.ToLower(filepath.Ext(book)[1:]),
+		stat.Size(),
+		null.StringFrom(f.title),
+		null.StringFrom(f.publisher),
+		null.StringFrom(f.creator),
+		null.StringFrom(f.subject),
+		dateCreated,
+		dateModified,
+		null.TimeFrom(t.AccessTime().UTC().Truncate(time.Millisecond)),
+		hash).Exec(db.db)
 
 	err = tx.Commit()
 
