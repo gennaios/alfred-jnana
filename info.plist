@@ -116,6 +116,19 @@
 				<false/>
 			</dict>
 		</array>
+		<key>806397BD-0229-419D-8E5A-18BFC0D1CA08</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>E40DABBE-04EF-4A8D-9F82-7998B9276143</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</key>
 		<array>
 			<dict>
@@ -149,6 +162,19 @@
 			<dict>
 				<key>destinationuid</key>
 				<string>1B3862E4-62B6-4E4F-995C-FDF92221C3AE</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>984D0CAD-970F-41FE-A415-0E450CF6AB64</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>DB1FDBCB-0771-4996-AD94-2C6FCF4166C6</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -201,6 +227,32 @@
 			<dict>
 				<key>destinationuid</key>
 				<string>D5EF7CBD-EB06-4516-AA43-8B83D0939530</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>DB1FDBCB-0771-4996-AD94-2C6FCF4166C6</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>806397BD-0229-419D-8E5A-18BFC0D1CA08</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>E40DABBE-04EF-4A8D-9F82-7998B9276143</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>8E430881-8B78-4B6E-9E72-6A80D0E7F8B3</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -1277,6 +1329,143 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		if activeApp = "Preview" then			set theFile to my Preview()		else if activeApp = "AdobeAcrobat" then			set theFile to my AdobeAcrobat()		else if activeApp = "Skim" then			set theFile to my Skim()		else			display notification "Some other app!"
+			quit		end if	end tell
+
+	tell application "Finder"
+    		set fileName to name of (POSIX file theFile as alias)
+		set fileName to my replace_chars(fileName, ".pdf", "")
+	    set fileName to my replace_chars(fileName, ".PDF", "")
+	end tell
+
+	-- save currently opened file as variable
+	tell application id "com.runningwithcrayons.Alfred"		set configuration "JNANA_FILE" to value theFile in workflow (system attribute "alfred_workflow_bundleid") 	end tell
+	return fileNameend runon Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat
+on replace_chars(this_text, search_string, replacement_string)	set AppleScript's text item delimiters to the search_string	set the item_list to every text item of this_text	set AppleScript's text item delimiters to the replacement_string	set this_text to the item_list as string	set AppleScript's text item delimiters to ""	return this_textend replace_chars</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>DB1FDBCB-0771-4996-AD94-2C6FCF4166C6</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>keyword</key>
+				<string>rename to:</string>
+				<key>subtext</key>
+				<string></string>
+				<key>text</key>
+				<string>Rename file to...</string>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>E40DABBE-04EF-4A8D-9F82-7998B9276143</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv
+	set newFileName to item 1 of argv
+	set theFile to (system attribute "JNANA_FILE")
+	tell application "Finder"
+		set fileAlias to POSIX file theFile as alias
+		set name of fileAlias to newFileName &amp; ".pdf"
+	end tell
+		--	-- remove variable for currently opened file	--		set bundleID to (system attribute "alfred_workflow_bundleid")	tell application "Alfred 4" to remove configuration "JNANA_FILE" in workflow bundleID
+end run</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>8E430881-8B78-4B6E-9E72-6A80D0E7F8B3</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<false/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>15</integer>
+				<key>hotmod</key>
+				<integer>1572864</integer>
+				<key>hotstring</key>
+				<string>R</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>net.sourceforge.skim-app.skim</string>
+					<string>com.smileonmymac.PDFpenPro</string>
+					<string>com.apple.Preview</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>984D0CAD-970F-41FE-A415-0E450CF6AB64</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>type</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.transform</string>
+			<key>uid</key>
+			<string>806397BD-0229-419D-8E5A-18BFC0D1CA08</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>path</key>
 				<string></string>
 				<key>sortBy</key>
@@ -1735,6 +1924,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>330</integer>
 		</dict>
+		<key>806397BD-0229-419D-8E5A-18BFC0D1CA08</key>
+		<dict>
+			<key>xpos</key>
+			<integer>1105</integer>
+			<key>ypos</key>
+			<integer>525</integer>
+		</dict>
 		<key>82FA4B07-F6F6-49DF-A2CB-299E11657DD1</key>
 		<dict>
 			<key>xpos</key>
@@ -1763,12 +1959,26 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>30</integer>
 		</dict>
+		<key>8E430881-8B78-4B6E-9E72-6A80D0E7F8B3</key>
+		<dict>
+			<key>xpos</key>
+			<integer>1355</integer>
+			<key>ypos</key>
+			<integer>495</integer>
+		</dict>
 		<key>8E6765C1-6380-4416-AD0F-517F76E8AFD9</key>
 		<dict>
 			<key>xpos</key>
 			<integer>790</integer>
 			<key>ypos</key>
 			<integer>180</integer>
+		</dict>
+		<key>984D0CAD-970F-41FE-A415-0E450CF6AB64</key>
+		<dict>
+			<key>xpos</key>
+			<integer>785</integer>
+			<key>ypos</key>
+			<integer>495</integer>
 		</dict>
 		<key>9BC020A0-E6C1-43EA-97D2-53583BC37A97</key>
 		<dict>
@@ -1811,6 +2021,20 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<integer>600</integer>
 			<key>ypos</key>
 			<integer>365</integer>
+		</dict>
+		<key>DB1FDBCB-0771-4996-AD94-2C6FCF4166C6</key>
+		<dict>
+			<key>xpos</key>
+			<integer>945</integer>
+			<key>ypos</key>
+			<integer>495</integer>
+		</dict>
+		<key>E40DABBE-04EF-4A8D-9F82-7998B9276143</key>
+		<dict>
+			<key>xpos</key>
+			<integer>1185</integer>
+			<key>ypos</key>
+			<integer>495</integer>
 		</dict>
 		<key>E5504A33-763E-455A-BE9D-D5E4F8CDE8C8</key>
 		<dict>
@@ -1885,21 +2109,9 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 	</dict>
 	<key>variables</key>
 	<dict>
-		<key>JNANA_APP</key>
-		<string>ebook-viewer</string>
-		<key>JNANA_FILE</key>
-		<string>/Users/gary/Nextcloud/Calibre Library/Sophie Benabi/Ayurveda, mon programme automne-hiver (24001)/Ayurveda, mon programme automne-hiver - Sophie Benabi.epub</string>
 		<key>USE_JNANA2</key>
-		<string>true</string>
-		<key>activeApp</key>
-		<string>ebook-viewer</string>
+		<string>false</string>
 	</dict>
-	<key>variablesdontexport</key>
-	<array>
-		<string>JNANA_FILE</string>
-		<string>JNANA_APP</string>
-		<string>activeApp</string>
-	</array>
 	<key>version</key>
 	<string>1.0</string>
 	<key>webaddress</key>
