@@ -21,6 +21,19 @@
 				<false/>
 			</dict>
 		</array>
+		<key>137CFF78-DC4F-42A9-805A-C27E22CB145A</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>9DFBAEDD-06B9-43DE-8ACE-E46A2D0BBD19</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>22A54D55-762F-444A-89A0-8BFBF95F264F</key>
 		<array>
 			<dict>
@@ -77,6 +90,21 @@
 				<false/>
 			</dict>
 		</array>
+		<key>4CC2E906-3376-49BB-AB31-D09E72CD45CE</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>657E1ADA-89B3-44F7-B030-41D5C415CD3C</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>sourceoutputuid</key>
+				<string>3D5FB60A-9517-4C43-B43E-672DEADE2131</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>51F5CE86-675F-46A5-85B6-50E0BA817FC2</key>
 		<array>
 			<dict>
@@ -95,6 +123,19 @@
 			<dict>
 				<key>destinationuid</key>
 				<string>02F55D27-DE1F-48B6-BE78-73B6B6A8887E</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>657E1ADA-89B3-44F7-B030-41D5C415CD3C</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>806397BD-0229-419D-8E5A-18BFC0D1CA08</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -196,6 +237,19 @@
 				<false/>
 			</dict>
 		</array>
+		<key>9DFBAEDD-06B9-43DE-8ACE-E46A2D0BBD19</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>C6615E59-0437-4008-BD26-9C64A86842EA</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>A2D588C0-BDD4-417C-8DA0-4F2FDAA01103</key>
 		<array>
 			<dict>
@@ -239,7 +293,7 @@
 		<array>
 			<dict>
 				<key>destinationuid</key>
-				<string>806397BD-0229-419D-8E5A-18BFC0D1CA08</string>
+				<string>4CC2E906-3376-49BB-AB31-D09E72CD45CE</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -1339,8 +1393,8 @@ end run</string>
 
 	tell application "Finder"
     		set fileName to name of (POSIX file theFile as alias)
-		set fileName to my replace_chars(fileName, ".pdf", "")
-	    set fileName to my replace_chars(fileName, ".PDF", "")
+		-- set fileName to my replace_chars(fileName, ".pdf", "")
+	    -- set fileName to my replace_chars(fileName, ".PDF", "")
 	end tell
 
 	-- save currently opened file as variable
@@ -1436,9 +1490,9 @@ end run</string>
 				<integer>0</integer>
 				<key>relatedApps</key>
 				<array>
+					<string>com.apple.Preview</string>
 					<string>net.sourceforge.skim-app.skim</string>
 					<string>com.smileonmymac.PDFpenPro</string>
-					<string>com.apple.Preview</string>
 				</array>
 				<key>relatedAppsMode</key>
 				<integer>1</integer>
@@ -1453,6 +1507,36 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>conditions</key>
+				<array>
+					<dict>
+						<key>inputstring</key>
+						<string></string>
+						<key>matchcasesensitive</key>
+						<false/>
+						<key>matchmode</key>
+						<integer>4</integer>
+						<key>matchstring</key>
+						<string>.pdf</string>
+						<key>outputlabel</key>
+						<string></string>
+						<key>uid</key>
+						<string>3D5FB60A-9517-4C43-B43E-672DEADE2131</string>
+					</dict>
+				</array>
+				<key>elselabel</key>
+				<string>else</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.conditional</string>
+			<key>uid</key>
+			<string>4CC2E906-3376-49BB-AB31-D09E72CD45CE</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>type</key>
 				<integer>0</integer>
 			</dict>
@@ -1462,6 +1546,27 @@ end run</string>
 			<string>806397BD-0229-419D-8E5A-18BFC0D1CA08</string>
 			<key>version</key>
 			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>matchmode</key>
+				<integer>1</integer>
+				<key>matchstring</key>
+				<string>(.+?)\.[^\.]+$</string>
+				<key>regexcaseinsensitive</key>
+				<false/>
+				<key>regexmultiline</key>
+				<false/>
+				<key>replacestring</key>
+				<string>$1</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.replace</string>
+			<key>uid</key>
+			<string>657E1ADA-89B3-44F7-B030-41D5C415CD3C</string>
+			<key>version</key>
+			<integer>2</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -1520,6 +1625,154 @@ end run</string>
 			<string>3B5D0DB8-BC03-4C61-82E9-5F82677C0EF4</string>
 			<key>version</key>
 			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<false/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>46</integer>
+				<key>hotmod</key>
+				<integer>1572864</integer>
+				<key>hotstring</key>
+				<string>M</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>net.sourceforge.skim-app.skim</string>
+					<string>com.smileonmymac.PDFpenPro</string>
+					<string>com.apple.Preview</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>137CFF78-DC4F-42A9-805A-C27E22CB145A</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv	set theQuery to item 1 of argv
+
+	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		if activeApp = "Preview" then			set theFile to my Preview()		else if activeApp = "AdobeAcrobat" then			set theFile to my AdobeAcrobat()		else if activeApp = "Skim" then			set theFile to my Skim()		else			display notification "Some other app!"
+			quit		end if	end tell
+
+	tell application "Finder"
+		set fileAlias to POSIX file theFile as alias
+		move fileAlias to POSIX file argv
+		display notification "Moved to: " &amp; argv
+	end tell
+end runon Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>C6615E59-0437-4008-BD26-9C64A86842EA</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>anchorfields</key>
+				<true/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>daterange</key>
+				<integer>0</integer>
+				<key>fields</key>
+				<array>
+					<dict>
+						<key>field</key>
+						<string>kMDItemDisplayName</string>
+						<key>not</key>
+						<false/>
+						<key>split</key>
+						<true/>
+						<key>value</key>
+						<string>{query}</string>
+						<key>words</key>
+						<true/>
+					</dict>
+					<dict>
+						<key>field</key>
+						<string>kMDItemAlternateNames</string>
+						<key>not</key>
+						<false/>
+						<key>split</key>
+						<true/>
+						<key>value</key>
+						<string>{query}</string>
+						<key>words</key>
+						<true/>
+					</dict>
+					<dict>
+						<key>field</key>
+						<string>kMDItemFinderComment</string>
+						<key>not</key>
+						<false/>
+						<key>split</key>
+						<true/>
+						<key>value</key>
+						<string>{query}</string>
+						<key>words</key>
+						<true/>
+					</dict>
+				</array>
+				<key>includesystem</key>
+				<false/>
+				<key>limit</key>
+				<integer>0</integer>
+				<key>runningsubtext</key>
+				<string></string>
+				<key>scopes</key>
+				<array/>
+				<key>sortmode</key>
+				<integer>0</integer>
+				<key>subtext</key>
+				<string></string>
+				<key>title</key>
+				<string>Move file to...</string>
+				<key>types</key>
+				<array>
+					<string>public.folder</string>
+				</array>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.filefilter</string>
+			<key>uid</key>
+			<string>9DFBAEDD-06B9-43DE-8ACE-E46A2D0BBD19</string>
+			<key>version</key>
+			<integer>2</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -1812,6 +2065,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>1345</integer>
 		</dict>
+		<key>137CFF78-DC4F-42A9-805A-C27E22CB145A</key>
+		<dict>
+			<key>xpos</key>
+			<integer>785</integer>
+			<key>ypos</key>
+			<integer>650</integer>
+		</dict>
 		<key>1B3862E4-62B6-4E4F-995C-FDF92221C3AE</key>
 		<dict>
 			<key>xpos</key>
@@ -1889,6 +2149,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>30</integer>
 		</dict>
+		<key>4CC2E906-3376-49BB-AB31-D09E72CD45CE</key>
+		<dict>
+			<key>xpos</key>
+			<integer>1110</integer>
+			<key>ypos</key>
+			<integer>515</integer>
+		</dict>
 		<key>51F5CE86-675F-46A5-85B6-50E0BA817FC2</key>
 		<dict>
 			<key>xpos</key>
@@ -1910,6 +2177,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>330</integer>
 		</dict>
+		<key>657E1ADA-89B3-44F7-B030-41D5C415CD3C</key>
+		<dict>
+			<key>xpos</key>
+			<integer>1210</integer>
+			<key>ypos</key>
+			<integer>525</integer>
+		</dict>
 		<key>6E8DAED4-7772-4E57-90AC-497A024E247C</key>
 		<dict>
 			<key>xpos</key>
@@ -1927,7 +2201,7 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 		<key>806397BD-0229-419D-8E5A-18BFC0D1CA08</key>
 		<dict>
 			<key>xpos</key>
-			<integer>1105</integer>
+			<integer>1285</integer>
 			<key>ypos</key>
 			<integer>525</integer>
 		</dict>
@@ -1962,7 +2236,7 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 		<key>8E430881-8B78-4B6E-9E72-6A80D0E7F8B3</key>
 		<dict>
 			<key>xpos</key>
-			<integer>1355</integer>
+			<integer>1540</integer>
 			<key>ypos</key>
 			<integer>495</integer>
 		</dict>
@@ -1986,6 +2260,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<integer>30</integer>
 			<key>ypos</key>
 			<integer>30</integer>
+		</dict>
+		<key>9DFBAEDD-06B9-43DE-8ACE-E46A2D0BBD19</key>
+		<dict>
+			<key>xpos</key>
+			<integer>945</integer>
+			<key>ypos</key>
+			<integer>650</integer>
 		</dict>
 		<key>A2D588C0-BDD4-417C-8DA0-4F2FDAA01103</key>
 		<dict>
@@ -2015,6 +2296,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>330</integer>
 		</dict>
+		<key>C6615E59-0437-4008-BD26-9C64A86842EA</key>
+		<dict>
+			<key>xpos</key>
+			<integer>1120</integer>
+			<key>ypos</key>
+			<integer>650</integer>
+		</dict>
 		<key>D5EF7CBD-EB06-4516-AA43-8B83D0939530</key>
 		<dict>
 			<key>xpos</key>
@@ -2025,14 +2313,14 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 		<key>DB1FDBCB-0771-4996-AD94-2C6FCF4166C6</key>
 		<dict>
 			<key>xpos</key>
-			<integer>945</integer>
+			<integer>935</integer>
 			<key>ypos</key>
 			<integer>495</integer>
 		</dict>
 		<key>E40DABBE-04EF-4A8D-9F82-7998B9276143</key>
 		<dict>
 			<key>xpos</key>
-			<integer>1185</integer>
+			<integer>1370</integer>
 			<key>ypos</key>
 			<integer>495</integer>
 		</dict>
@@ -2109,9 +2397,18 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 	</dict>
 	<key>variables</key>
 	<dict>
+		<key>JNANA_FILE</key>
+		<string>/Users/gary/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/Tekne/Aesthetics and the Philosophy of Art_ Comparative Perspectives - Prabha Shankar Dwivedi.pdf</string>
 		<key>USE_JNANA2</key>
 		<string>false</string>
+		<key>activeApp</key>
+		<string>Preview</string>
 	</dict>
+	<key>variablesdontexport</key>
+	<array>
+		<string>JNANA_FILE</string>
+		<string>activeApp</string>
+	</array>
 	<key>version</key>
 	<string>1.0</string>
 	<key>webaddress</key>
