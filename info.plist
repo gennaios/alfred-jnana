@@ -382,7 +382,7 @@
 		<array>
 			<dict>
 				<key>destinationuid</key>
-				<string>FE7794B4-133C-4174-A21C-04571D374A00</string>
+				<string>237DDB28-42BE-45FC-9017-CCE481F1BDB7</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -443,19 +443,6 @@
 				<false/>
 			</dict>
 		</array>
-		<key>FE7794B4-133C-4174-A21C-04571D374A00</key>
-		<array>
-			<dict>
-				<key>destinationuid</key>
-				<string>237DDB28-42BE-45FC-9017-CCE481F1BDB7</string>
-				<key>modifiers</key>
-				<integer>0</integer>
-				<key>modifiersubtext</key>
-				<string></string>
-				<key>vitoclose</key>
-				<false/>
-			</dict>
-		</array>
 	</dict>
 	<key>createdby</key>
 	<string>gennaios</string>
@@ -475,11 +462,14 @@
 				<key>escaping</key>
 				<integer>68</integer>
 				<key>script</key>
-				<string>on run argv	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		log "Active app : " &amp; activeApp		if activeApp = "Preview" then			set theFile to my Preview()		else if activeApp = "ebook-viewer" then			set theFile to do shell script "./jnana getepub"		else if activeApp = "AdobeAcrobat" then			set theFile to my AdobeAcrobat()		else if activeApp = "Skim" then			set theFile to my Skim()		else			display notification "Some other app!"
-			quit		end if	end tell
-	-- save currently opened file as variable
-	tell application id "com.runningwithcrayons.Alfred"		set configuration "JNANA_FILE" to value theFile in workflow (system attribute "alfred_workflow_bundleid")		set configuration "activeApp" to value activeApp in workflow (system attribute "alfred_workflow_bundleid") 	end tell
-	return theFileend runon Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat-- on Skim()--		tell application "Skim"--			set currentFile to file of document 1--		end tell--		return POSIX path of currentFile--	end Skim</string>
+				<string>--
+-- Get active app
+--
+
+on run argv	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		log "Active app : " &amp; activeApp	end tell
+	-- *** file name as variable doesn't work with unicode characters ***
+	tell application id "com.runningwithcrayons.Alfred"		set configuration "activeApp" to value activeApp in workflow (system attribute "alfred_workflow_bundleid") 	end tell
+end run</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -560,17 +550,32 @@
 				<key>runningsubtext</key>
 				<string>Getting bookmarks</string>
 				<key>script</key>
-				<string>on run argv	set theQuery to item 1 of argv	set theFile to (system attribute "JNANA_FILE")	set activeApp to (system attribute "activeApp")	
+				<string>--
+-- Get bookmarks all or filtered
+--
+
+on run argv	set theQuery to item 1 of argv
+
+	set activeApp to (system attribute "activeApp")
+	if activeApp is not "ebook-viewer" then
+		set theFile to getFile(activeApp)
+	end if	
 	-- get bookmarks	if length of theQuery is not 0 then		-- filtered bookmarks
-		if (system attribute "USE_JNANA2") is true then			set cmd to "./jnana2 " &amp; (quoted form of theQuery) &amp; " -b " &amp; (quoted form of theFile)
-		else
-			set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
+		if activeApp is equal to "ebook-viewer" then
+			set cmd to "./jnana epub " &amp; (quoted form of theQuery)
+		else			set cmd to "./jnana bmf " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
 		end if
 	else
-		-- all bookmarks		if theFile is "epub" then			set cmd to "./jnana epub"
+		-- all bookmarks		if activeApp is equal to "ebook-viewer" then			set cmd to "./jnana epub"
 		else
 			set cmd to "./jnana bm " &amp; (quoted form of theFile)		end if	end if	
-	return do shell script cmdend runon Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat-- on Skim()-- 	tell application "Skim"-- 		set currentFile to file of document 1-- 	end tell-- 	return POSIX path of currentFile-- end Skim</string>
+	return do shell script cmdend runon getFile(activeApp)
+	if activeApp is equal to "Preview" then		return my Preview()	else if activeApp is equal to "AdobeAcrobat" then		return my AdobeAcrobat()	else if activeApp is equal to "Skim" then		return my Skim()	else		display notification "Some other app!"
+	end if
+
+	return ""
+end getFile
+on Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat-- on Skim()--  	tell application "Skim"--  		set currentFile to file of document 1--  	end tell--  	return POSIX path of currentFile-- end Skim</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -652,8 +657,10 @@
 				<key>script</key>
 				<string>on run argv	set theQuery to item 1 of argv		tell application "System Events"		set activeApp to name of first application process whose frontmost is true				if activeApp = "Preview" then			keystroke "g" using {option down, command down} -- ⌥⌘G			keystroke theQuery			delay 0.25			keystroke return			keystroke return		else if activeApp = "ebook-viewer" then			do shell script "./jnana openepub " &amp; (quoted form of theQuery)			--		else if activeApp = "Skim" then			--			tell application "Skim"			--				set thePage to theQuery			--				tell document 1 to go to page (thePage as integer)			--			end tell		else if activeApp = "AdobeAcrobat" then			tell application "Adobe Acrobat"				set thePage to theQuery				-- tell PDF Window 1 to goto page (thePage as integer)				tell PDF Window of active doc to goto page (thePage as integer)			end tell		else			display notification "Some other app!"		end if	end tell	set theFile to (system attribute "JNANA_FILE")
 	-- update date read (date_accessed)
-	do shell script "./jnana updateread " &amp; (quoted form of theFile)		--	-- remove variable for currently opened file	--		set bundleID to (system attribute "alfred_workflow_bundleid")	tell application "Alfred 4" to remove configuration "JNANA_FILE" in workflow bundleID
-	tell application "Alfred 4" to remove configuration "activeApp" in workflow bundleID
+	do shell script "./jnana updateread " &amp; (quoted form of theFile)		--	-- remove variable for currently opened file	--		set bundleID to (system attribute "alfred_workflow_bundleid")	tell application id "com.runningwithcrayons.Alfred" 
+		-- remove configuration "JNANA_FILE" in workflow bundleID
+		remove configuration "activeApp" in workflow bundleID
+	end tell
 end run</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
@@ -740,26 +747,6 @@ end run</string>
 			<string>1E867EF1-D712-446F-8C78-889387210529</string>
 			<key>version</key>
 			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>argument</key>
-				<string></string>
-				<key>passthroughargument</key>
-				<false/>
-				<key>variables</key>
-				<dict>
-					<key>file_path</key>
-					<string>{query}</string>
-				</dict>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.utility.argument</string>
-			<key>uid</key>
-			<string>FE7794B4-133C-4174-A21C-04571D374A00</string>
-			<key>version</key>
-			<integer>1</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -1104,6 +1091,41 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<true/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>1</integer>
+				<key>hotmod</key>
+				<integer>1179648</integer>
+				<key>hotstring</key>
+				<string>S</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>com.calibre-ebook.ebook-viewer</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>78CD8F8C-F7DD-4C40-94B5-4FB94649DF4D</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>concurrently</key>
 				<false/>
 				<key>escaping</key>
@@ -1164,41 +1186,6 @@ end Skim</string>
 			<string>alfred.workflow.action.script</string>
 			<key>uid</key>
 			<string>5CDF905F-9A9B-4401-AAE3-D714F9FEA4CB</string>
-			<key>version</key>
-			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>action</key>
-				<integer>0</integer>
-				<key>argument</key>
-				<integer>0</integer>
-				<key>focusedappvariable</key>
-				<true/>
-				<key>focusedappvariablename</key>
-				<string></string>
-				<key>hotkey</key>
-				<integer>1</integer>
-				<key>hotmod</key>
-				<integer>1179648</integer>
-				<key>hotstring</key>
-				<string>S</string>
-				<key>leftcursor</key>
-				<false/>
-				<key>modsmode</key>
-				<integer>0</integer>
-				<key>relatedApps</key>
-				<array>
-					<string>com.calibre-ebook.ebook-viewer</string>
-				</array>
-				<key>relatedAppsMode</key>
-				<integer>1</integer>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.trigger.hotkey</string>
-			<key>uid</key>
-			<string>78CD8F8C-F7DD-4C40-94B5-4FB94649DF4D</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
@@ -1446,7 +1433,8 @@ on replace_chars(this_text, search_string, replacement_string)	set AppleScript'
 				<key>script</key>
 				<string>on run argv
 	set newFileName to item 1 of argv
-	set theFile to (system attribute "JNANA_FILE")
+	-- set theFile to (system attribute "JNANA_FILE")
+	set theFile to do shell script "echo " &amp; quoted form of (system attribute "JNANA_FILE") &amp; " | iconv -f UTF-8-MAC -t MACROMAN"
 	tell application "Finder"
 		set fileAlias to POSIX file theFile as alias
 		set name of fileAlias to newFileName &amp; ".pdf"
@@ -1490,9 +1478,9 @@ end run</string>
 				<integer>0</integer>
 				<key>relatedApps</key>
 				<array>
-					<string>com.apple.Preview</string>
 					<string>net.sourceforge.skim-app.skim</string>
 					<string>com.smileonmymac.PDFpenPro</string>
+					<string>com.apple.Preview</string>
 				</array>
 				<key>relatedAppsMode</key>
 				<integer>1</integer>
@@ -1649,9 +1637,9 @@ end run</string>
 				<integer>0</integer>
 				<key>relatedApps</key>
 				<array>
-					<string>net.sourceforge.skim-app.skim</string>
-					<string>com.smileonmymac.PDFpenPro</string>
 					<string>com.apple.Preview</string>
+					<string>com.smileonmymac.PDFpenPro</string>
+					<string>net.sourceforge.skim-app.skim</string>
 				</array>
 				<key>relatedAppsMode</key>
 				<integer>1</integer>
@@ -2387,22 +2375,15 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>865</integer>
 		</dict>
-		<key>FE7794B4-133C-4174-A21C-04571D374A00</key>
-		<dict>
-			<key>xpos</key>
-			<integer>355</integer>
-			<key>ypos</key>
-			<integer>30</integer>
-		</dict>
 	</dict>
 	<key>variables</key>
 	<dict>
 		<key>JNANA_FILE</key>
-		<string>/Users/gary/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/Tekne/Aesthetics and the Philosophy of Art_ Comparative Perspectives - Prabha Shankar Dwivedi.pdf</string>
+		<string>/Users/gary/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/Dhari2/Sutra of the Medicine Buddha - Minh Thành, P.D. Leigh &amp; Hsuan Jung.pdf</string>
 		<key>USE_JNANA2</key>
 		<string>false</string>
 		<key>activeApp</key>
-		<string>Preview</string>
+		<string>ebook-viewer</string>
 	</dict>
 	<key>variablesdontexport</key>
 	<array>
