@@ -173,6 +173,8 @@ func calibreEpubFile() string {
 	usr, _ := user.Current()
 	var path string
 
+	// find calibre preferences
+
 	// pre 4.x
 	//calibreJsonFile := "~/Library/Preferences/calibre/viewer.json"
 
@@ -184,9 +186,8 @@ func calibreEpubFile() string {
 	if err != nil {
 		wf.FatalError(err)
 	}
-	// var jsonData map[string][]string
-	// JSON unmarshal returns some BOOL error
-	// _ = json.Unmarshal(jsonFile, &jsonData)
+
+	// find most recently opened file = current
 
 	// pre 4.x
 	//return jsonData["viewer_open_history"][0]
