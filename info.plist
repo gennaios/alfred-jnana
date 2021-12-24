@@ -1053,6 +1053,57 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv
+	set theQuery to item 1 of argv
+
+	tell application "System Events"		set activeApp to name of first application process whose frontmost is true	end tell
+
+	if activeApp = "Preview" then
+		set theFile to my Preview()
+	else if activeApp = "ebook-viewer" then
+		set theFile to do shell script "./jnana getepub"
+	else if activeApp = "AcrobatPro" then
+		set theFile to my AdobeAcrobat()
+	end if
+
+	--
+	-- save subjects
+	--
+
+	do shell script "./jnana subject " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
+end run
+
+on Preview()
+	tell application "Preview"		return path of document 1	end tellend Preview
+
+on AdobeAcrobat()
+	tell application "Adobe Acrobat"
+		set currentFile to file alias of active doc
+	end tell
+	return POSIX path of currentFile
+end AdobeAcrobat</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>D5EF7CBD-EB06-4516-AA43-8B83D0939530</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>action</key>
 				<integer>0</integer>
 				<key>argument</key>
@@ -1132,16 +1183,16 @@ end run</string>
 				<integer>68</integer>
 				<key>script</key>
 				<string>on run argv
-	set focusedApp to (system attribute "focusedapp")
+	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		log "Active app : " &amp; activeApp	end tell
 
-	if focusedApp = "com.apple.Preview" then
+	if activeApp = "Preview" then
 		set theFile to my Preview()
-	else if focusedApp = "com.calibre-ebook.ebook-viewer" then
+	else if activeApp = "ebook-viewer" then
 		set theFile to do shell script "./jnana getepub"
-	else if focusedApp = "com.adobe.Acrobat.Pro" then
+	else if activeApp = "AcrobatPro" then
 		set theFile to my AdobeAcrobat()
-	else if focusedApp = "net.sourceforge.skim-app.skim" then
-		set theFile to my Skim()
+--	else if activeApp = "Skim" then
+--		set theFile to my Skim()
 	end if
 
 	--
@@ -1169,12 +1220,12 @@ on AdobeAcrobat()
 	return POSIX path of currentFile
 end AdobeAcrobat
 
-on Skim()
-	tell application "Skim"
-		set currentFile to file of document 1
-	end tell
-	return POSIX path of currentFile
-end Skim</string>
+-- on Skim()
+-- 	tell application "Skim"
+-- 		set currentFile to file of document 1
+-- 	end tell
+-- 	return POSIX path of currentFile
+-- end Skim</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
 				<key>scriptfile</key>
@@ -1201,38 +1252,6 @@ end Skim</string>
 			<string>02F55D27-DE1F-48B6-BE78-73B6B6A8887E</string>
 			<key>version</key>
 			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>concurrently</key>
-				<false/>
-				<key>escaping</key>
-				<integer>68</integer>
-				<key>script</key>
-				<string>on run argv
-	set theQuery to item 1 of argv
-	set theFile to (system attribute "JNANA_FILE")
-
-	--
-	-- save subjects
-	--
-
-	do shell script "./jnana subject " &amp; theFile &amp; " " &amp; (quoted form of theQuery)
-end run</string>
-				<key>scriptargtype</key>
-				<integer>1</integer>
-				<key>scriptfile</key>
-				<string></string>
-				<key>type</key>
-				<integer>6</integer>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.action.script</string>
-			<key>uid</key>
-			<string>D5EF7CBD-EB06-4516-AA43-8B83D0939530</string>
-			<key>version</key>
-			<integer>2</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -2296,7 +2315,7 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>xpos</key>
 			<integer>600</integer>
 			<key>ypos</key>
-			<integer>365</integer>
+			<integer>330</integer>
 		</dict>
 		<key>DB1FDBCB-0771-4996-AD94-2C6FCF4166C6</key>
 		<dict>
@@ -2378,6 +2397,8 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 	</dict>
 	<key>variables</key>
 	<dict>
+		<key>JNANA_FILE</key>
+		<string>'/Users/xxxxxxxx/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/Dhari2/Sutra of the Medicine Buddha - Minh Thành, P.D. Leigh &amp; Hsuan Jung.pdf'</string>
 		<key>USE_JNANA2</key>
 		<string>false</string>
 		<key>activeApp</key>
@@ -2385,6 +2406,7 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 	</dict>
 	<key>variablesdontexport</key>
 	<array>
+		<string>JNANA_FILE</string>
 		<string>activeApp</string>
 	</array>
 	<key>version</key>

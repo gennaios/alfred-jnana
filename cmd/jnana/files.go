@@ -244,6 +244,7 @@ func (db *Database) UpdateFile(file models.File) error {
 			WHERE id = $11`,
 		file.Path, filepath.Base(file.Path), stat.Size(),
 		file.Title.String, file.Creator.String, file.Subject.String, file.Publisher.String,
+		file.DateModified, file.DateAccessed, file.Hash,
 		file.ID).Exec(db.db)
 
 	if err != nil {
@@ -324,7 +325,7 @@ func (db *Database) UpdateSubject(file *models.File, subject string) error {
 	newSubject := strings.Join(s, ", ")
 
 	if newSubject != file.Subject.String {
-		file.Subject.String = newSubject
+		file.Subject = null.StringFrom(newSubject)
 		err = db.UpdateFile(*file)
 	}
 
