@@ -1006,6 +1006,41 @@ end run</string>
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<true/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>1</integer>
+				<key>hotmod</key>
+				<integer>1179648</integer>
+				<key>hotstring</key>
+				<string>S</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>com.calibre-ebook.ebook-viewer</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>78CD8F8C-F7DD-4C40-94B5-4FB94649DF4D</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>concurrently</key>
 				<false/>
 				<key>escaping</key>
@@ -1136,41 +1171,6 @@ end AdobeAcrobat</string>
 			<string>alfred.workflow.trigger.hotkey</string>
 			<key>uid</key>
 			<string>51F5CE86-675F-46A5-85B6-50E0BA817FC2</string>
-			<key>version</key>
-			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
-				<key>action</key>
-				<integer>0</integer>
-				<key>argument</key>
-				<integer>0</integer>
-				<key>focusedappvariable</key>
-				<true/>
-				<key>focusedappvariablename</key>
-				<string></string>
-				<key>hotkey</key>
-				<integer>1</integer>
-				<key>hotmod</key>
-				<integer>1179648</integer>
-				<key>hotstring</key>
-				<string>S</string>
-				<key>leftcursor</key>
-				<false/>
-				<key>modsmode</key>
-				<integer>0</integer>
-				<key>relatedApps</key>
-				<array>
-					<string>com.calibre-ebook.ebook-viewer</string>
-				</array>
-				<key>relatedAppsMode</key>
-				<integer>1</integer>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.trigger.hotkey</string>
-			<key>uid</key>
-			<string>78CD8F8C-F7DD-4C40-94B5-4FB94649DF4D</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
@@ -1389,41 +1389,6 @@ end AdobeAcrobat
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>concurrently</key>
-				<false/>
-				<key>escaping</key>
-				<integer>68</integer>
-				<key>script</key>
-				<string>on run argv	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		if activeApp = "Preview" then			set theFile to my Preview()		else if activeApp = "AdobeAcrobat" then			set theFile to my AdobeAcrobat()		else if activeApp = "Skim" then			set theFile to my Skim()		else			display notification "Some other app!"
-			quit		end if	end tell
-
-	tell application "Finder"
-    		set fileName to name of (POSIX file theFile as alias)
-		-- set fileName to my replace_chars(fileName, ".pdf", "")
-	    -- set fileName to my replace_chars(fileName, ".PDF", "")
-	end tell
-
-	-- save currently opened file as variable
-	tell application id "com.runningwithcrayons.Alfred"		set configuration "JNANA_FILE" to value theFile in workflow (system attribute "alfred_workflow_bundleid") 	end tell
-	return fileNameend runon Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat
-on replace_chars(this_text, search_string, replacement_string)	set AppleScript's text item delimiters to the search_string	set the item_list to every text item of this_text	set AppleScript's text item delimiters to the replacement_string	set this_text to the item_list as string	set AppleScript's text item delimiters to ""	return this_textend replace_chars</string>
-				<key>scriptargtype</key>
-				<integer>1</integer>
-				<key>scriptfile</key>
-				<string></string>
-				<key>type</key>
-				<integer>6</integer>
-			</dict>
-			<key>type</key>
-			<string>alfred.workflow.action.script</string>
-			<key>uid</key>
-			<string>DB1FDBCB-0771-4996-AD94-2C6FCF4166C6</string>
-			<key>version</key>
-			<integer>2</integer>
-		</dict>
-		<dict>
-			<key>config</key>
-			<dict>
 				<key>argumenttype</key>
 				<integer>0</integer>
 				<key>keyword</key>
@@ -1497,9 +1462,9 @@ end run</string>
 				<integer>0</integer>
 				<key>relatedApps</key>
 				<array>
-					<string>com.apple.Preview</string>
-					<string>net.sourceforge.skim-app.skim</string>
 					<string>com.smileonmymac.PDFpenPro</string>
+					<string>net.sourceforge.skim-app.skim</string>
+					<string>com.apple.Preview</string>
 				</array>
 				<key>relatedAppsMode</key>
 				<integer>1</integer>
@@ -1508,6 +1473,41 @@ end run</string>
 			<string>alfred.workflow.trigger.hotkey</string>
 			<key>uid</key>
 			<string>984D0CAD-970F-41FE-A415-0E450CF6AB64</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		if activeApp = "Preview" then			set theFile to my Preview()		else if activeApp = "AdobeAcrobat" then			set theFile to my AdobeAcrobat()		else if activeApp = "Skim" then			set theFile to my Skim()		else			display notification "Some other app!"
+			quit		end if	end tell
+
+	tell application "Finder"
+    		set fileName to name of (POSIX file theFile as alias)
+		-- set fileName to my replace_chars(fileName, ".pdf", "")
+	    -- set fileName to my replace_chars(fileName, ".PDF", "")
+	end tell
+
+	-- save currently opened file as variable
+	tell application id "com.runningwithcrayons.Alfred"		set configuration "JNANA_FILE" to value theFile in workflow (system attribute "alfred_workflow_bundleid") 	end tell
+	return fileNameend runon Preview()	tell application "Preview"		return path of document 1 as text	end tellend Previewon AdobeAcrobat()	tell application "Adobe Acrobat"		set currentFile to file alias of active doc	end tell	return POSIX path of currentFileend AdobeAcrobat
+on replace_chars(this_text, search_string, replacement_string)	set AppleScript's text item delimiters to the search_string	set the item_list to every text item of this_text	set AppleScript's text item delimiters to the replacement_string	set this_text to the item_list as string	set AppleScript's text item delimiters to ""	return this_textend replace_chars</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>DB1FDBCB-0771-4996-AD94-2C6FCF4166C6</string>
 			<key>version</key>
 			<integer>2</integer>
 		</dict>
@@ -1656,9 +1656,9 @@ end run</string>
 				<integer>0</integer>
 				<key>relatedApps</key>
 				<array>
+					<string>com.apple.Preview</string>
 					<string>net.sourceforge.skim-app.skim</string>
 					<string>com.smileonmymac.PDFpenPro</string>
-					<string>com.apple.Preview</string>
 				</array>
 				<key>relatedAppsMode</key>
 				<integer>1</integer>
@@ -2397,18 +2397,9 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 	</dict>
 	<key>variables</key>
 	<dict>
-		<key>JNANA_FILE</key>
-		<string>'/Users/xxxxxxxx/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/Dhari2/Sutra of the Medicine Buddha - Minh Thành, P.D. Leigh &amp; Hsuan Jung.pdf'</string>
 		<key>USE_JNANA2</key>
 		<string>false</string>
-		<key>activeApp</key>
-		<string>Preview</string>
 	</dict>
-	<key>variablesdontexport</key>
-	<array>
-		<string>JNANA_FILE</string>
-		<string>activeApp</string>
-	</array>
 	<key>version</key>
 	<string>1.0</string>
 	<key>webaddress</key>
