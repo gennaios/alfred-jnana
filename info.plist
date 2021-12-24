@@ -943,7 +943,7 @@ end run</string>
 				<string>Getting bookmarks...</string>
 				<key>script</key>
 				<string>on run argv
-	if (system attribute "USE_JNANA2") is true then
+	if (system attribute "USE_JNANA2") is false then
 		return do shell script "./jnana all " &amp; quoted form of item 1 of argv
 	else 
 		return do shell script "./jnana2 -a " &amp; quoted form of item 1 of argv	end ifend run</string>
@@ -1478,9 +1478,9 @@ end run</string>
 				<integer>0</integer>
 				<key>relatedApps</key>
 				<array>
+					<string>com.apple.Preview</string>
 					<string>net.sourceforge.skim-app.skim</string>
 					<string>com.smileonmymac.PDFpenPro</string>
-					<string>com.apple.Preview</string>
 				</array>
 				<key>relatedAppsMode</key>
 				<integer>1</integer>
@@ -1637,9 +1637,9 @@ end run</string>
 				<integer>0</integer>
 				<key>relatedApps</key>
 				<array>
-					<string>com.apple.Preview</string>
-					<string>com.smileonmymac.PDFpenPro</string>
 					<string>net.sourceforge.skim-app.skim</string>
+					<string>com.smileonmymac.PDFpenPro</string>
+					<string>com.apple.Preview</string>
 				</array>
 				<key>relatedAppsMode</key>
 				<integer>1</integer>
@@ -2378,16 +2378,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 	</dict>
 	<key>variables</key>
 	<dict>
-		<key>JNANA_FILE</key>
-		<string>/Users/xxxxxxxx/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/Dhari2/Sutra of the Medicine Buddha - Minh Thành, P.D. Leigh &amp; Hsuan Jung.pdf</string>
 		<key>USE_JNANA2</key>
 		<string>false</string>
 		<key>activeApp</key>
-		<string>ebook-viewer</string>
+		<string>Preview</string>
 	</dict>
 	<key>variablesdontexport</key>
 	<array>
-		<string>JNANA_FILE</string>
 		<string>activeApp</string>
 	</array>
 	<key>version</key>
