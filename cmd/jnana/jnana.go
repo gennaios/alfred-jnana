@@ -2,7 +2,12 @@ package main
 
 import (
 	"database/sql"
-	. "jnana/internal"
+	bookFile "jnana/internal/file"
+	"jnana/internal/files"
+	"jnana/internal/util"
+
+	"jnana/internal/bookmarks"
+	"jnana/internal/database"
 	"jnana/models"
 
 	"encoding/json"
@@ -118,15 +123,15 @@ func init() {
 }
 
 // initDatabase: initialize SQLite database
-func initDatabase(dbFile string) Database {
-	db := Database{}
+func initDatabase(dbFile string) *database.Database {
+	db := &database.Database{}
 	db.Init(dbFile)
 	return db
 }
 
 // initDatabase: initialize SQLite database
-func initDatabaseForReading(dbFile string) Database {
-	db := Database{}
+func initDatabaseForReading(dbFile string) *database.Database {
+	db := &database.Database{}
 	db.InitForReading(dbFile)
 	return db
 }
@@ -136,10 +141,10 @@ func bookmarksForFile(file string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
 
-	bookmarks, err := db.BookmarksForFile(file, coversCacheDir)
+	bookmarksRecord, err := bookmarks.ForFile(db, file, coversCacheDir)
 
 	if err == nil {
-		returnBookmarksForFile(file, bookmarks)
+		returnBookmarksForFile(file, bookmarksRecord)
 	} else {
 		wf.FatalError(err)
 	}
@@ -160,10 +165,10 @@ func bookmarksForFileFiltered(file string, query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabaseForReading(dbFile)
 
-	bookmarks, err := db.BookmarksForFileFiltered(file, query)
+	bookmarksRecord, err := bookmarks.ForFileFiltered(db, file, query)
 
 	if err == nil {
-		returnBookmarksForFileFiltered(file, bookmarks)
+		returnBookmarksForFileFiltered(file, bookmarksRecord)
 	} else {
 		wf.FatalError(err)
 	}
@@ -207,7 +212,7 @@ func cleanDatabase() {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
 
-	all, err := db.AllFiles()
+	all, err := files.All(db)
 	if err != nil {
 		log.Println(err)
 	}
@@ -257,20 +262,20 @@ func fileSubject(file string, subject string) {
 	db := initDatabase(dbFile)
 
 	if subject == "" {
-		fileRecord, _, err := db.GetFile(file, false)
+		fileRecord, _, err := files.Get(db, file, false)
 		if err != nil {
 			wf.FatalError(err)
 		}
 
 		fmt.Println(fileRecord.Subject.String)
 	} else {
-		fileRecord, _, err := db.GetFile(file, false)
+		fileRecord, _, err := files.Get(db, file, false)
 
-		err = db.UpdateSubject(fileRecord, subject)
+		err = files.UpdateSubject(db, fileRecord, subject)
 		if err != nil {
 			wf.FatalError(err)
 		}
-		_ = db.db.Close()
+		_ = db.Db.Close()
 	}
 }
 
@@ -295,24 +300,24 @@ func getLastQuery() string {
 }
 
 // ImportFile import file or all files in folder
-func ImportFile(db Database, file string) error {
+func ImportFile(db *database.Database, file string) error {
 	var err error
 
 	if strings.HasSuffix(file, ".epub") || strings.HasSuffix(file, ".pdf") {
-		_, err := db.GetFileFromPath(file)
+		_, err := files.GetFromPath(db, file)
 
 		if err == sql.ErrNoRows {
-			fileRecord, changed, err := db.GetFile(file, false)
+			fileRecord, changed, err := files.Get(db, file, false)
 			if err != nil {
 				return err
 			}
 
 			if changed == true {
-				bookmarks, err := db.BookmarksForFile(file, coversCacheDir)
+				bookmarksRecord, err := bookmarks.ForFile(db, file, coversCacheDir)
 				if err != nil {
 					return err
 				}
-				if len(bookmarks) != 0 {
+				if len(bookmarksRecord) != 0 {
 					log.Println("Imported:", fileRecord.Name)
 				}
 			}
@@ -387,8 +392,8 @@ func openCalibreBookmarkCommand(command string, cmdArgs []string) {
 
 // openFile opens EPUB or PDF from catalog
 func openFile(file string) {
-	if exists, _ := Exists(file); exists == false {
-		notification("Does not exist: " + file)
+	if exists, _ := util.Exists(file); exists == false {
+		util.Notification("Does not exist: " + file)
 		return
 	}
 
@@ -413,7 +418,7 @@ func RecentFiles() {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabaseForReading(dbFile)
 
-	results, err := db.RecentFiles()
+	results, err := files.Recent(db)
 	if err != nil {
 		wf.FatalError(err)
 	}
@@ -425,7 +430,7 @@ func searchAllBookmarks(query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabaseForReading(dbFile)
 
-	results, err := db.searchAll(query)
+	results, err := bookmarks.SearchAll(db, query)
 	if err != nil {
 		wf.FatalError(err)
 	}
@@ -437,7 +442,7 @@ func searchAllFiles(query string) {
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabaseForReading(dbFile)
 
-	results, err := db.SearchFiles(query)
+	results, err := files.Search(db, query)
 	if err != nil {
 		wf.FatalError(err)
 	}
@@ -489,7 +494,7 @@ func returnBookmarksForFile(file string, bookmarks []*models.Bookmark) {
 	wf.SendFeedback()
 }
 
-func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
+func returnBookmarksForFileFiltered(file string, bookmarks []*bookmarks.SearchAllResult) {
 	var icon *aw.Icon
 
 	if strings.HasSuffix(file, "pdf") {
@@ -528,7 +533,7 @@ func returnBookmarksForFileFiltered(file string, bookmarks []*SearchAllResult) {
 }
 
 // Parse database search results and return items to Alfred
-func returnSearchAllResults(bookmarks []*SearchAllResult, query string) {
+func returnSearchAllResults(bookmarks []*bookmarks.SearchAllResult, query string) {
 	var title string
 	var subtitle string
 	var arg string
@@ -597,7 +602,7 @@ func returnSearchFilesResults(files []*models.File, query string) {
 func TestStuff(file string) {
 	//bookmarks, _ := bookmarksForPDF(path)
 	//fmt.Println("bookmarks", len(bookmarks))
-	f := File{}
+	f := bookFile.File{}
 	if err := f.Init(file); err != nil {
 		log.Println(err)
 	}
@@ -607,8 +612,8 @@ func TestStuff(file string) {
 }
 
 // UpdateFile check one file for metadata updates, not including bookmarks
-func UpdateFile(db Database, fileRecord *models.File) {
-	updated, err := db.UpdateMetadata(fileRecord)
+func UpdateFile(db *database.Database, fileRecord *models.File) {
+	updated, err := files.UpdateMetadata(db, fileRecord)
 	if err != nil {
 		log.Println("Error:", fileRecord.Path)
 	}
@@ -623,15 +628,15 @@ func UpdateFiles(file string) {
 	db := initDatabase(dbFile)
 
 	if _, err := os.Stat(file); err == nil {
-		fileRecord, _, _ := db.GetFile(file, false)
+		fileRecord, _, _ := files.Get(db, file, false)
 		UpdateFile(db, fileRecord)
 	} else {
-		files, err := db.AllFiles()
+		filesRecord, err := files.All(db)
 		if err != nil {
 			log.Fatal(err)
 		}
-		for _, aFile := range files {
-			if FileExists(aFile.Path) {
+		for _, aFile := range filesRecord {
+			if util.FileExists(aFile.Path) {
 				UpdateFile(db, aFile)
 			}
 		}
@@ -640,14 +645,14 @@ func UpdateFiles(file string) {
 
 // UpdateRead set date read (date_accessed)
 func UpdateRead(file string) {
-	if exists, _ := Exists(file); exists == false {
+	if exists, _ := util.Exists(file); exists == false {
 		return
 	}
 
 	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := initDatabase(dbFile)
-	fileRecord, _, _ := db.GetFile(file, false)
-	db.UpdateDateAccessed(fileRecord)
+	fileRecord, _, _ := files.Get(db, file, false)
+	files.UpdateDateAccessed(db, fileRecord)
 }
 
 func runCommand() {

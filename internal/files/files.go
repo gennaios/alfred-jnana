@@ -1,8 +1,10 @@
-package main
+package files
 
 import (
 	"database/sql"
-	. "jnana/internal"
+	"jnana/internal/database"
+	bookFile "jnana/internal/file"
+	"jnana/internal/util"
 	"jnana/models"
 
 	"github.com/volatiletech/null/v8"
@@ -21,19 +23,19 @@ import (
 	"time"
 )
 
-// AllFiles get all files, used for update
-func (db *Database) AllFiles() ([]*models.File, error) {
+// All get all files, used for update
+func All(db *database.Database) ([]*models.File, error) {
 	var files []*models.File
 	var err error
 
-	files, err = models.Files(qm.SQL("SELECT * FROM file")).All(db.ctx, db.db)
+	files, err = models.Files(qm.SQL("SELECT * FROM file")).All(db.Ctx, db.Db)
 	return files, err
 }
 
 // CoverForFile creates thumbnails using ImageMagick
 // 160x160 - 80x80 2x
 // 7.x: magick convert -resize 160x160 -background transparent -colorspace srgb -depth 8 -gravity center -extent 160x160 -strip  …
-func (db *Database) CoverForFile(fileRecord *models.File, coversCacheDir string) bool {
+func CoverForFile(fileRecord *models.File, coversCacheDir string) bool {
 	var err error
 	coverPath := filepath.Join(coversCacheDir, strconv.FormatInt(fileRecord.ID, 10)+".png")
 
@@ -41,7 +43,7 @@ func (db *Database) CoverForFile(fileRecord *models.File, coversCacheDir string)
 	if !os.IsNotExist(err) {
 		return true
 	} else {
-		_ = notification("File ID: " + strconv.FormatInt(fileRecord.ID, 10) + ".png")
+		_ = util.Notification("File ID: " + strconv.FormatInt(fileRecord.ID, 10) + ".png")
 	}
 
 	// create thumbnail
@@ -55,24 +57,24 @@ func (db *Database) CoverForFile(fileRecord *models.File, coversCacheDir string)
 	}
 }
 
-func (db *Database) GetFile(book string, check bool) (*models.File, bool, error) {
+func Get(db *database.Database, book string, check bool) (*models.File, bool, error) {
 	var file *models.File
 	var err error
 	var hash string
 	changed := false // return value, to later recheck bookmarks
 
 	// first lookup by file path
-	file, err = db.GetFileFromPath(book)
+	file, err = GetFromPath(db, book)
 
 	// not found, possible file moved, look up by file hash
 	if err == sql.ErrNoRows {
-		hash, err = FileHash(book)
-		file, err = db.GetFileFromHash(hash)
+		hash, err = util.FileHash(book)
+		file, err = GetFromHash(db, hash)
 	}
 
 	// not found by path or hash, create new
 	if err == sql.ErrNoRows {
-		file, err = db.NewFile(book)
+		file, err = New(db, book)
 		if err != nil {
 			return file, true, err
 		}
@@ -82,9 +84,9 @@ func (db *Database) GetFile(book string, check bool) (*models.File, bool, error)
 			if _, err = os.Stat(file.Path); err != nil {
 				if os.IsNotExist(err) {
 					// old path doesn't exist, moved, same hash
-					_ = notification("File moved: " + file.Path)
+					_ = util.Notification("File moved: " + file.Path)
 					file.Path = book
-					err = db.UpdateFile(*file)
+					err = Update(db, *file)
 					// hash match, no changes needed
 					return file, false, err
 				}
@@ -92,7 +94,7 @@ func (db *Database) GetFile(book string, check bool) (*models.File, bool, error)
 				// check file exists, or notification will be triggered if not
 				if _, err = os.Stat(book); err != nil {
 					if !os.IsNotExist(err) {
-						_ = notification("Dupe of: " + file.Path)
+						_ = util.Notification("Dupe of: " + file.Path)
 						check = false
 					}
 				}
@@ -117,41 +119,41 @@ func (db *Database) GetFile(book string, check bool) (*models.File, bool, error)
 		if modDate.After(file.DateModified) {
 			//date different, check hash value
 			changed = true
-			file.Hash, _ = FileHash(book)
+			file.Hash, _ = util.FileHash(book)
 			file.DateModified = modDate
-			err = db.UpdateFile(*file)
+			err = Update(db, *file)
 		}
 	}
 	return file, changed, err
 }
 
-// GetFileFromPath Look for existing record by file path
-// return columns needed by GetFile, all in case of update
-func (db *Database) GetFileFromPath(book string) (*models.File, error) {
-	file, err := models.Files(qm.Where("path = ?", book)).One(db.ctx, db.db)
+// GetFromPath Look for existing record by file path
+// return columns needed by Get, all in case of update
+func GetFromPath(db *database.Database, book string) (*models.File, error) {
+	file, err := models.Files(qm.Where("path = ?", book)).One(db.Ctx, db.Db)
 	return file, err
 }
 
-// GetFileFromHash look for existing by file hash (sha256)
-// return columns needed by GetFile, all in case of update
-func (db *Database) GetFileFromHash(hash string) (*models.File, error) {
-	file, err := models.Files(qm.Where("hash = ?", hash)).One(db.ctx, db.db)
+// GetFromHash look for existing by file hash (sha256)
+// return columns needed by Get, all in case of update
+func GetFromHash(db *database.Database, hash string) (*models.File, error) {
+	file, err := models.Files(qm.Where("hash = ?", hash)).One(db.Ctx, db.Db)
 	return file, err
 }
 
-// NewFile create new file entry.
+// New create new file entry.
 // models.File struct comes in with only path.
 // Required fields: path, name, extension, created, modified, hash
-func (db *Database) NewFile(book string) (*models.File, error) {
+func New(db *database.Database, book string) (*models.File, error) {
 	stat, err := os.Stat(book)
 	if err != nil {
 		return &models.File{}, err
 	}
 	// format string for insert, strange set then get by format doesn't work
 	dateModified := stat.ModTime().UTC().Truncate(time.Millisecond)
-	hash, _ := FileHash(book)
+	hash, _ := util.FileHash(book)
 
-	f := File{}
+	f := bookFile.File{}
 	if err = f.Init(book); err != nil {
 		return &models.File{}, err
 	}
@@ -165,7 +167,7 @@ func (db *Database) NewFile(book string) (*models.File, error) {
 		dateCreated = t.BirthTime().UTC().Truncate(time.Millisecond)
 	}
 
-	tx, err := db.db.BeginTx(db.ctx, nil)
+	tx, err := db.Db.BeginTx(db.Ctx, nil)
 	if err != nil {
 		return &models.File{}, err
 	}
@@ -176,37 +178,37 @@ func (db *Database) NewFile(book string) (*models.File, error) {
 		filepath.Base(book),
 		strings.ToLower(filepath.Ext(book)[1:]),
 		stat.Size(),
-		null.StringFrom(f.title),
-		null.StringFrom(f.publisher),
-		null.StringFrom(f.creator),
-		null.StringFrom(f.subject),
+		null.StringFrom(f.Title),
+		null.StringFrom(f.Publisher),
+		null.StringFrom(f.Creator),
+		null.StringFrom(f.Subject),
 		dateCreated,
 		dateModified,
 		null.TimeFrom(t.AccessTime().UTC().Truncate(time.Millisecond)),
-		hash).Exec(db.db)
+		hash).Exec(db.Db)
 
 	err = tx.Commit()
 
 	//err = f.file.Close() // TODO: invalid memory address or nil pointer, maybe closed in File?
 	if strings.HasSuffix(book, ".epub") {
-		f.epub.Close()
+		f.Epub.Close()
 	}
 
-	file, err := db.GetFileFromPath(book)
+	file, err := GetFromPath(db, book)
 	return file, err
 }
 
-// RecentFiles list of recently opened files
-func (db *Database) RecentFiles() ([]*models.File, error) {
-	files, err := models.Files(qm.SQL("SELECT * FROM file ORDER BY date_accessed DESC LIMIT 50")).All(db.ctx, db.db)
+// Recent list of recently opened files
+func Recent(db *database.Database) ([]*models.File, error) {
+	files, err := models.Files(qm.SQL("SELECT * FROM file ORDER BY date_accessed DESC LIMIT 50")).All(db.Ctx, db.Db)
 	return files, err
 }
 
-// SearchFiles Search all files from FTS5 table,
+// Search all files from FTS5 table,
 // order by rank: name, title, creator, subject, publisher, description
 // Return results as slice of struct models.File, later prepped for Alfred script filter
-func (db *Database) SearchFiles(query string) ([]*models.File, error) {
-	queryString := stringForSQLite(query)
+func Search(db *database.Database, query string) ([]*models.File, error) {
+	queryString := util.StringForSQLite(query)
 	var results []*models.File
 
 	// NOTE: AND rank MATCH 'bm25(…)' ORDER BY rank faster than ORDER BY bm25(fts, …)
@@ -217,14 +219,14 @@ func (db *Database) SearchFiles(query string) ([]*models.File, error) {
 			WHERE file_search MATCH ?
 			AND rank MATCH 'bm25(10.0, 2.0, 2.0, 2.0, 2.0, 2.0)'
 			ORDER BY rank LIMIT 200`,
-		queryString).Bind(db.ctx, db.db, &results)
+		queryString).Bind(db.Ctx, db.Db, &results)
 
-	err = db.db.Close()
+	err = db.Db.Close()
 	return results, err
 }
 
-// UpdateFile update file on change of path, file name, or date modified
-func (db *Database) UpdateFile(file models.File) error {
+// Update on change of path, file name, or date modified
+func Update(db *database.Database, file models.File) error {
 	stat, err := os.Stat(file.Path)
 	if err != nil {
 		return err
@@ -235,7 +237,7 @@ func (db *Database) UpdateFile(file models.File) error {
 	}
 	file.DateAccessed = null.TimeFrom(t.AccessTime().UTC())
 
-	tx, err := db.db.BeginTx(db.ctx, nil)
+	tx, err := db.Db.BeginTx(db.Ctx, nil)
 
 	_, err = queries.Raw(`UPDATE file SET
 			path = $1, name = $2, size = $3,
@@ -245,7 +247,7 @@ func (db *Database) UpdateFile(file models.File) error {
 		file.Path, filepath.Base(file.Path), stat.Size(),
 		file.Title.String, file.Creator.String, file.Subject.String, file.Publisher.String,
 		file.DateModified, file.DateAccessed, file.Hash,
-		file.ID).Exec(db.db)
+		file.ID).Exec(db.Db)
 
 	if err != nil {
 		// TODO: PDF metadata "unrecognized token", workaround don't update metadata
@@ -253,7 +255,7 @@ func (db *Database) UpdateFile(file models.File) error {
 			path = ?, name = ?, size = ?, date_modified = ?, date_accessed = ?, hash = ?
 			WHERE id = ?`,
 			file.Path, filepath.Base(file.Path), stat.Size(), file.DateModified, file.DateAccessed,
-			file.Hash, file.ID).Exec(db.db)
+			file.Hash, file.ID).Exec(db.Db)
 	}
 
 	err = tx.Commit()
@@ -264,42 +266,42 @@ func (db *Database) UpdateFile(file models.File) error {
 }
 
 // UpdateDateAccessed update last opened
-func (db *Database) UpdateDateAccessed(file *models.File) {
+func UpdateDateAccessed(db *database.Database, file *models.File) {
 	currentTime := time.Now().UTC()
 	_, _ = queries.Raw(`UPDATE file SET date_accessed = ? WHERE id = ?`,
-		currentTime, file.ID).Exec(db.db)
+		currentTime, file.ID).Exec(db.Db)
 }
 
 // UpdateMetadata check for updates to metadata
-func (db *Database) UpdateMetadata(file *models.File) (bool, error) {
+func UpdateMetadata(db *database.Database, file *models.File) (bool, error) {
 	var err error
 	if _, err = os.Stat(file.Path); err != nil {
 		return false, err
 	}
 	update := false
 
-	f := File{}
+	f := bookFile.File{}
 	if err = f.Init(file.Path); err != nil {
 		return false, err
 	}
 
-	if file.Title.String != f.title && f.title != "" {
-		file.Title.String = f.title
+	if file.Title.String != f.Title && f.Title != "" {
+		file.Title.String = f.Title
 		update = true
 	}
-	if file.Creator.String != f.creator && f.creator != "" {
-		file.Creator.String = f.creator
+	if file.Creator.String != f.Creator && f.Creator != "" {
+		file.Creator.String = f.Creator
 		update = true
 	}
 	if strings.HasSuffix(file.Path, "epub") {
-		if file.Publisher.String != f.publisher && f.publisher != "" {
-			file.Publisher.String = f.publisher
+		if file.Publisher.String != f.Publisher && f.Publisher != "" {
+			file.Publisher.String = f.Publisher
 			update = true
 		}
 	}
 
 	if update == true {
-		err = db.UpdateFile(*file)
+		err = Update(db, *file)
 		if err == nil {
 			return true, err
 		}
@@ -309,7 +311,7 @@ func (db *Database) UpdateMetadata(file *models.File) (bool, error) {
 }
 
 // UpdateSubject set subject/keywords for file
-func (db *Database) UpdateSubject(file *models.File, subject string) error {
+func UpdateSubject(db *database.Database, file *models.File, subject string) error {
 	var err error
 
 	if subject == "" {
@@ -317,22 +319,17 @@ func (db *Database) UpdateSubject(file *models.File, subject string) error {
 	}
 
 	terms := strings.Split(strings.ToLower(subject), ",")
-	s := trimMetadata(terms)
+	s := bookFile.TrimMetadata(terms)
 
-	less := lessString(&s)
+	less := util.LessString(&s)
 	unique.Slice(&s, less)
 
 	newSubject := strings.Join(s, ", ")
 
 	if newSubject != file.Subject.String {
 		file.Subject = null.StringFrom(newSubject)
-		err = db.UpdateFile(*file)
+		err = Update(db, *file)
 	}
 
 	return err
-}
-
-func lessString(v interface{}) func(i, j int) bool {
-	s := *v.(*[]string)
-	return func(i, j int) bool { return s[i] < s[j] }
 }

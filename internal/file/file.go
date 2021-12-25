@@ -1,10 +1,11 @@
-package main
+package file
 
 import (
 	"fmt"
 	"github.com/gen2brain/go-fitz"
 	"github.com/meskio/epubgo"
 	"io/ioutil"
+	"jnana/internal/util"
 	"strings"
 )
 
@@ -12,16 +13,16 @@ type File struct {
 	path string
 	file *fitz.Document
 
-	epub *epubgo.Epub
+	Epub *epubgo.Epub
 	nav  *epubgo.NavigationIterator
 
-	title     string
-	creator   string
-	subject   string
-	publisher string
+	Title     string
+	Creator   string
+	Subject   string
+	Publisher string
 }
 
-type FileBookmark struct {
+type Bookmark struct {
 	Title       string `json:"title"`
 	Section     string `json:"section"`
 	Destination string `json:"destination"`
@@ -38,16 +39,16 @@ func (f *File) Init(file string) error {
 	}
 
 	if strings.HasSuffix(f.path, ".epub") {
-		f.epub, err = epubgo.Open(file)
-		f.nav, err = f.epub.Navigation()
+		f.Epub, err = epubgo.Open(file)
+		f.nav, err = f.Epub.Navigation()
 	}
 	f.Metadata()
 	return err
 
 }
 
-// Bookmarks: for EPUB and PDF path, using go-fitz
-func (f *File) Bookmarks() ([]*FileBookmark, error) {
+// Bookmarks for EPUB and PDF path, using go-fitz
+func (f *File) Bookmarks() ([]*Bookmark, error) {
 	var outlines []fitz.Outline
 	var err error
 
@@ -59,14 +60,14 @@ func (f *File) Bookmarks() ([]*FileBookmark, error) {
 }
 
 func (f *File) CoverForEPUB() ([]byte, error) {
-	metaCoverId, err := f.epub.Metadata("cover")
+	metaCoverId, err := f.Epub.Metadata("cover")
 	if err != nil {
-		cover, _ := f.epub.OpenFileId(metaCoverId[0])
+		cover, _ := f.Epub.OpenFileId(metaCoverId[0])
 		defer cover.Close()
 
 		buff1, err := ioutil.ReadAll(cover)
 		if err != nil {
-			_ = notification("Error EPUB cover:" + err.Error())
+			_ = util.Notification("Error EPUB cover:" + err.Error())
 			return nil, err
 		} else {
 			return buff1, err
@@ -76,10 +77,10 @@ func (f *File) CoverForEPUB() ([]byte, error) {
 }
 
 func (f *File) Metadata() {
-	f.title = ""
-	f.creator = ""
-	f.subject = ""
-	f.publisher = ""
+	f.Title = ""
+	f.Creator = ""
+	f.Subject = ""
+	f.Publisher = ""
 
 	if strings.HasSuffix(f.path, ".pdf") {
 		f.MetadataForPDF()
@@ -88,42 +89,42 @@ func (f *File) Metadata() {
 	}
 }
 
-// MetadataForEPUB: for PDF path, using go-fitz
+// MetadataForEPUB for PDF path, using go-fitz
 func (f *File) MetadataForEPUB() {
 	var title []string
 	var creator []string
 	var subject []string
 	var publisher []string
 
-	title, _ = f.epub.Metadata("title")
-	title = trimMetadata(title)
-	f.title = strings.TrimSpace(strings.Join(title[:], "; "))
+	title, _ = f.Epub.Metadata("title")
+	title = TrimMetadata(title)
+	f.Title = strings.TrimSpace(strings.Join(title[:], "; "))
 
-	creator, _ = f.epub.Metadata("creator")
-	creator = trimMetadata(creator)
-	f.creator = strings.TrimSpace(strings.Join(creator[:], "; "))
+	creator, _ = f.Epub.Metadata("creator")
+	creator = TrimMetadata(creator)
+	f.Creator = strings.TrimSpace(strings.Join(creator[:], "; "))
 
-	subject, _ = f.epub.Metadata("subject")
-	subject = trimMetadata(subject)
-	f.subject = strings.ToLower(strings.TrimSpace(strings.Join(subject[:], ", ")))
+	subject, _ = f.Epub.Metadata("subject")
+	subject = TrimMetadata(subject)
+	f.Subject = strings.ToLower(strings.TrimSpace(strings.Join(subject[:], ", ")))
 
-	publisher, _ = f.epub.Metadata("publisher")
-	publisher = trimMetadata(publisher)
-	f.publisher = strings.TrimSpace(strings.Join(publisher[:], "; "))
+	publisher, _ = f.Epub.Metadata("publisher")
+	publisher = TrimMetadata(publisher)
+	f.Publisher = strings.TrimSpace(strings.Join(publisher[:], "; "))
 }
 
-// MetadataForPDF: for PDF path, using go-fitz
+// MetadataForPDF for PDF path, using go-fitz
 func (f *File) MetadataForPDF() {
 	fileMetadata := f.file.Metadata()
 
-	f.title = strings.Trim(fileMetadata["title"], `'"; `)
-	f.creator = strings.Trim(fileMetadata["author"], `'"; `)
+	f.Title = strings.Trim(fileMetadata["title"], `'"; `)
+	f.Creator = strings.Trim(fileMetadata["author"], `'"; `)
 }
 
 // Parse bookmarks from go-fitz
-func (f *File) parseBookmarks(file string, outline []fitz.Outline) []*FileBookmark {
+func (f *File) parseBookmarks(file string, outline []fitz.Outline) []*Bookmark {
 	sections := []string{"", "", "", "", "", "", "", "", "", "", "", "", ""}
-	var parsedBookmarks []*FileBookmark
+	var parsedBookmarks []*Bookmark
 	var page int
 	var currentLevel int
 	var section string
@@ -174,7 +175,7 @@ func (f *File) parseBookmarks(file string, outline []fitz.Outline) []*FileBookma
 				}
 			}
 
-			newBookmark := FileBookmark{
+			newBookmark := Bookmark{
 				Title:       title,
 				Section:     section,
 				Destination: destination,
@@ -186,7 +187,7 @@ func (f *File) parseBookmarks(file string, outline []fitz.Outline) []*FileBookma
 	return parsedBookmarks
 }
 
-func trimMetadata(slc []string) []string {
+func TrimMetadata(slc []string) []string {
 	for i := range slc {
 		slc[i] = strings.Trim(slc[i], `'"; `)
 	}
