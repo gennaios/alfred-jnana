@@ -1,13 +1,13 @@
 package bookmarks
 
 import (
+	"github.com/volatiletech/sqlboiler/v4/queries"
 	"jnana/internal/database"
 	bookFile "jnana/internal/file"
 	"jnana/internal/files"
+	"jnana/internal/fulltext"
 	"jnana/internal/util"
 	"jnana/models"
-
-	"github.com/volatiletech/sqlboiler/v4/queries"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/volatiletech/null/v8"
@@ -128,6 +128,8 @@ func New(db *database.Database, file *models.File, bookmarks []*bookFile.Bookmar
 			Exec(db.Db)
 	}
 
+	fulltext.BookmarksCreate(db, *file)
+
 	err = tx.Commit()
 
 	// get newly inserted bookmarks
@@ -143,6 +145,9 @@ func Update(db *database.Database, file *models.File, oldBookmarks []*models.Boo
 	var results []*models.Bookmark
 
 	tx, _ := db.Db.BeginTx(db.Ctx, nil)
+
+	fulltext.BookmarksDelete(db, *file)
+
 	if len(oldBookmarks) == len(newBookmarks) {
 		// count same, update records
 		for i := range oldBookmarks {
@@ -161,6 +166,9 @@ func Update(db *database.Database, file *models.File, oldBookmarks []*models.Boo
 		_, err = queries.Raw(`DELETE from bookmark WHERE file_id = $1`, file.ID).Exec(db.Db)
 		results, err = New(db, file, newBookmarks)
 	}
+
+	fulltext.BookmarksCreate(db, *file)
+
 	err = tx.Commit()
 
 	return results, err

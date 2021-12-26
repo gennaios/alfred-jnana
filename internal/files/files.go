@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"jnana/internal/database"
 	bookFile "jnana/internal/file"
+	"jnana/internal/fulltext"
 	"jnana/internal/util"
 	"jnana/models"
 
@@ -14,6 +15,8 @@ import (
 	"fmt"
 	"github.com/campoy/unique"
 	"github.com/djherbis/times"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
@@ -239,6 +242,14 @@ func Update(db *database.Database, file models.File) error {
 
 	tx, err := db.Db.BeginTx(db.Ctx, nil)
 
+	// delete old FTS
+	oldFile, _ := models.Files(qm.Where("id = ?", file.ID)).One(db.Ctx, db.Db)
+	if compare(*oldFile, file) != true {
+		fulltext.FileDelete(db, file)
+		fulltext.BookmarksDelete(db, file)
+	}
+
+	// update record
 	_, err = queries.Raw(`UPDATE file SET
 			path = $1, name = $2, size = $3,
 			title = $4, creator = $5, subject = $6, publisher = $7,
@@ -249,13 +260,10 @@ func Update(db *database.Database, file models.File) error {
 		file.DateModified, file.DateAccessed, file.Hash,
 		file.ID).Exec(db.Db)
 
-	if err != nil {
-		// TODO: PDF metadata "unrecognized token", workaround don't update metadata
-		_, err = queries.Raw(`UPDATE file SET
-			path = ?, name = ?, size = ?, date_modified = ?, date_accessed = ?, hash = ?
-			WHERE id = ?`,
-			file.Path, filepath.Base(file.Path), stat.Size(), file.DateModified, file.DateAccessed,
-			file.Hash, file.ID).Exec(db.Db)
+	// create new FTS
+	if compare(*oldFile, file) != true {
+		fulltext.FileCreate(db, file)
+		fulltext.BookmarksCreate(db, file)
 	}
 
 	err = tx.Commit()
@@ -332,4 +340,13 @@ func UpdateSubject(db *database.Database, file *models.File, subject string) err
 	}
 
 	return err
+}
+
+func compare(a, b models.File) bool {
+	if a == b {
+		return true
+	}
+
+	return cmp.Equal(a, b, cmpopts.IgnoreFields(models.File{}, "Path", "Extension", "Size", "Language", "DateCreated",
+		"DateModified", "DateAccessed", "Hash"))
 }

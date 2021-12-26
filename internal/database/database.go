@@ -100,6 +100,7 @@ func (db *Database) createTables() {
 	var schemaView = `
 	CREATE VIEW IF NOT EXISTS bookmark_view AS SELECT
 		bookmark.id,
+		file.id as file_id,	                                                  
 		bookmark.title,
 		bookmark.section,
 		file.name,
@@ -158,28 +159,6 @@ func (db *Database) createTriggers() {
 		BEGIN INSERT INTO file_search(rowid, name, title, creator, subject, publisher, description)
 		VALUES (new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description);
 		END;
-	CREATE TRIGGER IF NOT EXISTS bookmark_delete
-		AFTER DELETE ON bookmark
-		BEGIN DELETE FROM bookmark_search where rowid=old.id;
-		END;
-	CREATE TRIGGER IF NOT EXISTS bookmark_insert
-		AFTER INSERT ON bookmark
-		BEGIN INSERT INTO bookmark_search(rowid, title, section, name, file_title, creator, subject, publisher)
-		VALUES (new.id, new.title, new.section, (SELECT name FROM file WHERE id = new.file_id), (SELECT title FROM file WHERE id = new.file_id), (SELECT creator FROM file WHERE id = new.file_id), (SELECT subject FROM file WHERE id = new.file_id), (SELECT publisher FROM file WHERE id = new.file_id));
-		END;
-	CREATE TRIGGER IF NOT EXISTS bookmark_update
-		AFTER UPDATE ON bookmark
-		BEGIN INSERT INTO bookmark_search(rowid, title, section, name, file_title, creator, subject, publisher)
-		VALUES (new.id, new.title, new.section, (SELECT name FROM file WHERE id = new.file_id), (SELECT title FROM file WHERE id = new.file_id), (SELECT creator FROM file WHERE id = new.file_id), (SELECT subject FROM file WHERE id = new.file_id), (SELECT publisher FROM file WHERE id = new.file_id));
-		END;
-	CREATE TRIGGER IF NOT EXISTS update_file_name
-		INSTEAD OF UPDATE OF name ON bookmark_view
-		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
-		INSERT INTO bookmark_search(
-		rowid, title, section, name, file_title, creator, subject, publisher)
-		VALUES (
-		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
-		); END;
 	CREATE TRIGGER IF NOT EXISTS update_title
 		INSTEAD OF UPDATE OF title ON bookmark_view
 		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
@@ -211,14 +190,6 @@ func (db *Database) createTriggers() {
 		rowid, title, section, name, file_title, creator, subject, publisher)
 		VALUES (
 		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_file_name
-		AFTER UPDATE OF name ON file
-		BEGIN DELETE FROM file_search where rowid=old.id;
-		INSERT INTO file_search(
-		rowid, name, title, creator, subject, publisher, description)
-		VALUES (
-		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
 		); END;
 	CREATE TRIGGER IF NOT EXISTS update_file_title
 		AFTER UPDATE OF title ON file
