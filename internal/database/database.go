@@ -46,7 +46,6 @@ func (db *Database) Init(dbFilePath string) {
 	_ = queries.Raw("SELECT name FROM sqlite_master WHERE type='table' AND name='file'").Bind(db.Ctx, db.Db, &result)
 	if result.Name != "file" {
 		db.createTables()
-		db.createTriggers()
 	}
 
 	if err != nil {
@@ -144,93 +143,4 @@ func (db *Database) createTables() {
 	_, _ = db.Db.Exec(schemaView)
 	_, _ = db.Db.Exec(fileFTS)
 	_, _ = db.Db.Exec(bookmarkFTS)
-	db.createTriggers()
-}
-
-// createTriggers: triggers to update FTS index upon insert, delete, and update
-func (db *Database) createTriggers() {
-	var triggers = `
-	CREATE TRIGGER IF NOT EXISTS file_delete
-		AFTER DELETE ON file
-		BEGIN DELETE FROM file_search where rowid=old.id;
-		END;
-	CREATE TRIGGER IF NOT EXISTS file_insert
-		AFTER INSERT ON file
-		BEGIN INSERT INTO file_search(rowid, name, title, creator, subject, publisher, description)
-		VALUES (new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description);
-		END;
-	CREATE TRIGGER IF NOT EXISTS update_title
-		INSTEAD OF UPDATE OF title ON bookmark_view
-		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
-		INSERT INTO bookmark_search(
-		rowid, title, section, name, file_title, creator, subject, publisher)
-		VALUES (
-		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_creator
-		INSTEAD OF UPDATE OF creator ON bookmark_view
-		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
-		INSERT INTO bookmark_search(
-		rowid, title, section, name, file_title, creator, subject, publisher)
-		VALUES (
-		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_subject
-		INSTEAD OF UPDATE OF subject ON bookmark_view
-		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
-		INSERT INTO bookmark_search(
-		rowid, title, section, name, file_title, creator, subject, publisher)
-		VALUES (
-		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_publisher
-		INSTEAD OF UPDATE OF publisher ON bookmark_view
-		BEGIN DELETE FROM bookmark_search where rowid=old.rowid;
-		INSERT INTO bookmark_search(
-		rowid, title, section, name, file_title, creator, subject, publisher)
-		VALUES (
-		new.id, new.title, new.section, new.name, new.file_title, new.creator, new.subject, new.publisher
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_file_title
-		AFTER UPDATE OF title ON file
-		BEGIN DELETE FROM file_search where rowid=old.id;
-		INSERT INTO file_search(
-		rowid, name, title, creator, subject, publisher, description)
-		VALUES (
-		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_file_creator
-		AFTER UPDATE OF creator ON file
-		BEGIN DELETE FROM file_search where rowid=old.id;
-		INSERT INTO file_search(
-		rowid, name, title, creator, subject, publisher, description)
-		VALUES (
-		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_file_subject
-		AFTER UPDATE OF subject ON file
-		BEGIN DELETE FROM file_search where rowid=old.id;
-		INSERT INTO file_search(
-		rowid, name, title, creator, subject, publisher, description)
-		VALUES (
-		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_file_publisher
-		AFTER UPDATE OF publisher ON file
-		BEGIN DELETE FROM file_search where rowid=old.id;
-		INSERT INTO file_search(
-		rowid, name, title, creator, subject, publisher, description)
-		VALUES (
-		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
-		); END;
-	CREATE TRIGGER IF NOT EXISTS update_file_description
-		AFTER UPDATE OF description ON file
-		BEGIN DELETE FROM file_search where rowid=old.id;
-		INSERT INTO file_search(
-		rowid, name, title, creator, subject, publisher, description)
-		VALUES (
-		new.id, new.name, new.title, new.creator, new.subject, new.publisher, new.description
-		); END;
-	`
-	_, _ = db.Db.Exec(triggers)
 }
