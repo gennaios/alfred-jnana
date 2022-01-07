@@ -123,14 +123,16 @@ func init() {
 }
 
 // initDatabase: initialize SQLite database
-func initDatabase(dbFile string) *database.Database {
+func initDatabase() *database.Database {
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := &database.Database{}
 	db.Init(dbFile)
 	return db
 }
 
 // initDatabase: initialize SQLite database
-func initDatabaseForReading(dbFile string) *database.Database {
+func initDatabaseForReading() *database.Database {
+	dbFile := filepath.Join(wf.DataDir(), dbFileName)
 	db := &database.Database{}
 	db.InitForReading(dbFile)
 	return db
@@ -138,8 +140,7 @@ func initDatabaseForReading(dbFile string) *database.Database {
 
 // Bookmarks all for file, from database or imported, return results
 func bookmarksForFile(file string) {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabase(dbFile)
+	db := initDatabase()
 
 	bookmarksRecord, err := bookmarks.ForFile(db, file, coversCacheDir)
 
@@ -162,8 +163,7 @@ func bookmarksForFileEpub(query string) {
 
 // Bookmarks filtered for file, from database or imported, return results
 func bookmarksForFileFiltered(file string, query string) {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabaseForReading(dbFile)
+	db := initDatabaseForReading()
 
 	bookmarksRecord, err := bookmarks.ForFileFiltered(db, file, query)
 
@@ -209,8 +209,7 @@ func calibreEpubFile() string {
 }
 
 func cleanDatabase() {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabase(dbFile)
+	db := initDatabase()
 
 	all, err := files.All(db)
 	if err != nil {
@@ -258,8 +257,7 @@ func cacheLastQuery(queryString string) {
 }
 
 func fileSubject(file string, subject string) {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabase(dbFile)
+	db := initDatabase()
 
 	if subject == "" {
 		fileRecord, _, err := files.Get(db, file, false)
@@ -328,8 +326,7 @@ func ImportFile(db *database.Database, file string) error {
 
 // ImportFiles import file or all files in folder
 func ImportFiles(file string) {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabase(dbFile)
+	db := initDatabase()
 
 	fi, err := os.Stat(file)
 	if err != nil {
@@ -393,7 +390,7 @@ func openCalibreBookmarkCommand(command string, cmdArgs []string) {
 // openFile opens EPUB or PDF from catalog
 func openFile(file string) {
 	if exists, _ := util.Exists(file); exists == false {
-		util.Notification("Does not exist: " + file)
+		_ = util.Notification("Does not exist: " + file)
 		return
 	}
 
@@ -415,8 +412,7 @@ func printLastFileQuery() {
 
 // RecentFiles List recently opened files
 func RecentFiles() {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabaseForReading(dbFile)
+	db := initDatabaseForReading()
 
 	results, err := files.Recent(db)
 	if err != nil {
@@ -427,8 +423,7 @@ func RecentFiles() {
 
 // Query database for all bookmarks
 func searchAllBookmarks(query string) {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabaseForReading(dbFile)
+	db := initDatabaseForReading()
 
 	results, err := bookmarks.SearchAll(db, query)
 	if err != nil {
@@ -439,8 +434,7 @@ func searchAllBookmarks(query string) {
 
 // Query database for all files
 func searchAllFiles(query string) {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabaseForReading(dbFile)
+	db := initDatabaseForReading()
 
 	results, err := files.Search(db, query)
 	if err != nil {
@@ -624,8 +618,7 @@ func UpdateFile(db *database.Database, fileRecord *models.File) {
 
 // UpdateFiles check passed file or all files for metadata changes, not including bookmarks
 func UpdateFiles(file string) {
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabase(dbFile)
+	db := initDatabase()
 
 	if _, err := os.Stat(file); err == nil {
 		fileRecord, _, _ := files.Get(db, file, false)
@@ -649,8 +642,7 @@ func UpdateRead(file string) {
 		return
 	}
 
-	dbFile := filepath.Join(wf.DataDir(), dbFileName)
-	db := initDatabase(dbFile)
+	db := initDatabase()
 	fileRecord, _, _ := files.Get(db, file, false)
 	files.UpdateDateAccessed(db, fileRecord)
 }
