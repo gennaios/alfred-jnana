@@ -8,6 +8,7 @@ import (
 	"jnana/internal/util"
 	"jnana/models"
 	"os/exec"
+	"regexp"
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/queries"
@@ -317,6 +318,50 @@ func UpdateMetadata(db *database.Database, file *models.File) (bool, error) {
 	}
 
 	return false, err
+}
+
+func ParseCreators(newCreators string) string {
+	// fix creators
+	creatorsArray := util.StringSplitAny(newCreators, ";&")
+	for i := range creatorsArray {
+		creatorsArray[i] = strings.Replace(creatorsArray[i], ", Jr", " Jr", -1)
+		creatorsArray[i] = strings.Replace(creatorsArray[i], " (EDT)", "", -1)
+
+		if strings.Contains(creatorsArray[i], ",") {
+			newCreator := strings.Split(creatorsArray[i], ",")
+			newCreator[0], newCreator[1] = newCreator[1], newCreator[0]
+			creatorsArray[i] = strings.Join(newCreator[:], " ")
+		}
+
+		// remove double spaces
+		creatorsArray[i] = strings.TrimSpace(creatorsArray[i])
+		space := regexp.MustCompile(`\s+`)
+		creatorsArray[i] = space.ReplaceAllString(creatorsArray[i], " ")
+	}
+	return strings.Join(creatorsArray[:], ", ")
+}
+
+// UpdateCreators set creators for file
+func UpdateCreators(db *database.Database, file *models.File, newCreators string) error {
+	var err error
+
+	if newCreators == file.Creator.String || newCreators == "" {
+		return err
+	}
+
+	// set creators
+	calibreMeta := "/Applications/calibre.app/Contents/MacOS/ebook-meta"
+	if file.Extension == "epub" && util.FileExists(calibreMeta) {
+		if err = exec.Command(calibreMeta, file.Path, "-a", strings.Replace(newCreators, ", ", " & ", -1)).Run(); err == nil {
+			file.Creator = null.StringFrom(newCreators)
+			err = Update(db, *file)
+			if err == nil {
+				util.Notification("Creators updated: " + file.Creator.String)
+			}
+		}
+	}
+
+	return err
 }
 
 // UpdateSubject set subject/keywords for file

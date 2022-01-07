@@ -36,6 +36,7 @@ usage:
     jnana bmf <file> <query>
     jnana clean
     jnana epub [<query>]
+	jnana filecreators <file> [<query>]
 	jnana filetitle <file> [<query>]
     jnana files [<query>]
     jnana import <file>
@@ -65,6 +66,7 @@ commands:
     bmf				Bookmarks for file filtered by query
     clean			Clean database, remove bookmarks for deleted files 
     epub		   	Bookmarks for EPUB in calibre
+	filecreators	Get or set file creators
 	filetitle		Get or set file title
     files			Search all files by name and metadata
     getepub     	Return opened EPUB
@@ -96,6 +98,7 @@ var (
 		Bmf           bool
 		Clean         bool
 		Epub          bool
+		Filecreators  bool
 		Filetitle     bool
 		Files         bool
 		Getepub       bool
@@ -259,6 +262,31 @@ func cacheLastQuery(queryString string) {
 	if err := wf.Cache.StoreJSON("LastQuery", queryString); err != nil {
 		wf.FatalError(err)
 	}
+}
+
+func fileCreators(file string, newCreators string) {
+	db := initDatabase()
+	fileRecord, _, err := files.Get(db, file, false)
+	if err != nil {
+		wf.FatalError(err)
+	}
+
+	// get creators
+	if newCreators == "" {
+		// creators := util.CalibreCreators(file)
+		creators := fileRecord.Creator.String
+		creators = files.ParseCreators(creators)
+		fmt.Println(creators)
+		return
+	}
+
+	// set new creators if specified
+	err = files.UpdateCreators(db, fileRecord, newCreators)
+	if err != nil {
+		wf.FatalError(err)
+	}
+	_ = db.Db.Close()
+	fmt.Println(newCreators)
 }
 
 func fileSubject(file string, subject string) {
@@ -693,6 +721,8 @@ func runCommand() {
 		bookmarksForFileEpub(query)
 	case options.Subject:
 		fileSubject(options.File, query)
+	case options.Filecreators:
+		fileCreators(options.File, query)
 	case options.Filetitle:
 		fileTitle(options.File, query)
 	case options.Files:

@@ -34,6 +34,19 @@
 				<false/>
 			</dict>
 		</array>
+		<key>1D523972-18B5-4522-951E-44B484A6C590</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>7B32E69E-2CD1-49A6-A497-3DA5F1E988D2</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>22A54D55-762F-444A-89A0-8BFBF95F264F</key>
 		<array>
 			<dict>
@@ -118,6 +131,19 @@
 				<false/>
 			</dict>
 		</array>
+		<key>54266705-A1E1-44A5-8B3A-8D07943582F4</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>1D523972-18B5-4522-951E-44B484A6C590</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
 		<key>5CDF905F-9A9B-4401-AAE3-D714F9FEA4CB</key>
 		<array>
 			<dict>
@@ -149,6 +175,19 @@
 			<dict>
 				<key>destinationuid</key>
 				<string>88EB7067-E802-4345-B4B5-F312C9C1B22F</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>7B32E69E-2CD1-49A6-A497-3DA5F1E988D2</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>C938690E-3E39-407D-BC08-3B6E8ECC87B3</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -307,6 +346,19 @@
 			<dict>
 				<key>destinationuid</key>
 				<string>D5EF7CBD-EB06-4516-AA43-8B83D0939530</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>C938690E-3E39-407D-BC08-3B6E8ECC87B3</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>C09B4A10-25BE-4D50-967C-1A64533C3B88</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -1461,8 +1513,8 @@ end AdobeAcrobat</string>
 				<integer>0</integer>
 				<key>relatedApps</key>
 				<array>
-					<string>com.smileonmymac.PDFpenPro</string>
 					<string>net.sourceforge.skim-app.skim</string>
+					<string>com.smileonmymac.PDFpenPro</string>
 					<string>com.apple.Preview</string>
 				</array>
 				<key>relatedAppsMode</key>
@@ -1820,8 +1872,8 @@ end runon Preview()	tell application "Preview"		return path of document 1 as
 				<key>relatedApps</key>
 				<array>
 					<string>com.apple.Preview</string>
-					<string>net.sourceforge.skim-app.skim</string>
 					<string>com.smileonmymac.PDFpenPro</string>
+					<string>net.sourceforge.skim-app.skim</string>
 				</array>
 				<key>relatedAppsMode</key>
 				<integer>1</integer>
@@ -1965,7 +2017,7 @@ end AdobeAcrobat
 				<key>subtext</key>
 				<string></string>
 				<key>text</key>
-				<string>Edit file title</string>
+				<string>Edit title</string>
 				<key>withspace</key>
 				<false/>
 			</dict>
@@ -2042,6 +2094,160 @@ end AdobeAcrobat
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv
+	tell application "System Events"		set activeApp to name of first application process whose frontmost is true		log "Active app : " &amp; activeApp	end tell
+
+	if activeApp = "Preview" then
+		set theFile to my Preview()
+	else if activeApp = "ebook-viewer" then
+		set theFile to do shell script "./jnana getepub"
+	else if activeApp = "AcrobatPro" then
+		set theFile to my AdobeAcrobat()
+	end if
+
+	--
+	-- get title
+	--
+
+	set query to do shell script "./jnana filecreators " &amp; (quoted form of theFile)
+end run
+
+on Preview()
+	tell application "Preview"		return path of document 1	end tellend Preview
+
+on AdobeAcrobat()
+	tell application "Adobe Acrobat"
+		set currentFile to file alias of active doc
+	end tell
+	return POSIX path of currentFile
+end AdobeAcrobat</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>1D523972-18B5-4522-951E-44B484A6C590</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>68</integer>
+				<key>script</key>
+				<string>on run argv
+	set theQuery to item 1 of argv
+
+	tell application "System Events"		set activeApp to name of first application process whose frontmost is true	end tell
+
+	if activeApp = "Preview" then
+		set theFile to my Preview()
+	else if activeApp = "ebook-viewer" then
+		set theFile to do shell script "./jnana getepub"
+	else if activeApp = "AcrobatPro" then
+		set theFile to my AdobeAcrobat()
+	end if
+
+	--
+	-- save title
+	--
+
+	do shell script "./jnana filecreators " &amp; (quoted form of theFile) &amp; " " &amp; (quoted form of theQuery)
+end run
+
+on Preview()
+	tell application "Preview"		return path of document 1	end tellend Preview
+
+on AdobeAcrobat()
+	tell application "Adobe Acrobat"
+		set currentFile to file alias of active doc
+	end tell
+	return POSIX path of currentFile
+end AdobeAcrobat</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>6</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>C09B4A10-25BE-4D50-967C-1A64533C3B88</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>2</integer>
+				<key>subtext</key>
+				<string></string>
+				<key>text</key>
+				<string>Edit creators</string>
+				<key>withspace</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>C938690E-3E39-407D-BC08-3B6E8ECC87B3</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>action</key>
+				<integer>0</integer>
+				<key>argument</key>
+				<integer>0</integer>
+				<key>focusedappvariable</key>
+				<true/>
+				<key>focusedappvariablename</key>
+				<string></string>
+				<key>hotkey</key>
+				<integer>8</integer>
+				<key>hotmod</key>
+				<integer>1179648</integer>
+				<key>hotstring</key>
+				<string>C</string>
+				<key>leftcursor</key>
+				<false/>
+				<key>modsmode</key>
+				<integer>0</integer>
+				<key>relatedApps</key>
+				<array>
+					<string>com.calibre-ebook.ebook-viewer</string>
+				</array>
+				<key>relatedAppsMode</key>
+				<integer>1</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.trigger.hotkey</string>
+			<key>uid</key>
+			<string>54266705-A1E1-44A5-8B3A-8D07943582F4</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>action</key>
 				<integer>0</integer>
 				<key>argument</key>
@@ -2073,6 +2279,19 @@ end AdobeAcrobat
 			<string>EDDC282B-747F-4DDC-BDBD-49EA365B5BB1</string>
 			<key>version</key>
 			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>type</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.utility.transform</string>
+			<key>uid</key>
+			<string>7B32E69E-2CD1-49A6-A497-3DA5F1E988D2</string>
+			<key>version</key>
+			<integer>1</integer>
 		</dict>
 		<dict>
 			<key>config</key>
@@ -2328,6 +2547,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>460</integer>
 		</dict>
+		<key>1D523972-18B5-4522-951E-44B484A6C590</key>
+		<dict>
+			<key>xpos</key>
+			<integer>945</integer>
+			<key>ypos</key>
+			<integer>955</integer>
+		</dict>
 		<key>1E867EF1-D712-446F-8C78-889387210529</key>
 		<dict>
 			<key>xpos</key>
@@ -2405,6 +2631,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>330</integer>
 		</dict>
+		<key>54266705-A1E1-44A5-8B3A-8D07943582F4</key>
+		<dict>
+			<key>xpos</key>
+			<integer>785</integer>
+			<key>ypos</key>
+			<integer>955</integer>
+		</dict>
 		<key>5BC619A7-7498-46E4-B481-AB8EF5AD629C</key>
 		<dict>
 			<key>xpos</key>
@@ -2439,6 +2672,13 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<integer>790</integer>
 			<key>ypos</key>
 			<integer>330</integer>
+		</dict>
+		<key>7B32E69E-2CD1-49A6-A497-3DA5F1E988D2</key>
+		<dict>
+			<key>xpos</key>
+			<integer>1105</integer>
+			<key>ypos</key>
+			<integer>985</integer>
 		</dict>
 		<key>806397BD-0229-419D-8E5A-18BFC0D1CA08</key>
 		<dict>
@@ -2552,12 +2792,26 @@ Repo :  https://github.com/gennaios/alfred-jnana</string>
 			<key>ypos</key>
 			<integer>330</integer>
 		</dict>
+		<key>C09B4A10-25BE-4D50-967C-1A64533C3B88</key>
+		<dict>
+			<key>xpos</key>
+			<integer>1355</integer>
+			<key>ypos</key>
+			<integer>955</integer>
+		</dict>
 		<key>C6615E59-0437-4008-BD26-9C64A86842EA</key>
 		<dict>
 			<key>xpos</key>
 			<integer>1120</integer>
 			<key>ypos</key>
 			<integer>650</integer>
+		</dict>
+		<key>C938690E-3E39-407D-BC08-3B6E8ECC87B3</key>
+		<dict>
+			<key>xpos</key>
+			<integer>1185</integer>
+			<key>ypos</key>
+			<integer>955</integer>
 		</dict>
 		<key>D5EF7CBD-EB06-4516-AA43-8B83D0939530</key>
 		<dict>
