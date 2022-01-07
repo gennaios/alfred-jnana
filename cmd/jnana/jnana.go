@@ -36,6 +36,7 @@ usage:
     jnana bmf <file> <query>
     jnana clean
     jnana epub [<query>]
+	jnana filetitle <file> [<query>]
     jnana files [<query>]
     jnana import <file>
     jnana getepub
@@ -64,6 +65,7 @@ commands:
     bmf				Bookmarks for file filtered by query
     clean			Clean database, remove bookmarks for deleted files 
     epub		   	Bookmarks for EPUB in calibre
+	filetitle		Get or set file title
     files			Search all files by name and metadata
     getepub     	Return opened EPUB
     import      	Import file or files from folder	
@@ -86,34 +88,37 @@ commands:
 	coversCacheDir string // directory generated icons are stored in
 )
 
-var options struct {
-	// commands
-	All           bool
-	Bm            bool
-	Bmf           bool
-	Clean         bool
-	Epub          bool
-	Files         bool
-	Getepub       bool
-	Import        bool
-	Openepub      bool
-	Openfile      bool
-	Pdf           bool
-	Lastquery     bool
-	Lastfilequery bool
-	Recent        bool
-	Savefilequery bool
-	Savequery     bool
-	Subject       bool
-	Test          bool
-	Update        bool
-	Updateread    bool
+var (
+	options struct {
+		// commands
+		All           bool
+		Bm            bool
+		Bmf           bool
+		Clean         bool
+		Epub          bool
+		Filetitle     bool
+		Files         bool
+		Getepub       bool
+		Import        bool
+		Openepub      bool
+		Openfile      bool
+		Pdf           bool
+		Lastquery     bool
+		Lastfilequery bool
+		Recent        bool
+		Savefilequery bool
+		Savequery     bool
+		Subject       bool
+		Test          bool
+		Update        bool
+		Updateread    bool
 
-	// parameters
-	File   string
-	Fileid int64
-	Query  string
-}
+		// parameters
+		File   string
+		Fileid int64
+		Query  string
+	}
+)
 
 func init() {
 	// Create a new Workflow using default settings.
@@ -275,6 +280,27 @@ func fileSubject(file string, subject string) {
 		}
 		_ = db.Db.Close()
 	}
+}
+
+func fileTitle(file string, newTitle string) {
+	db := initDatabase()
+	fileRecord, _, err := files.Get(db, file, false)
+	if err != nil {
+		wf.FatalError(err)
+	}
+
+	// get title
+	if newTitle == "" {
+		fmt.Println(fileRecord.Title.String)
+	}
+
+	// set new title if specified
+	err = files.UpdateTitle(db, fileRecord, newTitle)
+	if err != nil {
+		wf.FatalError(err)
+	}
+	_ = db.Db.Close()
+	fmt.Println(newTitle)
 }
 
 func getCurrentEpub() {
@@ -665,6 +691,10 @@ func runCommand() {
 		cleanDatabase()
 	case options.Epub:
 		bookmarksForFileEpub(query)
+	case options.Subject:
+		fileSubject(options.File, query)
+	case options.Filetitle:
+		fileTitle(options.File, query)
 	case options.Files:
 		searchAllFiles(query)
 	case options.Import:
@@ -685,8 +715,6 @@ func runCommand() {
 		cacheLastFileQuery(query)
 	case options.Recent:
 		RecentFiles()
-	case options.Subject:
-		fileSubject(options.File, query)
 	case options.Test:
 		TestStuff(options.File)
 	case options.Update:

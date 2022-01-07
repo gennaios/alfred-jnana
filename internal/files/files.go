@@ -7,6 +7,7 @@ import (
 	"jnana/internal/fulltext"
 	"jnana/internal/util"
 	"jnana/models"
+	"os/exec"
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/queries"
@@ -337,6 +338,30 @@ func UpdateSubject(db *database.Database, file *models.File, subject string) err
 	if newSubject != file.Subject.String {
 		file.Subject = null.StringFrom(newSubject)
 		err = Update(db, *file)
+	}
+
+	return err
+}
+
+// UpdateTitle set title for file
+func UpdateTitle(db *database.Database, file *models.File, newTitle string) error {
+	var err error
+
+	if newTitle == file.Title.String || newTitle == "" {
+		return err
+	}
+
+	// set title
+	calibreMeta := "/Applications/calibre.app/Contents/MacOS/ebook-meta"
+	if file.Extension == "epub" && util.FileExists(calibreMeta) {
+		// get title: " | head -n 1 | cut -d ':' -f2- | awk '{$1=$1};1'"
+		if err = exec.Command(calibreMeta, file.Path, "-t", strings.TrimSpace(newTitle)).Run(); err == nil {
+			file.Title = null.StringFrom(newTitle)
+			err = Update(db, *file)
+			if err == nil {
+				util.Notification("Title updated: " + file.Title.String)
+			}
+		}
 	}
 
 	return err
