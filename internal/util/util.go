@@ -62,6 +62,32 @@ func Notification(message string) error {
 	}
 	return nil
 }
+func ArrayRemoveEmpty(s []string) []string {
+	var r []string
+	for _, str := range s {
+		if str != "" {
+			r = append(r, str)
+		}
+	}
+	return r
+}
+
+func StringContains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func StringSplitAny(s string, seps string) []string {
+	splitter := func(r rune) bool {
+		return strings.ContainsRune(seps, r)
+	}
+	return strings.FieldsFunc(s, splitter)
+}
 
 // StringForSQLite  prepare string for SQLite FTS query
 // make all terms wildcard

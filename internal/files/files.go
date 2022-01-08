@@ -320,39 +320,64 @@ func UpdateMetadata(db *database.Database, file *models.File) (bool, error) {
 	return false, err
 }
 
-func ParseCreators(newCreators string) string {
-	// fix creators
-	creatorsArray := util.StringSplitAny(newCreators, ";&")
-	for i := range creatorsArray {
-		creatorsArray[i] = strings.Replace(creatorsArray[i], ", Jr", " Jr", -1)
-		creatorsArray[i] = strings.Replace(creatorsArray[i], " (EDT)", "", -1)
+func GetCreators(oldCreators string) string {
+	var newCreators []string
 
-		if strings.Contains(creatorsArray[i], ",") {
-			newCreator := strings.Split(creatorsArray[i], ",")
-			newCreator[0], newCreator[1] = newCreator[1], newCreator[0]
-			creatorsArray[i] = strings.Join(newCreator[:], " ")
+	// pre-process
+	oldCreators = strings.Replace(oldCreators, " and ", ", ", -1)
+	oldCreators = strings.Replace(oldCreators, " MA", "", -1)
+	oldCreators = strings.Replace(oldCreators, " MD", "", -1)
+	oldCreators = strings.Replace(oldCreators, ", Jr", " Jr", -1)
+	oldCreators = strings.Replace(oldCreators, "(EDT)", "", -1)
+	oldCreators = strings.Replace(oldCreators, "MBBS", "", -1)
+	oldCreators = strings.Replace(oldCreators, "PhD", "", -1)
+	oldCreators = strings.Replace(oldCreators, "PHD", "", -1)
+
+	// ProQuest and other libraries use `;` as delimiter
+	if strings.ContainsAny(oldCreators, ";") {
+		academicCreators := util.StringSplitAny(oldCreators, ";")
+		for i := range academicCreators {
+			// reverse Last, First ...
+			if strings.Contains(academicCreators[i], ",") {
+				newCreator := strings.Split(academicCreators[i], ",")
+				newCreator[0], newCreator[1] = newCreator[1], newCreator[0]
+				academicCreators[i] = strings.Join(newCreator[:], " ")
+			}
+
+			// add if not duplicate
+			if util.StringContains(newCreators, academicCreators[i]) == false {
+				newCreators = append(newCreators, academicCreators[i])
+			}
 		}
-
-		// remove double spaces
-		creatorsArray[i] = strings.TrimSpace(creatorsArray[i])
-		space := regexp.MustCompile(`\s+`)
-		creatorsArray[i] = space.ReplaceAllString(creatorsArray[i], " ")
+	} else {
+		newCreators = util.StringSplitAny(oldCreators, ",&")
 	}
-	return strings.Join(creatorsArray[:], ", ")
+
+	for i := range newCreators {
+		// remove double spaces
+		newCreators[i] = strings.TrimSpace(newCreators[i])
+		space := regexp.MustCompile(`\s+`)
+		newCreators[i] = space.ReplaceAllString(newCreators[i], " ")
+	}
+
+	newCreators = util.ArrayRemoveEmpty(newCreators)
+	return strings.Join(newCreators[:], ", ")
 }
 
-// UpdateCreators set creators for file
-func UpdateCreators(db *database.Database, file *models.File, newCreators string) error {
+// SetCreators set creators for file
+func SetCreators(db *database.Database, file *models.File, newCreators string) error {
 	var err error
 
 	if newCreators == file.Creator.String || newCreators == "" {
 		return err
 	}
 
+	newCreators = strings.Replace(newCreators, " and ", ", ", -1)
+
 	// set creators
 	calibreMeta := "/Applications/calibre.app/Contents/MacOS/ebook-meta"
 	if file.Extension == "epub" && util.FileExists(calibreMeta) {
-		if err = exec.Command(calibreMeta, file.Path, "-a", strings.Replace(newCreators, ", ", " & ", -1)).Run(); err == nil {
+		if err = exec.Command(calibreMeta, file.Path, "-a", strings.Replace(newCreators, ",", " & ", -1)).Run(); err == nil {
 			file.Creator = null.StringFrom(newCreators)
 			err = Update(db, *file)
 			if err == nil {

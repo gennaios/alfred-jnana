@@ -264,29 +264,28 @@ func cacheLastQuery(queryString string) {
 	}
 }
 
-func fileCreators(file string, newCreators string) {
+func fileCreators(file string, creators string) {
 	db := initDatabase()
 	fileRecord, _, err := files.Get(db, file, false)
 	if err != nil {
 		wf.FatalError(err)
 	}
 
-	// get creators
-	if newCreators == "" {
-		// creators := util.CalibreCreators(file)
-		creators := fileRecord.Creator.String
-		creators = files.ParseCreators(creators)
-		fmt.Println(creators)
+	// return current from File for editing
+	if creators == "" {
+		oldCreators := fileRecord.Creator.String
+		oldCreators = files.GetCreators(oldCreators)
+		fmt.Println(oldCreators)
 		return
 	}
 
 	// set new creators if specified
-	err = files.UpdateCreators(db, fileRecord, newCreators)
+	err = files.SetCreators(db, fileRecord, creators)
 	if err != nil {
 		wf.FatalError(err)
 	}
 	_ = db.Db.Close()
-	fmt.Println(newCreators)
+	fmt.Println(creators)
 }
 
 func fileSubject(file string, subject string) {
