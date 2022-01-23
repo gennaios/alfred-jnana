@@ -41,6 +41,9 @@ type File struct {
 	DateAccessed null.Time   `boil:"date_accessed" json:"date_accessed,omitempty" toml:"date_accessed" yaml:"date_accessed,omitempty"`
 	Rating       null.Int64  `boil:"rating" json:"rating,omitempty" toml:"rating" yaml:"rating,omitempty"`
 	Hash         string      `boil:"hash" json:"hash" toml:"hash" yaml:"hash"`
+	AppleBooks   null.Bool   `boil:"apple_books" json:"apple_books,omitempty" toml:"apple_books" yaml:"apple_books,omitempty"`
+	Series       null.String `boil:"series" json:"series,omitempty" toml:"series" yaml:"series,omitempty"`
+	SeriesID     null.Int64  `boil:"series_id" json:"series_id,omitempty" toml:"series_id" yaml:"series_id,omitempty"`
 
 	R *fileR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L fileL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -64,6 +67,9 @@ var FileColumns = struct {
 	DateAccessed string
 	Rating       string
 	Hash         string
+	AppleBooks   string
+	Series       string
+	SeriesID     string
 }{
 	ID:           "id",
 	Path:         "path",
@@ -82,6 +88,9 @@ var FileColumns = struct {
 	DateAccessed: "date_accessed",
 	Rating:       "rating",
 	Hash:         "hash",
+	AppleBooks:   "apple_books",
+	Series:       "series",
+	SeriesID:     "series_id",
 }
 
 var FileTableColumns = struct {
@@ -102,6 +111,9 @@ var FileTableColumns = struct {
 	DateAccessed string
 	Rating       string
 	Hash         string
+	AppleBooks   string
+	Series       string
+	SeriesID     string
 }{
 	ID:           "file.id",
 	Path:         "file.path",
@@ -120,6 +132,9 @@ var FileTableColumns = struct {
 	DateAccessed: "file.date_accessed",
 	Rating:       "file.rating",
 	Hash:         "file.hash",
+	AppleBooks:   "file.apple_books",
+	Series:       "file.series",
+	SeriesID:     "file.series_id",
 }
 
 // Generated where
@@ -145,6 +160,30 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
 
+type whereHelpernull_Bool struct{ field string }
+
+func (w whereHelpernull_Bool) EQ(x null.Bool) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, false, x)
+}
+func (w whereHelpernull_Bool) NEQ(x null.Bool) qm.QueryMod {
+	return qmhelper.WhereNullEQ(w.field, true, x)
+}
+func (w whereHelpernull_Bool) LT(x null.Bool) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpernull_Bool) LTE(x null.Bool) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpernull_Bool) GT(x null.Bool) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpernull_Bool) GTE(x null.Bool) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
+func (w whereHelpernull_Bool) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
+func (w whereHelpernull_Bool) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
+
 var FileWhere = struct {
 	ID           whereHelperint64
 	Path         whereHelperstring
@@ -163,6 +202,9 @@ var FileWhere = struct {
 	DateAccessed whereHelpernull_Time
 	Rating       whereHelpernull_Int64
 	Hash         whereHelperstring
+	AppleBooks   whereHelpernull_Bool
+	Series       whereHelpernull_String
+	SeriesID     whereHelpernull_Int64
 }{
 	ID:           whereHelperint64{field: "\"file\".\"id\""},
 	Path:         whereHelperstring{field: "\"file\".\"path\""},
@@ -181,6 +223,9 @@ var FileWhere = struct {
 	DateAccessed: whereHelpernull_Time{field: "\"file\".\"date_accessed\""},
 	Rating:       whereHelpernull_Int64{field: "\"file\".\"rating\""},
 	Hash:         whereHelperstring{field: "\"file\".\"hash\""},
+	AppleBooks:   whereHelpernull_Bool{field: "\"file\".\"apple_books\""},
+	Series:       whereHelpernull_String{field: "\"file\".\"series\""},
+	SeriesID:     whereHelpernull_Int64{field: "\"file\".\"series_id\""},
 }
 
 // FileRels is where relationship names are stored.
@@ -204,8 +249,8 @@ func (*fileR) NewStruct() *fileR {
 type fileL struct{}
 
 var (
-	fileAllColumns            = []string{"id", "path", "name", "extension", "size", "title", "publisher", "publisher_id", "creator", "subject", "language", "description", "date_created", "date_modified", "date_accessed", "rating", "hash"}
-	fileColumnsWithoutDefault = []string{"path", "name", "extension", "size", "title", "publisher", "publisher_id", "creator", "subject", "language", "description", "date_created", "date_modified", "date_accessed", "rating", "hash"}
+	fileAllColumns            = []string{"id", "path", "name", "extension", "size", "title", "publisher", "publisher_id", "creator", "subject", "language", "description", "date_created", "date_modified", "date_accessed", "rating", "hash", "apple_books", "series", "series_id"}
+	fileColumnsWithoutDefault = []string{"path", "name", "extension", "size", "title", "publisher", "publisher_id", "creator", "subject", "language", "description", "date_created", "date_modified", "date_accessed", "rating", "hash", "apple_books", "series", "series_id"}
 	fileColumnsWithDefault    = []string{"id"}
 	filePrimaryKeyColumns     = []string{"id"}
 )

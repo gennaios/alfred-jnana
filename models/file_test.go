@@ -769,7 +769,7 @@ func testFilesSelect(t *testing.T) {
 }
 
 var (
-	fileDBTypes = map[string]string{`ID`: `INTEGER`, `Path`: `TEXT`, `Name`: `TEXT`, `Extension`: `VARCHAR(3)`, `Size`: `INTEGER`, `Title`: `TEXT`, `Publisher`: `TEXT`, `PublisherID`: `INTEGER`, `Creator`: `TEXT`, `Subject`: `TEXT`, `Language`: `TEXT`, `Description`: `TEXT`, `DateCreated`: `DATETIME`, `DateModified`: `DATETIME`, `DateAccessed`: `DATETIME`, `Rating`: `INTEGER`, `Hash`: `VARCHAR(64)`}
+	fileDBTypes = map[string]string{`ID`: `INTEGER`, `Path`: `TEXT`, `Name`: `TEXT`, `Extension`: `VARCHAR(3)`, `Size`: `INTEGER`, `Title`: `TEXT`, `Publisher`: `TEXT`, `PublisherID`: `INTEGER`, `Creator`: `TEXT`, `Subject`: `TEXT`, `Language`: `TEXT`, `Description`: `TEXT`, `DateCreated`: `DATETIME`, `DateModified`: `DATETIME`, `DateAccessed`: `DATETIME`, `Rating`: `INTEGER`, `Hash`: `VARCHAR(64)`, `AppleBooks`: `BOOLEAN`, `Series`: `TEXT`, `SeriesID`: `INTEGER`}
 	_           = bytes.MinRead
 )
 
