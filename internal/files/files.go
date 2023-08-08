@@ -19,7 +19,6 @@ import (
 	"github.com/djherbis/times"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
 	"path/filepath"
@@ -148,7 +147,7 @@ func GetFromHash(db *database.Database, hash string) (*models.File, error) {
 
 // New create new file entry.
 // models.File struct comes in with only path.
-// Required fields: path, name, extension, created, modified, hash
+// Required fields: path, name, format, created, modified, hash
 func New(db *database.Database, book string) (*models.File, error) {
 	stat, err := os.Stat(book)
 	if err != nil {
@@ -178,10 +177,35 @@ func New(db *database.Database, book string) (*models.File, error) {
 	}
 	defer tx.Rollback()
 
-	_, _ = queries.Raw("INSERT INTO file (path, name, extension, size, title, publisher, creator, subject, date_created, date_modified, date_accessed, hash) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+	var format = 1
+	if strings.ToLower(filepath.Ext(book)[1:]) == "pdf" {
+		format = 2
+	}
+
+	//boil.DebugMode = true
+	//var newFile = &models.File{}
+	//newFile.Path = book
+	//newFile.Name = filepath.Base(book)
+	//newFile.Format = format
+	//newFile.Size = stat.Size()
+	//newFile.Title = null.StringFrom(strings.TrimSpace(f.Title))
+	//newFile.Publisher = null.StringFrom(strings.TrimSpace(f.Publisher))
+	//newFile.Creator = null.StringFrom(strings.TrimSpace(f.Creator))
+	//newFile.Subject = null.StringFrom(strings.TrimSpace(f.Subject))
+	//newFile.DateCreated = dateCreated
+	//newFile.DateModified = dateModified
+	//newFile.DateAccessed = null.TimeFrom(t.AccessTime().UTC().Truncate(time.Millisecond))
+	//newFile.Hash = hash
+	//
+	//err = newFile.Insert(db.Ctx, db.Db, boil.Infer())
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	_, _ = queries.Raw("INSERT INTO file (path, name, format, size, title, publisher, creator, subject, date_created, date_modified, date_accessed, hash) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		book,
 		filepath.Base(book),
-		strings.ToLower(filepath.Ext(book)[1:]),
+		format,
 		stat.Size(),
 		null.StringFrom(f.Title),
 		null.StringFrom(f.Publisher),
@@ -218,7 +242,7 @@ func Search(db *database.Database, query string) ([]*models.File, error) {
 
 	// NOTE: AND rank MATCH 'bm25(…)' ORDER BY rank faster than ORDER BY bm25(fts, …)
 	err := queries.Raw(`SELECT
-			file.id, file.path, file.name, file.extension, file.title, file.subject
+			file.id, file.path, file.name, file.format, file.title, file.subject
 			FROM file
 			JOIN file_search on file.id = file_search.rowid
 			WHERE file_search MATCH ?
@@ -376,12 +400,39 @@ func SetCreators(db *database.Database, file *models.File, newCreators string) e
 
 	// set creators
 	calibreMeta := "/Applications/calibre.app/Contents/MacOS/ebook-meta"
-	if file.Extension == "epub" && util.FileExists(calibreMeta) {
+	if file.Format == 1 && util.FileExists(calibreMeta) {
 		if err = exec.Command(calibreMeta, file.Path, "-a", strings.Replace(newCreators, ",", " & ", -1)).Run(); err == nil {
 			file.Creator = null.StringFrom(newCreators)
 			err = Update(db, *file)
 			if err == nil {
 				util.Notification("Creators updated: " + file.Creator.String)
+			}
+		}
+	}
+
+	return err
+}
+
+// UpdateISBN set ISBN for file
+func UpdateISBN(file *models.File, isbn string) error {
+	var err error
+
+	isbn = strings.Replace(isbn, "-", "", -1)
+	isbn = strings.TrimSpace(isbn)
+
+	if isbn == "" || len(isbn) != 13 {
+		return err
+	}
+
+	// set ISBN
+	calibreMeta := "/Applications/calibre.app/Contents/MacOS/ebook-meta"
+	if file.Format == 1 && util.FileExists(calibreMeta) {
+		if err = exec.Command(calibreMeta, file.Path, "--isbn="+isbn).Run(); err == nil {
+			if err == nil {
+				err := util.Notification("ISBN updated: " + isbn)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -423,7 +474,7 @@ func UpdateTitle(db *database.Database, file *models.File, newTitle string) erro
 
 	// set title
 	calibreMeta := "/Applications/calibre.app/Contents/MacOS/ebook-meta"
-	if file.Extension == "epub" && util.FileExists(calibreMeta) {
+	if file.Format == 1 && util.FileExists(calibreMeta) {
 		// get title: " | head -n 1 | cut -d ':' -f2- | awk '{$1=$1};1'"
 		if err = exec.Command(calibreMeta, file.Path, "-t", strings.TrimSpace(newTitle)).Run(); err == nil {
 			file.Title = null.StringFrom(newTitle)
@@ -442,6 +493,6 @@ func compare(a, b models.File) bool {
 		return true
 	}
 
-	return cmp.Equal(a, b, cmpopts.IgnoreFields(models.File{}, "Path", "Extension", "Size", "Language", "DateCreated",
+	return cmp.Equal(a, b, cmpopts.IgnoreFields(models.File{}, "Path", "Format", "Size", "Language", "DateCreated",
 		"DateModified", "DateAccessed", "Hash"))
 }

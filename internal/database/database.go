@@ -73,12 +73,13 @@ func (db *Database) createTables() {
 		id INTEGER NOT NULL PRIMARY KEY,
 		path TEXT NOT NULL,
 	    	name TEXT,
-	    	extension VARCHAR(255) NOT NULL,
+	    	format INTEGER NOT NULL,
 	    	size INTEGER NOT NULL,
 	    	title TEXT,
 	    	creator TEXT,
 	    	subject TEXT,
 	    	publisher TEXT,
+	    	publisher_id INTEGER,
 	    	language TEXT,
 	    	description TEXT,
 	    	date_created DATETIME NOT NULL,
@@ -99,7 +100,7 @@ func (db *Database) createTables() {
 	var schemaView = `
 	CREATE VIEW IF NOT EXISTS bookmark_view AS SELECT
 		bookmark.id,
-		file.id as file_id,	                                                  
+		file.id as file_id,
 		bookmark.title,
 		bookmark.section,
 		file.name,

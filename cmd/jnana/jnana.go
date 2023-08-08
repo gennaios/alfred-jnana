@@ -36,10 +36,11 @@ usage:
     jnana bmf <file> <query>
     jnana clean
     jnana epub [<query>]
-	jnana filecreators <file> [<query>]
-	jnana filetitle <file> [<query>]
+    jnana filecreators <file> [<query>]
+    jnana filetitle <file> [<query>]
     jnana files [<query>]
     jnana import <file>
+    jnana isbn <file> [<query>]
     jnana getepub
     jnana openepub <query> [<file>]
     jnana openfile <file>
@@ -64,13 +65,14 @@ commands:
     all				Search all bookmarks.
     bm				Bookmarks for file
     bmf				Bookmarks for file filtered by query
-    clean			Clean database, remove bookmarks for deleted files 
+    clean			Clean database, remove bookmarks for deleted files
     epub		   	Bookmarks for EPUB in calibre
 	filecreators	Get or set file creators
 	filetitle		Get or set file title
     files			Search all files by name and metadata
     getepub     	Return opened EPUB
-    import      	Import file or files from folder	
+    import      	Import file or files from folder
+	isbn 	     	Set ISBN for EPUB
     openepub		open calibre to bookmark
 	openfile		open file
     pdf				Retrieve or filter bookmarks for opened PDF in Acrobat, Preview, or Skim
@@ -103,6 +105,7 @@ var (
 		Files         bool
 		Getepub       bool
 		Import        bool
+		Isbn          bool
 		Openepub      bool
 		Openfile      bool
 		Pdf           bool
@@ -286,6 +289,22 @@ func fileCreators(file string, creators string) {
 	}
 	_ = db.Db.Close()
 	fmt.Println(creators)
+}
+
+func fileISBN(file string, isbn string) {
+	db := initDatabase()
+	fileRecord, _, err := files.Get(db, file, false)
+	if err != nil {
+		wf.FatalError(err)
+	}
+
+	// set new ISBN if specified
+	err = files.UpdateISBN(fileRecord, isbn)
+	if err != nil {
+		wf.FatalError(err)
+	}
+	_ = db.Db.Close()
+	fmt.Println(isbn)
 }
 
 func fileSubject(file string, subject string) {
@@ -626,7 +645,7 @@ func returnSearchFilesResults(files []*models.File, query string) {
 	for i := range files {
 		icon := iconForFileID(strconv.FormatInt(files[i].ID, 10), files[i].Path)
 
-		if files[i].Extension == "pdf" {
+		if files[i].Format == 2 {
 			title = files[i].Name
 		} else {
 			if files[i].Creator.String != "" {
@@ -728,6 +747,8 @@ func runCommand() {
 		searchAllFiles(query)
 	case options.Import:
 		ImportFiles(options.File)
+	case options.Isbn:
+		fileISBN(options.File, query)
 	case options.Getepub:
 		getCurrentEpub()
 	case options.Openepub:
