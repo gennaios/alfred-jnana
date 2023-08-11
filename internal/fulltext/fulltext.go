@@ -70,30 +70,46 @@ func BookmarksDelete(db *database.Database, file models.File) {
 
 // FileCreate create FTS entry
 func FileCreate(db *database.Database, file models.File) {
+	var results []*models.File
+
+	_ = queries.Raw(`SELECT
+		id, name, title, series, creator, publisher, subject, isbn, description from file_view
+		WHERE id = ?`, file.ID).Bind(db.Ctx, db.Db, &results)
+
 	_, _ = queries.Raw(`INSERT INTO
-			file_search(rowid, name, title, creator, subject, publisher, description)
-			VALUES(?, ?, ?, ?, ?, ?, ?)`,
-		file.ID,
-		file.Name,
-		file.Title,
-		file.Creator,
-		file.Subject,
-		file.Publisher,
-		file.Description,
+			file_search(rowid, name, title, series, creator, publisher, subject, isbn, description)
+			VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		results[0].ID,
+		results[0].Name,
+		results[0].Title,
+		results[0].Series,
+		results[0].Creator,
+		results[0].Publisher,
+		results[0].Subject,
+		results[0].Isbn,
+		results[0].Description,
 	).Exec(db.Db)
 }
 
 // FileDelete delete FTS entry
 func FileDelete(db *database.Database, file models.File) {
+	var results []*models.File
+
+	_ = queries.Raw(`SELECT
+		id, name, title, series, creator, publisher, subject, isbn, description from file_view
+		WHERE id = ?`, file.ID).Bind(db.Ctx, db.Db, &results)
+
 	_, _ = queries.Raw(`INSERT INTO 
-			file_search(file_search, rowid, name, title, creator, subject, publisher, description)
-			VALUES('delete', ?, ?, ?, ?, ?, ?, ?, ?)`,
-		file.ID,
-		file.Name,
-		file.Title,
-		file.Creator,
-		file.Subject,
-		file.Publisher,
-		file.Description,
+			file_search(file_search, rowid, name, title, series, creator, publisher, subject, isbn, description)
+			VALUES('delete', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		results[0].ID,
+		results[0].Name,
+		results[0].Title,
+		results[0].Series,
+		results[0].Creator,
+		results[0].Publisher,
+		results[0].Subject,
+		results[0].Isbn,
+		results[0].Description,
 	).Exec(db.Db)
 }

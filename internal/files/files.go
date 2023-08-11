@@ -189,7 +189,6 @@ func New(db *database.Database, book string) (*models.File, error) {
 	//newFile.Format = format
 	//newFile.Size = stat.Size()
 	//newFile.Title = null.StringFrom(strings.TrimSpace(f.Title))
-	//newFile.Publisher = null.StringFrom(strings.TrimSpace(f.Publisher))
 	//newFile.Creator = null.StringFrom(strings.TrimSpace(f.Creator))
 	//newFile.Subject = null.StringFrom(strings.TrimSpace(f.Subject))
 	//newFile.DateCreated = dateCreated
@@ -202,13 +201,12 @@ func New(db *database.Database, book string) (*models.File, error) {
 	//	panic(err)
 	//}
 
-	_, _ = queries.Raw("INSERT INTO file (path, name, format, size, title, publisher, creator, subject, date_created, date_modified, date_accessed, hash) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+	_, _ = queries.Raw("INSERT INTO file (path, name, format, size, title, creator, subject, date_created, date_modified, date_accessed, hash) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		book,
 		filepath.Base(book),
 		format,
 		stat.Size(),
 		null.StringFrom(f.Title),
-		null.StringFrom(f.Publisher),
 		null.StringFrom(f.Creator),
 		null.StringFrom(f.Subject),
 		dateCreated,
@@ -278,11 +276,11 @@ func Update(db *database.Database, file models.File) error {
 	// update record
 	_, err = queries.Raw(`UPDATE file SET
 			path = $1, name = $2, size = $3,
-			title = $4, creator = $5, subject = $6, publisher = $7,
-			date_modified = $8, date_accessed = $9, hash = $10
-			WHERE id = $11`,
+			title = $4, creator = $5, subject = $6,
+			date_modified = $7, date_accessed = $8, hash = $9
+			WHERE id = $10`,
 		file.Path, filepath.Base(file.Path), stat.Size(),
-		file.Title.String, file.Creator.String, file.Subject.String, file.Publisher.String,
+		file.Title.String, file.Creator.String, file.Subject.String,
 		file.DateModified, file.DateAccessed, file.Hash,
 		file.ID).Exec(db.Db)
 
