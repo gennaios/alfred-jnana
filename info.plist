@@ -1537,13 +1537,12 @@ end AdobeAcrobat</string>
 				<key>script</key>
 				<string>on run argv
 	set newFileName to item 1 of argv
-	-- set theFile to (system attribute "JNANA_FILE")
 	set theFile to do shell script "echo " &amp; quoted form of (system attribute "JNANA_FILE") &amp; " | iconv -f UTF-8-MAC -t MACROMAN"
 	tell application "Finder"
 		set fileAlias to POSIX file theFile as alias
 		set name of fileAlias to newFileName &amp; ".pdf"
 	end tell
-		--	-- remove variable for currently opened file	--		set bundleID to (system attribute "alfred_workflow_bundleid")	tell application "Alfred 4" to remove configuration "JNANA_FILE" in workflow bundleID
+		--	-- remove variable for currently opened file	--		set bundleID to (system attribute "alfred_workflow_bundleid")	tell application "Alfred 5" to remove configuration "JNANA_FILE" in workflow bundleID
 end run</string>
 				<key>scriptargtype</key>
 				<integer>1</integer>
